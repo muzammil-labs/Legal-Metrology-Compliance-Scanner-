@@ -100,3 +100,9 @@ def analytics(db: Session = Depends(get_db)):
     for row in rows:
         by_region[row.region] = by_region.get(row.region, 0) + 1
     return AnalyticsSummary(total_inspections=len(rows), compliant_inspections=sum(row.overall_status == "PASS" for row in rows), failed_inspections=sum(row.overall_status == "FAIL" for row in rows), warning_inspections=sum(row.overall_status == "WARNING" for row in rows), by_region=by_region)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
