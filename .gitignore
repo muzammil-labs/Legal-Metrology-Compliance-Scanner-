@@ -1,0 +1,6 @@
+.env
+inspections.db
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
