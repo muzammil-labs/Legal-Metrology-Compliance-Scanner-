@@ -13,10 +13,12 @@ from sqlalchemy.orm import Session
 try:
     from backend.models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from backend.services.rule_engine import audit_text
+    from backend.services.pdf_generator import generate_notice_pdf
     from backend.schemas import AnalyticsSummary, AuditResponse, InspectionMetadata, InspectionSummary, RuleStatus
 except ModuleNotFoundError:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text
+    from services.pdf_generator import generate_notice_pdf
     from schemas import AnalyticsSummary, AuditResponse, InspectionMetadata, InspectionSummary, RuleStatus
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
@@ -76,21 +78,11 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
     inspection = db.get(Inspection, inspection_id)
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
-    output = BytesIO()
-    document = canvas.Canvas(output, pagesize=A4)
-    document.setTitle(f"Section 36 Notice LM-{inspection.id:08d}")
-    document.drawString(72, 780, "LEGAL METROLOGY COMPLIANCE NOTICE")
-    document.drawString(72, 750, "Issued under Section 36 of the Legal Metrology Act, 2009")
-    document.drawString(72, 710, f"Inspection: LM-{inspection.id:08d}")
-    document.drawString(72, 690, f"Product file: {inspection.source_filename}")
-    document.drawString(72, 670, f"Region: {inspection.region}")
-    document.drawString(72, 650, f"Status: {inspection.overall_status}")
-    y = 610
-    for violation in inspection.violations:
-        document.drawString(72, y, f"{violation.rule}: {violation.reason[:100]}")
-        y -= 20
-    document.save()
-    return Response(content=output.getvalue(), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="LM-{inspection.id:08d}-notice.pdf"'})
+
+    document_title = f"Section 36 Notice LM-{inspection.id:08d}"
+    pdf_content = generate_notice_pdf(inspection, document_title)
+
+    return Response(content=pdf_content, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="LM-{inspection.id:08d}-notice.pdf"'})
 
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
