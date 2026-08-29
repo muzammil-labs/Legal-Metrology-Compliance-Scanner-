@@ -10,7 +10,7 @@ Country of Origin: India 50/kg"""
 
 
 def statuses(text):
-    rules, usp, _ = audit_text(text, date(2026, 8, 23))
+    rules, usp, _, penalty = audit_text(text, date(2026, 8, 23))
     return {rule.rule: rule.status for rule in rules}, usp
 
 

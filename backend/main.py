@@ -51,7 +51,7 @@ async def scan(file: UploadFile = File(...), ocr_text: str = Form(default=""), r
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     digest = sha256(content).hexdigest()
-    rules, usp, fields = audit_text(ocr_text, date.today())
+    rules, usp, fields, penalty = audit_text(ocr_text, date.today())
     overall = status_for(rules)
     inspection = Inspection(source_filename=file.filename or "upload", sha256=digest, region=region, overall_status=overall.value, ocr_text=ocr_text)
     db.add(inspection)
@@ -62,7 +62,7 @@ async def scan(file: UploadFile = File(...), ocr_text: str = Form(default=""), r
     db.add(AuditCertificate(inspection_id=inspection.id, certificate_number=f"LM-{inspection.id:08d}"))
     db.commit()
     metadata = InspectionMetadata(inspection_id=inspection.id, inspected_at=inspection.inspected_at, audit_date=date.today(), source_filename=inspection.source_filename, sha256=digest, region=region)
-    return AuditResponse(metadata=metadata, extracted_fields=fields, rules=rules, overall_status=overall, usp=usp, ocr_text=ocr_text)
+    return AuditResponse(metadata=metadata, extracted_fields=fields, rules=rules, overall_status=overall, usp=usp, penalty=penalty, ocr_text=ocr_text)
 
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
@@ -101,6 +101,24 @@ def analytics(db: Session = Depends(get_db)):
         by_region[row.region] = by_region.get(row.region, 0) + 1
     return AnalyticsSummary(total_inspections=len(rows), compliant_inspections=sum(row.overall_status == "PASS" for row in rows), failed_inspections=sum(row.overall_status == "FAIL" for row in rows), warning_inspections=sum(row.overall_status == "WARNING" for row in rows), by_region=by_region)
 
+
+import csv
+from io import StringIO
+
+@app.get("/api/analytics/export-csv")
+def export_csv(db: Session = Depends(get_db)):
+    rows = db.query(Inspection).all()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["inspection_id", "inspected_at", "region", "overall_status", "violation_count"])
+    for row in rows:
+        writer.writerow([row.id, row.inspected_at.isoformat(), row.region, row.overall_status, len(row.violations)])
+
+    return Response(
+        content=output.getvalue().encode('utf-8'),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="district_summary.csv"'}
+    )
 
 if __name__ == "__main__":
     import uvicorn

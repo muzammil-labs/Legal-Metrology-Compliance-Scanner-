@@ -3,9 +3,9 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import re
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 
 ENTITY_PREFIX_RE = re.compile(r"^\s*(?:mfg\.?\s+by|manufactured\s+by|packed\s+by|pkd\.?\s+by|imported\s+by|marketed\s+by)\b", re.I)
 PIN_RE = re.compile(r"\b[1-9][0-9]{5}\b")
@@ -67,8 +67,9 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
 
-def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField]]:
+def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
     audit_date = audit_date or date.today()
+    penalty = None
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
     mrp = Decimal(mrp_match.group(1)) if mrp_match else None
@@ -79,7 +80,7 @@ def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResu
     imported = bool(re.search(r"^\s*imported\s+by\b", text, re.I))
     has_origin = bool(re.search(r"country\s+of\s+origin\s*:", text, re.I))
     rules.append(result(StatutoryRule.RULE_6_1_A, RuleStatus.PASS if has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin) else RuleStatus.FAIL, "Entity prefix, address, PIN, and import origin declaration are present." if has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin) else "Manufacturer/packer/importer prefix, complete address, PIN, or country of origin is missing."))
-    generic = bool(re.search(r"\b(?:flour|noodles|oil|biscuit|biscuits|rice|sugar|soap|detergent|tea|wheat|milk)\b", text, re.I))
+    generic = bool(re.search(r"\b(?:flour|noodles|oil|biscuit|biscuits|rice|sugar|soap|detergent|tea|wheat|milk|आटा|तेल|चाय)\b", text, re.I))
     rules.append(result(StatutoryRule.RULE_6_1_B, RuleStatus.PASS if generic else RuleStatus.FAIL, "Generic commodity name is present." if generic else "A generic or common commodity name is missing."))
     invalid = INVALID_UNIT_RE.search(text)
     rules.append(result(StatutoryRule.RULE_6_1_C, RuleStatus.FAIL if invalid or not quantity_data else RuleStatus.PASS, f"Invalid unit notation detected: {invalid.group(0)}." if invalid else "Net quantity uses a recognized unit." if quantity_data else "Net quantity declaration is missing.", evidence=[invalid.group(0)] if invalid else []))
@@ -101,4 +102,8 @@ def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResu
         fields.append(ExtractedField(name="net_quantity", value=f"{quantity_data[0]} {quantity_data[1]}"))
     if mrp is not None:
         fields.append(ExtractedField(name="mrp", value=str(mrp)))
-    return rules, usp, fields
+    failed_rules = [r for r in rules if r.status == RuleStatus.FAIL]
+    if failed_rules:
+        penalty = PenaltyEstimate(sections_violated=["Section 36", "Section 49"], estimated_fine_range="₹25,000 - ₹50,000")
+
+    return rules, usp, fields, penalty
