@@ -3,7 +3,7 @@ from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from reportlab.lib.pagesizes import A4
@@ -32,6 +32,18 @@ def get_db():
         db.close()
 
 
+def save_violations_and_certificate(inspection_id: int, rules: list):
+    db = SessionLocal()
+    try:
+        for rule in rules:
+            if rule.status != RuleStatus.PASS:
+                db.add(Violation(inspection_id=inspection_id, rule=rule.rule.value, status=rule.status.value, reason=rule.reason))
+        db.add(AuditCertificate(inspection_id=inspection_id, certificate_number=f"LM-{inspection_id:08d}"))
+        db.commit()
+    finally:
+        db.close()
+
+
 def status_for(rules) -> RuleStatus:
     if any(rule.status == RuleStatus.FAIL for rule in rules):
         return RuleStatus.FAIL
@@ -46,7 +58,7 @@ def health():
 
 
 @app.post("/api/scan", response_model=AuditResponse)
-async def scan(file: UploadFile = File(...), ocr_text: str = Form(default=""), region: str = Form(default="Unknown"), db: Session = Depends(get_db)):
+async def scan(background_tasks: BackgroundTasks, file: UploadFile = File(...), ocr_text: str = Form(default=""), region: str = Form(default="Unknown"), db: Session = Depends(get_db)):
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
@@ -55,12 +67,11 @@ async def scan(file: UploadFile = File(...), ocr_text: str = Form(default=""), r
     overall = status_for(rules)
     inspection = Inspection(source_filename=file.filename or "upload", sha256=digest, region=region, overall_status=overall.value, ocr_text=ocr_text)
     db.add(inspection)
-    db.flush()
-    for rule in rules:
-        if rule.status != RuleStatus.PASS:
-            db.add(Violation(inspection_id=inspection.id, rule=rule.rule.value, status=rule.status.value, reason=rule.reason))
-    db.add(AuditCertificate(inspection_id=inspection.id, certificate_number=f"LM-{inspection.id:08d}"))
     db.commit()
+    db.refresh(inspection)
+
+    background_tasks.add_task(save_violations_and_certificate, inspection.id, rules)
+
     metadata = InspectionMetadata(inspection_id=inspection.id, inspected_at=inspection.inspected_at, audit_date=date.today(), source_filename=inspection.source_filename, sha256=digest, region=region)
     return AuditResponse(metadata=metadata, extracted_fields=fields, rules=rules, overall_status=overall, usp=usp, ocr_text=ocr_text)
 
