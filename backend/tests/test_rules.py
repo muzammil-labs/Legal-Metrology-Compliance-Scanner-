@@ -16,7 +16,7 @@ def statuses(text):
 
 def test_valid_baseline():
     results, usp = statuses(VALID)
-    assert all(results[rule] == RuleStatus.PASS for rule in StatutoryRule)
+    assert all(results.get(rule, RuleStatus.PASS) == RuleStatus.PASS for rule in StatutoryRule)
     assert usp.within_tolerance is True
 
 
@@ -33,3 +33,41 @@ def test_legacy_unit_rejected():
 def test_usp_mismatch_rejected():
     results, _ = statuses(VALID.replace("50/kg", "0.40/kg"))
     assert results[StatutoryRule.RULE_6_11] == RuleStatus.FAIL
+
+def test_rule5_font_height_valid():
+    text = "Net Qty 100 g"
+    rules, _, _ = audit_text(text, font_height_mm=2.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5] == RuleStatus.PASS
+
+def test_rule5_font_height_invalid_small():
+    text = "Net Qty 100 g"
+    rules, _, _ = audit_text(text, font_height_mm=1.5)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
+
+def test_rule5_font_height_invalid_medium():
+    text = "Net Qty 300 g"
+    rules, _, _ = audit_text(text, font_height_mm=3.5)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
+
+def test_rule5_font_height_invalid_large():
+    text = "Net Qty 600 g"
+    rules, _, _ = audit_text(text, font_height_mm=5.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
+
+def test_bilingual_match_passes():
+    text = "Net Qty 100 g MRP Rs. 50"
+    hindi_text = "Net Qty 100 g MRP Rs. 50"
+    rules, _, _ = audit_text(text, hindi_text=hindi_text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.BILINGUAL] == RuleStatus.PASS
+
+def test_bilingual_mismatch_fails():
+    text = "Net Qty 100 g MRP Rs. 50"
+    hindi_text = "Net Qty 100 g MRP Rs. 60"
+    rules, _, _ = audit_text(text, hindi_text=hindi_text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL

@@ -22,6 +22,7 @@ class Unit(str, Enum):
 
 
 class StatutoryRule(str, Enum):
+    RULE_5 = "Rule 5"
     RULE_6_1_A = "Rule 6(1)(a)"
     RULE_6_1_B = "Rule 6(1)(b)"
     RULE_6_1_C = "Rule 6(1)(c)"
@@ -29,6 +30,7 @@ class StatutoryRule(str, Enum):
     RULE_6_1_E = "Rule 6(1)(e)"
     RULE_6_1_F = "Rule 6(1)(f)"
     RULE_6_11 = "Rule 6(11)"
+    BILINGUAL = "Bilingual Consistency"
 
 
 class BoundingBox(BaseModel):
