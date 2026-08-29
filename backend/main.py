@@ -96,10 +96,41 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
 def analytics(db: Session = Depends(get_db)):
     rows = db.query(Inspection).all()
+    total = len(rows)
+    compliant = sum(row.overall_status == "PASS" for row in rows)
+    failed = sum(row.overall_status == "FAIL" for row in rows)
+    warning = sum(row.overall_status == "WARNING" for row in rows)
+
+    compliance_rate = (compliant / total * 100) if total > 0 else 0.0
+
     by_region: dict[str, int] = {}
+    regional_non_compliance: dict[str, int] = {}
     for row in rows:
         by_region[row.region] = by_region.get(row.region, 0) + 1
-    return AnalyticsSummary(total_inspections=len(rows), compliant_inspections=sum(row.overall_status == "PASS" for row in rows), failed_inspections=sum(row.overall_status == "FAIL" for row in rows), warning_inspections=sum(row.overall_status == "WARNING" for row in rows), by_region=by_region)
+        if row.overall_status != "PASS":
+            regional_non_compliance[row.region] = regional_non_compliance.get(row.region, 0) + 1
+
+    active_districts = len(by_region)
+
+    violations_query = db.query(Violation).all()
+    violation_breakdown: dict[str, int] = {}
+    for v in violations_query:
+        violation_breakdown[v.rule] = violation_breakdown.get(v.rule, 0) + 1
+
+    top_violations = [{"rule": k, "count": v} for k, v in sorted(violation_breakdown.items(), key=lambda item: item[1], reverse=True)[:5]]
+
+    return AnalyticsSummary(
+        total_inspections=total,
+        compliant_inspections=compliant,
+        failed_inspections=failed,
+        warning_inspections=warning,
+        compliance_rate=compliance_rate,
+        active_districts=active_districts,
+        top_violations=top_violations,
+        violation_breakdown=violation_breakdown,
+        regional_non_compliance=regional_non_compliance,
+        by_region=by_region
+    )
 
 
 if __name__ == "__main__":

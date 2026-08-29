@@ -98,11 +98,20 @@ class InspectionSummary(BaseModel):
     violation_count: int
 
 
+class ViolationCount(BaseModel):
+    rule: str
+    count: int
+
 class AnalyticsSummary(BaseModel):
     total_inspections: int
     compliant_inspections: int
     failed_inspections: int
     warning_inspections: int
+    compliance_rate: float
+    active_districts: int
+    top_violations: list[ViolationCount]
+    violation_breakdown: dict[str, int]
+    regional_non_compliance: dict[str, int]
     by_region: dict[str, int]
 
 
