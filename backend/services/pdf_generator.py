@@ -36,6 +36,7 @@ def generate_section_36_notice(
     overall_status: str,
     violations: list,
     ocr_text: str = "",
+    penalty_data: dict | None = None,
 ) -> bytes:
     """
     Generates a formal, court-admissible Inspection Notice & Compounding Demand
@@ -236,6 +237,38 @@ def generate_section_36_notice(
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
     elements.append(t_cert)
+
+    # Penalty Information
+    if penalty_data:
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("PENALTY ASSESSMENT & LIABILITY NOTIFICATION", section_heading))
+        elements.append(Spacer(1, 4))
+
+        pen_rows = []
+        if penalty_data.get("director_liability"):
+            pen_rows.append([
+                Paragraph("<b>Corporate Director Liability</b>", body_text),
+                Paragraph("<font color='#dc2626'><b>INVOKED (Section 49)</b></font>", body_text)
+            ])
+
+        pen_rows.append([
+            Paragraph("<b>Applicable Sections</b>", body_text),
+            Paragraph(f"{', '.join(penalty_data.get('sections_violated', []))}", body_text)
+        ])
+
+        pen_rows.append([
+            Paragraph("<b>Estimated Fine Range</b>", body_text),
+            Paragraph(f"<b>{penalty_data.get('estimated_fine_range', '')}</b>", body_text)
+        ])
+
+        t_pen = Table(pen_rows, colWidths=[200, 320])
+        t_pen.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef2f2')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#fca5a5')),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(t_pen)
 
     # 6. Verification QR Code
     elements.append(Spacer(1, 12))

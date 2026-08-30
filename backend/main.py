@@ -124,6 +124,7 @@ def scan(
     db: Session = Depends(get_db),
 ):
     content = file.file.read(MAX_FILE_SIZE + 1)
+    file.file.seek(0)
     content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")

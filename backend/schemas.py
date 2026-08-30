@@ -86,6 +86,9 @@ class PenaltyEstimate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     sections_violated: list[str]
     estimated_fine_range: str
+    jan_vishwas_eligible: bool = False
+    grace_period_days: str | None = None
+    director_liability: bool = False
 
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
