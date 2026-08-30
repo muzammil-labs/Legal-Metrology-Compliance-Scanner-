@@ -55,6 +55,8 @@ except ModuleNotFoundError:
     )
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
+from routers.b2b_saas import router as b2b_saas_router
+app.include_router(b2b_saas_router)
 
 # Read allowed origins from environment variable, fallback to common dev ports
 cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")

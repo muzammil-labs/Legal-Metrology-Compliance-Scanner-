@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Code,
   FileScan,
   ShieldAlert,
   Store,
