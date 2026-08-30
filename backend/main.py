@@ -26,8 +26,10 @@ try:
     from backend.services.gemini_service import extract_label_with_gemini
     from backend.seed import seed as seed_db
     from backend.schemas import (
+        StatutoryRule,
         AnalyticsSummary,
         AuditResponse,
+        BilingualVerification,
         BatchAuditItem,
         BatchAuditResponse,
         BoundingBox,
@@ -43,8 +45,10 @@ except ModuleNotFoundError:
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
     from schemas import (
+        StatutoryRule,
         AnalyticsSummary,
         AuditResponse,
+        BilingualVerification,
         BatchAuditItem,
         BatchAuditResponse,
         BoundingBox,
@@ -124,7 +128,6 @@ def scan(
     db: Session = Depends(get_db),
 ):
     content = file.file.read(MAX_FILE_SIZE + 1)
-    content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
@@ -198,6 +201,12 @@ def scan(
         region=region,
         gps_location=gps_location,
     )
+    bilingual_verification = None
+    for r in rules:
+        if r.rule == StatutoryRule.BILINGUAL and r.calculated_values:
+            bilingual_verification = BilingualVerification(**r.calculated_values)
+            break
+
     return AuditResponse(
         metadata=metadata,
         extracted_fields=fields,
@@ -205,6 +214,7 @@ def scan(
         overall_status=overall,
         trust_score=trust_score,
         usp=usp,
+        bilingual_verification=bilingual_verification,
         penalty=penalty,
         ocr_text=ocr_text,
     )

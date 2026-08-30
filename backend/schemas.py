@@ -87,6 +87,17 @@ class PenaltyEstimate(BaseModel):
     sections_violated: list[str]
     estimated_fine_range: str
 
+
+class BilingualVerification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    english_mrp: float | None = None
+    hindi_mrp: float | None = None
+    english_qty: str | None = None
+    hindi_qty: str | None = None
+    hindi_taxes_included: bool | None = None
+    mrp_match: bool | None = None
+    qty_match: bool | None = None
+
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     metadata: InspectionMetadata
@@ -95,6 +106,7 @@ class AuditResponse(BaseModel):
     overall_status: RuleStatus
     trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
+    bilingual_verification: BilingualVerification | None = None
     penalty: PenaltyEstimate | None = None
     ocr_text: str
 
