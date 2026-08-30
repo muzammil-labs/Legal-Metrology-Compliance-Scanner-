@@ -1,3 +1,4 @@
+from services.pdp_geometry import estimate_pdp_area
 from datetime import date
 import re
 from services.bilingual_auditor import audit_bilingual_consistency
@@ -172,16 +173,18 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     reason = "Declared USP matches the deterministic calculation." if within else "Declared USP has the wrong unit or differs from the calculated value by more than INR 0.01."
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
-def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
+def audit_font_and_pdp(text: str, pdp_width_cm: float = 12.0, pdp_height_cm: float = 10.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> RuleResult:
     """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
+    pdp_area_cm2 = estimate_pdp_area(pdp_width_cm, pdp_height_cm)
+
     if pdp_area_cm2 <= 50:
         required_mm = 1.0
     elif pdp_area_cm2 <= 100:
         required_mm = 1.5
     elif pdp_area_cm2 <= 500:
-        required_mm = 2.5
+        required_mm = 2.0
     else:
-        required_mm = 4.0
+        required_mm = 6.0 if is_net_qty else 4.0
 
     is_compliant = char_height_mm >= required_mm
     return result(
@@ -190,7 +193,7 @@ def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: f
         f"Numeral height ({char_height_mm:.1f}mm) satisfies statutory minimum ({required_mm:.1f}mm) for PDP area {pdp_area_cm2:.0f}cm²."
         if is_compliant
         else f"Micro-font detected: numeral height {char_height_mm:.1f}mm is below required {required_mm:.1f}mm for PDP area {pdp_area_cm2:.0f}cm².",
-        values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm},
+        values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm, "pdp_width_cm": pdp_width_cm, "pdp_height_cm": pdp_height_cm},
     )
 
 def calculate_trust_score(rules: list[RuleResult]) -> int:
@@ -234,7 +237,7 @@ def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation |
             offence_type=offence_type
         )
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, pdp_width_cm: float = 12.0, pdp_height_cm: float = 10.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
     audit_date = audit_date or date.today()
     penalty = None
     quantity_data = _quantity(text)
@@ -369,7 +372,7 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # ------------------------------------------------------------------
     # Rule 5 / 9 — Font Height & PDP Area Check (HEAD's default PDP auditor)
     # ------------------------------------------------------------------
-    rules.append(audit_font_and_pdp(text))
+    rules.append(audit_font_and_pdp(text, pdp_width_cm, pdp_height_cm, char_height_mm, is_net_qty))
 
     # ------------------------------------------------------------------
     # Rule 5 — Package-size-based font height (feature branch's granular check)

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+from services.pdf_generator import generate_improvement_notice_pdf
 
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
 from services.evidence_ledger import compute_ledger_hash
@@ -534,6 +535,35 @@ def test_ledger_chain_hashing():
 
     assert result == expected
 
+def test_rule5_font_height_valid_1mm():
+    text = "Net Qty 10 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=5.0, pdp_height_cm=10.0, char_height_mm=1.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_1_5mm():
+    text = "Net Qty 100 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=10.0, pdp_height_cm=10.0, char_height_mm=1.5)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_2_0mm():
+    text = "Net Qty 300 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=20.0, pdp_height_cm=20.0, char_height_mm=2.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_6_0mm_net_qty():
+    text = "Net Qty 1 kg"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=30.0, pdp_height_cm=20.0, char_height_mm=6.0, is_net_qty=True)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_4_0mm_not_net_qty():
+    text = "Net Qty 1 kg"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=30.0, pdp_height_cm=20.0, char_height_mm=4.0, is_net_qty=False)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
 # ------------------------------------------------------------------
 # Auth and Role Middleware Tests
 # ------------------------------------------------------------------

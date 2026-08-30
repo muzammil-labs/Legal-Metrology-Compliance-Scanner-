@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
+    from services.pdf_generator import generate_improvement_notice_pdf
 
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
