@@ -6,6 +6,7 @@ import {
   Scale,
   ShieldCheck,
   Phone,
+  Languages,
 } from "lucide-react";
 
 // Plain-language consumer explanations for each rule failure
@@ -108,6 +109,52 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {audit.bilingual_verification && (
+        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
+          <div className="usp-header">
+            <Languages size={16} className="text-cyan" />
+            <strong>Bilingual Language Consistency</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>English Details</span>
+              <b>
+                {audit.bilingual_verification.english_mrp
+                  ? `MRP: ₹${audit.bilingual_verification.english_mrp}`
+                  : "MRP: N/A"}
+                <br />
+                {audit.bilingual_verification.english_qty
+                  ? `Qty: ${audit.bilingual_verification.english_qty}`
+                  : "Qty: N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Hindi / Regional Details</span>
+              <b>
+                {audit.bilingual_verification.hindi_mrp
+                  ? `MRP: ₹${audit.bilingual_verification.hindi_mrp}`
+                  : "MRP: N/A"}
+                <br />
+                {audit.bilingual_verification.hindi_qty
+                  ? `Qty: ${audit.bilingual_verification.hindi_qty}`
+                  : "Qty: N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Match Status</span>
+              <b
+                className={
+                  audit.bilingual_verification.mrp_match !== false &&
+                  audit.bilingual_verification.qty_match !== false
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.bilingual_verification.mrp_match !== false &&
+                audit.bilingual_verification.qty_match !== false
+                  ? "✓ Consistent"
+                  : "✗ Discrepancy Found"}
+              </b>
 
       {audit.penalty && audit.penalty.estimated_fine_range && (
         <div className="usp-audit-card" style={{ marginTop: '16px' }}>

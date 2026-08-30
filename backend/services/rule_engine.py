@@ -1,5 +1,6 @@
 from datetime import date
 import re
+from services.bilingual_auditor import audit_bilingual_consistency
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
@@ -26,6 +27,7 @@ NET_QTY_RE = re.compile(
     re.UNICODE,
 )
 # Reject all non-SI / legacy unit notations
+INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)", re.I)
 INVALID_UNIT_RE = re.compile(
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
@@ -396,26 +398,16 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Bilingual Consistency — Hindi vs English label cross-check
     # ------------------------------------------------------------------
     if hindi_text is not None:
-        hindi_quantity_data = _quantity(hindi_text)
-        hindi_mrp_match = MRP_RE.search(hindi_text)
-        hindi_mrp = Decimal(hindi_mrp_match.group(1)) if hindi_mrp_match else None
-
-        bilingual_status = RuleStatus.PASS
-        bilingual_reason = "Hindi and English labels are consistent."
-
-        if quantity_data != hindi_quantity_data:
-            bilingual_status = RuleStatus.FAIL
-            bilingual_reason = "Net Quantity mismatch between Hindi and English labels."
-        elif mrp != hindi_mrp:
-            bilingual_status = RuleStatus.FAIL
-            bilingual_reason = "MRP mismatch between Hindi and English labels."
-
-        rules.append(result(StatutoryRule.BILINGUAL, bilingual_status, bilingual_reason, values={
-            "english_quantity": str(quantity_data) if quantity_data else None,
-            "hindi_quantity": str(hindi_quantity_data) if hindi_quantity_data else None,
-            "english_mrp": str(mrp) if mrp else None,
-            "hindi_mrp": str(hindi_mrp) if hindi_mrp else None
-        }))
+        is_compliant, reason, details = audit_bilingual_consistency(
+            text, hindi_text, mrp, quantity_data
+        )
+        bilingual_status = RuleStatus.PASS if is_compliant else RuleStatus.FAIL
+        rules.append(result(
+            StatutoryRule.BILINGUAL,
+            bilingual_status,
+            reason,
+            values=details
+        ))
 
     fields = [ExtractedField(name="ocr_text", value=text)]
     if quantity_data:
