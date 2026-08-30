@@ -27,7 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b",
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
 MRP_RE = re.compile(
@@ -387,6 +387,25 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
         fields.append(ExtractedField(name="mrp", value=str(mrp)))
     failed_rules = [r for r in rules if r.status == RuleStatus.FAIL]
     if failed_rules:
-        penalty = PenaltyEstimate(sections_violated=["Section 36", "Section 49"], estimated_fine_range="₹25,000 - ₹50,000")
+        sections_violated = set()
+        for r in failed_rules:
+            # Rule 6(1)(a) failure typically falls under Section 49 / Rule 32 for lack of manufacturer/importer info
+            if r.rule == StatutoryRule.RULE_6_1_A:
+                sections_violated.add("Section 49")
+            # Other statutory omissions, unit issues, and pricing math fall under Section 36
+            else:
+                sections_violated.add("Section 36")
+
+        sections_list = sorted(list(sections_violated))
+        if "Section 36" in sections_list and "Section 49" in sections_list:
+            fine_range = "₹50,000 - ₹1,00,000"
+        elif "Section 36" in sections_list:
+            fine_range = "₹25,000 - ₹50,000"
+        elif "Section 49" in sections_list:
+            fine_range = "₹10,000 - ₹25,000"
+        else:
+            fine_range = "₹10,000 - ₹50,000"
+
+        penalty = PenaltyEstimate(sections_violated=sections_list, estimated_fine_range=fine_range)
 
     return rules, usp, fields, penalty
