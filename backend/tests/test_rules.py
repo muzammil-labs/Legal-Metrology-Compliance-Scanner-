@@ -381,6 +381,143 @@ def test_excel_export_generation():
     assert "inspection_id" in csv_str
     assert "test.jpg" in csv_str
     assert "Delhi" in csv_str
+# ------------------------------------------------------------------
+# B2B SaaS API Rate Limiting and Authentication Tests
+# ------------------------------------------------------------------
+from fastapi.testclient import TestClient
+import time
+from main import app
+import routers.b2b_saas as b2b_saas
+
+# Monkey-patch time.time to simulate rate limiting correctly
+import time
+original_time = time.time
+
+class MockTime:
+    def __init__(self):
+        self.current_time = 10000.0
+    def time(self):
+        return self.current_time
+    def sleep(self, seconds):
+        self.current_time += seconds
+
+def test_b2b_saas_auth_missing():
+    client = TestClient(app)
+    response = client.post("/api/v1/pre-audit", json={"ocr_text": "Net Qty 100 g"})
+    assert response.status_code == 401
+    assert "X-API-Key header missing" in response.json()["detail"]
+
+def test_b2b_saas_auth_invalid_format():
+    client = TestClient(app)
+    response = client.post("/api/v1/pre-audit", json={"ocr_text": "Net Qty 100 g"}, headers={"X-API-Key": "invalid_key_format"})
+    assert response.status_code == 403
+    assert "Invalid API Key format" in response.json()["detail"]
+
+def test_b2b_saas_rate_limit_trial():
+    mock_time = MockTime()
+    b2b_saas.time.time = mock_time.time
+
+    # Clear rate limit store
+    b2b_saas.RATE_LIMIT_STORE = {}
+
+    client = TestClient(app)
+    headers = {"X-API-Key": "trial_testkey"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+
+    # Send 100 requests (the limit)
+    for _ in range(100):
+        response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+        assert response.status_code == 200
+
+    # The 101st request should fail
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 429
+    assert "Rate limit exceeded" in response.json()["detail"]
+
+    # Fast forward time by 61 seconds
+    mock_time.sleep(61)
+
+    # The next request should pass again
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 200
+
+    b2b_saas.time.time = original_time
+
+def test_b2b_saas_rate_limit_enterprise():
+    mock_time = MockTime()
+    b2b_saas.time.time = mock_time.time
+
+    # Clear rate limit store
+    b2b_saas.RATE_LIMIT_STORE = {}
+
+    client = TestClient(app)
+    headers = {"X-API-Key": "enterprise_testkey"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+
+    # Send 150 requests (above trial limit, but well below enterprise limit)
+    for _ in range(150):
+        response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+        assert response.status_code == 200
+
+    b2b_saas.time.time = original_time
+
+def test_b2b_saas_pre_audit_response_format():
+    client = TestClient(app)
+    headers = {"X-API-Key": "enterprise_formatcheck"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "overall_status" in data
+    assert "rules" in data
+    assert "mandatory_fixes" in data
+    assert "penalty" in data
+    assert "usp" in data
+import io
+import zipfile
+from services.batch_processor import process_csv_batch, process_zip_batch, process_batch
+
+def test_csv_batch_parsing():
+    csv_str = "sku_id,ocr_text\nSKU1,Manufactured by Acme 2 kg\nSKU2,Imported by Bob 1 kg\n"
+    # Ensure it only extracts up to 50
+    for i in range(3, 55):
+        csv_str += f"SKU{i},Text{i}\n"
+
+    items = process_csv_batch(csv_str)
+    assert len(items) == 50
+    assert items[0]["filename"] == "row_1.csv"
+    assert b"SKU1 Manufactured by Acme 2 kg" in items[0]["content"]
+
+def test_zip_batch_parsing():
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i in range(55):
+            zf.writestr(f"image_{i}.jpg", b"fake_image_data")
+
+    zip_bytes = zip_buffer.getvalue()
+
+    items = process_zip_batch(zip_bytes)
+    assert len(items) == 50
+    assert items[0]["filename"] == "image_0.jpg"
+    assert items[0]["content"] == b"fake_image_data"
+
+from services.ecommerce_parser import audit_digital_listing
+def test_digital_listing_pass():
+    text = (
+        "Country of Origin: India\n"
+        "Manufactured by Swiggy Instamart, Plot 5, New Delhi 411001\n"
+        "Net Qty 500 g\n"
+        "MRP Rs. 150 (incl. of all taxes)\n"
+        "Consumer Care: 1800 123 4567 care@swiggy.in"
+    )
+    rules = audit_digital_listing(text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_E] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_A] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_B] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_F] == RuleStatus.PASS
 def test_ledger_chain_hashing():
     prev = "abc123hash"
     ts = "2026-08-29T10:00:00"
