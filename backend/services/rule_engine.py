@@ -27,7 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b",
+    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\s|$)",
     re.I,
 )
 MRP_RE = re.compile(
@@ -210,30 +210,28 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     )
     imported = bool(ENTITY_PREFIX_RE.search(text) and re.search(r"imported\s+by|आयातित", text, re.I))
     has_origin = bool(re.search(r"(?:country\s+of\s+origin|मूल\s*देश)\s*:", text, re.I))
+
     a_ok = bool(has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin))
-    rules.append(
-        result(
-            StatutoryRule.RULE_6_1_A,
-            RuleStatus.PASS if a_ok else RuleStatus.FAIL,
-            "Entity prefix, address, PIN, and import origin declaration are present."
-            if a_ok
-            else "Manufacturer/packer/importer prefix, complete address, PIN, or country of origin is missing.",
-        )
+    status = RuleStatus.PASS if a_ok else RuleStatus.FAIL
+    reason = (
+        "Entity prefix, address, PIN, and import origin declaration are present."
+        if a_ok
+        else "Manufacturer/packer/importer prefix, complete address, PIN, or country of origin is missing."
     )
+
+    rules.append(result(StatutoryRule.RULE_6_1_A, status, reason))
 
     # ------------------------------------------------------------------
     # Rule 6(1)(b) — Generic / Common Commodity Name
     # ------------------------------------------------------------------
     has_generic = _has_commodity(text)
-    rules.append(
-        result(
-            StatutoryRule.RULE_6_1_B,
-            RuleStatus.PASS if has_generic else RuleStatus.FAIL,
-            "Generic commodity name is present."
-            if has_generic
-            else "A generic or common commodity name is missing. Brand names alone do not satisfy Rule 6(1)(b).",
-        )
+    b_status = RuleStatus.PASS if has_generic else RuleStatus.FAIL
+    b_reason = (
+        "Generic commodity name is present."
+        if has_generic
+        else "A generic or common commodity name is missing. Brand names alone do not satisfy Rule 6(1)(b)."
     )
+    rules.append(result(StatutoryRule.RULE_6_1_B, b_status, b_reason))
 
 
     # ------------------------------------------------------------------
