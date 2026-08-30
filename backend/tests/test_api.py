@@ -25,7 +25,17 @@ Base.metadata.create_all(bind=engine)
 # Because main.py executes init_db() and seed_db() on load, they will run against our testing engine!
 # That's perfectly fine, because it initializes the test DB with seed data.
 
-from main import app, get_db, status_for
+from fastapi import Depends
+from main import app
+from services.auth import RoleChecker, User, Role
+
+def override_role_checker(allowed_roles=None):
+    def checker():
+        return User(username="test_user", role=Role.CENTRAL_ADMIN)
+    return checker
+
+app.dependency_overrides[RoleChecker] = override_role_checker()
+from main import get_db, status_for
 from schemas import RuleResult, RuleStatus, StatutoryRule, USPResult, PenaltyEstimate
 from models import Inspection, Violation, AuditCertificate
 
@@ -38,6 +48,11 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
+from services.auth import create_access_token, Role
+token = create_access_token({"sub": "test", "role": Role.CENTRAL_ADMIN.value})
+client.headers.update({"Authorization": f"Bearer {token}"})
+
 
 @pytest.fixture(autouse=True)
 def clean_db():
