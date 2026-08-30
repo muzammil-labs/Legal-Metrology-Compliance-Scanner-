@@ -206,21 +206,25 @@ def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation |
         return None
 
     # Determine offence type based on violations
+    # Section 36 Repeat Offence / Deceptive Fraud (Rule 6(11) USP math discrepancy, legacy non-SI units)
     has_severe = any(v.rule == StatutoryRule.RULE_6_11 or v.rule == StatutoryRule.RULE_6_1_C for v in violations)
     offence_type = OffenceType.REPEAT_METRIC_FRAUD if has_severe else OffenceType.PROCEDURAL_FIRST_TIME
 
     if offence_type == OffenceType.REPEAT_METRIC_FRAUD:
+        # Calculate Tier-1 fine ranges (₹25,000 to ₹50,000). Add statutory director liability warning flags.
         return FineEstimation(
-            min_penalty_inr=50000,
-            max_penalty_inr=100000,
-            legal_section="Section 36 & 49 (Repeat Offence / Metric Fraud)",
+            min_penalty_inr=25000,
+            max_penalty_inr=50000,
+            legal_section="Section 36 & 49 (Repeat Offence / Deceptive Metric Fraud) + Corporate Director Liability Warning",
             offence_type=offence_type
         )
     else:
+        # Section 36 First-Time Procedural (Rule 6(1) syntax/prefix misprints):
+        # Jan Vishwas Improvement Notice (₹0 immediate fine, 15-day rectification window).
         return FineEstimation(
-            min_penalty_inr=2000,
-            max_penalty_inr=10000,
-            legal_section="Section 36 (Procedural Misprint)",
+            min_penalty_inr=0,
+            max_penalty_inr=0,
+            legal_section="Section 36 First-Time Procedural Misprint (Jan Vishwas Improvement Notice, 15-Day Grace Period)",
             offence_type=offence_type
         )
 

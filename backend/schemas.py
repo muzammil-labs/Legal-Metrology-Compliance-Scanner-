@@ -110,6 +110,7 @@ class PreAuditResponse(BaseModel):
     compliant: bool
     fine_risk: FineEstimation | None = None
     analysis: list[RuleResult]
+    mandatory_fixes: list[str] = Field(default_factory=list)
 
 
 class AuditResponse(BaseModel):

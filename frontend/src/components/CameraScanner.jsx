@@ -107,7 +107,37 @@ export default function CameraScanner({
             />
           </>
         ) : (
-          <div style={{ padding: '20px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '20px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+            {/* Scanline Animation overlay during loading */}
+            {loading && <div className="scanline" aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '2px', background: 'cyan', boxShadow: '0 0 10px cyan', zIndex: 10, animation: 'scan 2s linear infinite' }} />}
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setCustomOcr("https://blinkit.com/prn/product/12345")}
+                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                disabled={loading}
+              >
+                Blinkit Preset
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomOcr("https://zeptonow.com/pn/product/54321")}
+                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                disabled={loading}
+              >
+                Zepto Preset
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomOcr("https://www.swiggy.com/instamart/item/98765")}
+                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                disabled={loading}
+              >
+                Swiggy Preset
+              </button>
+            </div>
+
             <label style={{ marginBottom: '8px', fontSize: '14px', color: '#e4e4e7' }}>Digital Listing URL / Text</label>
             <textarea
               style={{ flex: 1, width: '100%', background: 'transparent', border: '1px solid #3f3f46', borderRadius: '8px', padding: '12px', color: '#fff', resize: 'none' }}

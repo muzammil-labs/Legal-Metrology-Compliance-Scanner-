@@ -215,6 +215,33 @@ def _generate_pdf(
 
     # 5. Section 65B Evidence Act Certificate & Cryptographic Seal
 
+
+    if notice_type == "IMPROVEMENT":
+        elements.append(Paragraph("JAN VISHWAS (AMENDMENT OF PROVISIONS) ACT, 2026 — GRACE PERIOD CLAUSE", section_heading))
+        elements.append(Spacer(1, 4))
+        grace_text = "<b>STATUTORY GRACE WINDOW:</b> In accordance with the Jan Vishwas reforms, this serves as a formal Improvement Notice for first-time procedural misprints. You are hereby granted a mandatory grace period of <b>15 to 30 days</b> from the date of this notice to rectify the mentioned labeling discrepancies without any immediate monetary penalty. Failure to comply will escalate to a Compounding Demand Notice."
+        t_grace = Table([[Paragraph(grace_text, body_text)]], colWidths=[520])
+        t_grace.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0fdf4')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#22c55e')),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(t_grace)
+        elements.append(Spacer(1, 12))
+    elif notice_type == "COMPOUNDING":
+        elements.append(Paragraph("STATUTORY PENALTY DEMAND & COMPOUNDING ORDER", section_heading))
+        elements.append(Spacer(1, 4))
+        comp_text = "<b>PENALTY ORDER:</b> Under Sections 36 & 49 of the Legal Metrology Act, 2009, this constitutes a formal Compounding Demand Notice for severe metric fraud or repeated violations. The calculated fine range is legally mandated. Immediate payment is required to avoid further prosecution."
+        t_comp = Table([[Paragraph(comp_text, body_text)]], colWidths=[520])
+        t_comp.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef2f2')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#ef4444')),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(t_comp)
+        elements.append(Spacer(1, 12))
     if fine_estimation:
         elements.append(Paragraph("ESTIMATED STATUTORY PENALTY", section_heading))
         elements.append(Spacer(1, 4))

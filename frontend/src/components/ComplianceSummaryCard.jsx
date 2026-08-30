@@ -147,6 +147,44 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+            {audit.fine_risk && (
+        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-rose" />
+            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+          </div>
+          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <div>
+              <span>Legal Section</span>
+              <b>{audit.fine_risk.legal_section}</b>
+            </div>
+            <div>
+              <span>Estimated Fine</span>
+              <b className="text-rose">₹{audit.fine_risk.min_penalty_inr} - ₹{audit.fine_risk.max_penalty_inr}</b>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {audit.penalty && audit.penalty.estimated_fine_range && !audit.fine_risk && (
+        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-rose" />
+            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+          </div>
+          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <div>
+              <span>Legal Section</span>
+              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
+            </div>
+            <div>
+              <span>Estimated Fine</span>
+              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rule-list">
 
         {audit.rules.map((rule) => {
