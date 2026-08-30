@@ -3,7 +3,10 @@ from datetime import datetime
 from sqlalchemy import DateTime, Integer, String, Text, create_engine, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
-DATABASE_URL = "sqlite:///./inspections.db"
+import os
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "inspections.db")
+DATABASE_URL = f"sqlite:///{DB_PATH}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -14,14 +17,18 @@ class Base(DeclarativeBase):
 
 class Inspection(Base):
     __tablename__ = "inspections"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     inspected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     source_filename: Mapped[str] = mapped_column(String(255))
     sha256: Mapped[str] = mapped_column(String(64), index=True)
     region: Mapped[str] = mapped_column(String(120), default="Unknown")
+<<<<<<< HEAD
     gps_location: Mapped[str] = mapped_column(String(120), default="28.6139° N, 77.2090° E")
     trust_score: Mapped[int] = mapped_column(Integer, default=100)
     overall_status: Mapped[str] = mapped_column(String(20))
+=======
+    overall_status: Mapped[str] = mapped_column(String(20), index=True)
+>>>>>>> origin/feat/check-demo-readiness-454878615019827795
     ocr_text: Mapped[str] = mapped_column(Text, default="")
     violations: Mapped[list["Violation"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")
     certificate: Mapped["AuditCertificate | None"] = relationship(back_populates="inspection", uselist=False, cascade="all, delete-orphan")
