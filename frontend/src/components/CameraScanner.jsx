@@ -115,7 +115,7 @@ export default function CameraScanner({
               <button
                 type="button"
                 onClick={() => setCustomOcr("https://blinkit.com/prn/product/12345")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                className="preset-btn"
                 disabled={loading}
               >
                 Blinkit Preset
@@ -123,7 +123,7 @@ export default function CameraScanner({
               <button
                 type="button"
                 onClick={() => setCustomOcr("https://zeptonow.com/pn/product/54321")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                className="preset-btn"
                 disabled={loading}
               >
                 Zepto Preset
@@ -131,7 +131,7 @@ export default function CameraScanner({
               <button
                 type="button"
                 onClick={() => setCustomOcr("https://www.swiggy.com/instamart/item/98765")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                className="preset-btn"
                 disabled={loading}
               >
                 Swiggy Preset

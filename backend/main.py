@@ -22,16 +22,15 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
-    from services.pdf_generator import generate_section_36_notice
+    from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
     from schemas import (
-    from backend.services.rule_engine import audit_text, calculate_trust_score
-    from backend.services.pdf_generator import generate_section_36_notice
-    from backend.services.gemini_service import extract_label_with_gemini
-    from backend.seed import seed as seed_db
-    from backend.schemas import (
         StatutoryRule,
+        PreAuditRequest,
+        PreAuditResponse,
+        FineEstimation,
+        OffenceType,
         AnalyticsSummary,
         AuditResponse,
         BilingualVerification,
@@ -44,29 +43,7 @@ try:
         RuleStatus,
     )
 except ModuleNotFoundError:
-    from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
-    from services.rule_engine import audit_text, calculate_trust_score
-    from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
-    from services.gemini_service import extract_label_with_gemini
-    from seed import seed as seed_db
-    from schemas import (
-        StatutoryRule,
-    PreAuditRequest,
-    PreAuditResponse,
-    FineEstimation,
-    OffenceType,
-
-        AnalyticsSummary,
-        AuditResponse,
-        BilingualVerification,
-        BatchAuditItem,
-        BatchAuditResponse,
-        BoundingBox,
-        ExtractedField,
-        InspectionMetadata,
-        InspectionSummary,
-        RuleStatus,
-    )
+    pass
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
 

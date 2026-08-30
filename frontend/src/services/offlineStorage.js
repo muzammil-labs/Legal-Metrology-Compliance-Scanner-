@@ -90,8 +90,14 @@ export async function syncOfflineScans() {
 
 // Automatically try to sync when network comes online
 if (typeof window !== "undefined") {
-  window.addEventListener("online", () => {
-    console.log("Network is back online, syncing offline scans...");
-    syncOfflineScans();
-  });
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    navigator.serviceWorker.ready.then((swRegistration) => {
+      return swRegistration.sync.register('sync-offline-scans');
+    }).catch((error) => {
+      console.error('Background sync registration failed:', error);
+      window.addEventListener("online", syncOfflineScans);
+    });
+  } else {
+    window.addEventListener("online", syncOfflineScans);
+  }
 }
