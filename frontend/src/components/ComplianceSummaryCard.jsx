@@ -6,6 +6,7 @@ import {
   Scale,
   ShieldCheck,
   Phone,
+  Languages,
 } from "lucide-react";
 
 // Plain-language consumer explanations for each rule failure
@@ -68,6 +69,38 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
           </p>
         </div>
       </div>
+
+
+
+      {(() => {
+        const rule5 = audit.rules.find(r => r.rule === "Rule 5 PDP Font Height & Area Ratio" || r.rule === "Rule 5 PDP" || r.rule.includes("Rule 5"));
+        if (!rule5 || !rule5.calculated_values || rule5.calculated_values.pdp_area_cm2 === undefined) return null;
+        const vals = rule5.calculated_values;
+        return (
+          <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+            <div className="usp-header">
+              <Scale size={16} className="text-cyan" />
+              <strong>Rule 5 PDP Font Height & Area Ratio</strong>
+            </div>
+            <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <div>
+                <span>PDP Area</span>
+                <b>{vals.pdp_area_cm2.toFixed(1)} cm²</b>
+              </div>
+              <div>
+                <span>Font Height</span>
+                <b>{vals.char_height_mm.toFixed(1)} mm</b>
+              </div>
+              <div>
+                <span>Minimum Required</span>
+                <b className={vals.char_height_mm >= vals.required_mm ? "text-emerald" : "text-rose"}>
+                  {vals.required_mm.toFixed(1)} mm
+                </b>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {audit.usp && audit.usp.applicable && (
         <div className="usp-audit-card">
@@ -152,6 +185,43 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                 className={
                   audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
                   "PASS"
+      {audit.bilingual_verification && (
+        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
+          <div className="usp-header">
+            <Languages size={16} className="text-cyan" />
+            <strong>Bilingual Language Consistency</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>English Details</span>
+              <b>
+                {audit.bilingual_verification.english_mrp
+                  ? `MRP: ₹${audit.bilingual_verification.english_mrp}`
+                  : "MRP: N/A"}
+                <br />
+                {audit.bilingual_verification.english_qty
+                  ? `Qty: ${audit.bilingual_verification.english_qty}`
+                  : "Qty: N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Hindi / Regional Details</span>
+              <b>
+                {audit.bilingual_verification.hindi_mrp
+                  ? `MRP: ₹${audit.bilingual_verification.hindi_mrp}`
+                  : "MRP: N/A"}
+                <br />
+                {audit.bilingual_verification.hindi_qty
+                  ? `Qty: ${audit.bilingual_verification.hindi_qty}`
+                  : "Qty: N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Match Status</span>
+              <b
+                className={
+                  audit.bilingual_verification.mrp_match !== false &&
+                  audit.bilingual_verification.qty_match !== false
                     ? "text-emerald"
                     : "text-rose"
                 }
@@ -160,11 +230,104 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                 "PASS"
                   ? "✓ Verified"
                   : "✗ Non-compliant"}
+                {audit.bilingual_verification.mrp_match !== false &&
+                audit.bilingual_verification.qty_match !== false
+                  ? "✓ Consistent"
+                  : "✗ Discrepancy Found"}
               </b>
             </div>
           </div>
         </div>
       )}
+
+      {audit.penalty && audit.penalty.estimated_fine_range && (
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-rose" />
+            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+          </div>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div>
+              <span>Legal Section</span>
+              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
+            </div>
+            <div>
+              <span>Estimated Fine</span>
+              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {audit.fine_risk && (
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-rose" />
+            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+          </div>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div>
+              <span>Legal Section</span>
+              <b>{audit.fine_risk.legal_section}</b>
+            </div>
+            <div>
+              <span>Estimated Fine</span>
+              <b className="text-rose">
+                ₹{audit.fine_risk.min_penalty_inr} - ₹
+                {audit.fine_risk.max_penalty_inr}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {audit.fine_risk && (
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-rose" />
+            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+          </div>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div>
+              <span>Legal Section</span>
+              <b>{audit.fine_risk.legal_section}</b>
+            </div>
+            <div>
+              <span>Estimated Fine</span>
+              <b className="text-rose">
+                ₹{audit.fine_risk.min_penalty_inr} - ₹
+                {audit.fine_risk.max_penalty_inr}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {audit.penalty &&
+        audit.penalty.estimated_fine_range &&
+        !audit.fine_risk && (
+          <div className="usp-audit-card" style={{ marginTop: "16px" }}>
+            <div className="usp-header">
+              <ShieldCheck size={16} className="text-rose" />
+              <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
+            </div>
+            <div
+              className="usp-grid"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
+              <div>
+                <span>Legal Section</span>
+                <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
+              </div>
+              <div>
+                <span>Estimated Fine</span>
+                <b className="text-rose">
+                  {audit.penalty.estimated_fine_range}
+                </b>
+              </div>
+            </div>
+          </div>
+        )}
 
       <div className="rule-list">
         {audit.rules.map((rule) => {
@@ -223,9 +386,28 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         })}
       </div>
 
-      <div className="result-footer-actions">
-        <button className="notice-btn" onClick={onOpenNoticeModal}>
-          <FileText size={16} /> Generate Official Inspection Notice
+      <div
+        className="result-footer-actions"
+        style={{ flexDirection: "column" }}
+      >
+        <button
+          className="notice-btn"
+          onClick={() => onOpenNoticeModal("IMPROVEMENT")}
+          style={{ width: "100%" }}
+        >
+          <FileText size={16} /> Generate Improvement Notice (15-Day Grace)
+        </button>
+        <button
+          className="notice-btn"
+          onClick={() => onOpenNoticeModal("COMPOUNDING")}
+          style={{
+            width: "100%",
+            background: "rgba(225, 29, 72, 0.1)",
+            color: "#fb7185",
+            border: "1px solid rgba(225, 29, 72, 0.2)",
+          }}
+        >
+          <FileText size={16} /> Generate Compounding Penalty Demand
         </button>
 
         {/* One-tap NCH Grievance Filing — visible only on FAIL results */}

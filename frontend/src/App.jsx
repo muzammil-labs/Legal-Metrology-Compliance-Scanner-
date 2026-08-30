@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import CameraScanner from "./components/CameraScanner";
 import ComplianceSummaryCard from "./components/ComplianceSummaryCard";
 import InspectorAnalyticsDashboard from "./components/InspectorAnalyticsDashboard";
 import SellerBulkAudit from "./components/SellerBulkAudit";
 import NoticePreviewModal from "./components/NoticePreviewModal";
+import PublicCitizenPortal from "./components/PublicCitizenPortal";
 import {
   executeScanWithCircuitBreaker,
   loadPrecachedFixture,
@@ -12,6 +13,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("consumer");
+  const [role, setRole] = useState("FIELD_INSPECTOR");
   const [demoMode, setDemoMode] = useState(null);
   const [file, setFile] = useState(null);
   const [audit, setAudit] = useState(() =>
@@ -21,7 +23,22 @@ export default function App() {
   const [message, setMessage] = useState(
     "System ready for statutory inspection",
   );
+  const [noticeModalType, setNoticeModalType] = useState(null);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
+
+  if (currentPath === "/citizen") {
+    return <PublicCitizenPortal />;
+  }
 
   function handleChooseMode(key) {
     setDemoMode(key);
@@ -62,6 +79,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         demoMode={demoMode}
         setDemoMode={handleChooseMode}
+        role={role}
+        setRole={setRole}
       />
 
       <section className="intro">
@@ -99,7 +118,7 @@ export default function App() {
           />
           <ComplianceSummaryCard
             audit={audit}
-            onOpenNoticeModal={() => setIsNoticeModalOpen(true)}
+            onOpenNoticeModal={(type) => setNoticeModalType(type)}
           />
         </section>
       )}
@@ -109,9 +128,10 @@ export default function App() {
       {activeTab === "seller" && <SellerBulkAudit />}
 
       <NoticePreviewModal
-        isOpen={isNoticeModalOpen}
-        onClose={() => setIsNoticeModalOpen(false)}
+        isOpen={!!noticeModalType}
+        onClose={() => setNoticeModalType(null)}
         audit={audit}
+        noticeType={noticeModalType}
       />
     </main>
   );
