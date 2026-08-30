@@ -280,18 +280,26 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 def analytics(db: Session = Depends(get_db)):
     rows = db.query(Inspection).all()
     total = len(rows)
-    compliant = sum(1 for row in rows if row.overall_status == "PASS")
-    failed = sum(1 for row in rows if row.overall_status == "FAIL")
-    warning = sum(1 for row in rows if row.overall_status == "WARNING")
-    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
 
+    compliant = 0
+    failed = 0
+    warning = 0
     by_region: dict[str, int] = {}
     regional_non_compliance: dict[str, int] = {}
+
     for row in rows:
+        if row.overall_status == "PASS":
+            compliant += 1
+        elif row.overall_status == "FAIL":
+            failed += 1
+        elif row.overall_status == "WARNING":
+            warning += 1
+
         by_region[row.region] = by_region.get(row.region, 0) + 1
         if row.overall_status != "PASS":
             regional_non_compliance[row.region] = regional_non_compliance.get(row.region, 0) + 1
 
+    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
     active_districts = len(by_region)
 
     violations_query = db.query(Violation).all()
