@@ -123,7 +123,6 @@ def scan(
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
 ):
-    content = file.file.read(MAX_FILE_SIZE + 1)
     content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")

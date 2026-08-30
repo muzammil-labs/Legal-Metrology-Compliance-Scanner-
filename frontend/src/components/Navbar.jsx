@@ -104,6 +104,14 @@ export default function Navbar({
         >
           <Store size={15} /> Seller Batch Audit
         </button>
+        <button
+          className={`tab-btn ${activeTab === "developer" ? "active" : ""}`}
+          onClick={() => setActiveTab("developer")}
+          role="tab"
+          aria-selected={activeTab === "developer"}
+        >
+          <Code size={15} /> Developer Portal
+        </button>
       </div>
 
       <div className="nav-right">
