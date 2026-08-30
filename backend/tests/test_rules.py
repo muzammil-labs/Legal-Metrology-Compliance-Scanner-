@@ -311,3 +311,21 @@ def test_audit_usp_missing_quantity_data():
     assert rule_result.status == RuleStatus.WARNING
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
+
+
+from services.ecommerce_parser import audit_digital_listing
+def test_digital_listing_pass():
+    text = (
+        "Country of Origin: India\n"
+        "Manufactured by Swiggy Instamart, Plot 5, New Delhi 411001\n"
+        "Net Qty 500 g\n"
+        "MRP Rs. 150 (incl. of all taxes)\n"
+        "Consumer Care: 1800 123 4567 care@swiggy.in"
+    )
+    rules = audit_digital_listing(text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_E] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_A] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_B] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_F] == RuleStatus.PASS
