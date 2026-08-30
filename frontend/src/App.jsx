@@ -83,7 +83,6 @@ export default function App() {
         </section>
       )}
 
-
       {activeTab === 'officer' && (
         <InspectorAnalyticsDashboard />
       )}
