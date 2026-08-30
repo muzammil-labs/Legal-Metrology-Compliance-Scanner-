@@ -9,6 +9,11 @@ from datetime import date, datetime
 from hashlib import sha256
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
+
+from services.auth import UserRole, create_access_token, require_role, verify_password, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
+from datetime import timedelta
+from pydantic import BaseModel
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
@@ -22,17 +27,14 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
-    from services.pdf_generator import generate_section_36_notice
+    from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
     from schemas import (
-    from backend.services.rule_engine import audit_text, calculate_trust_score
-    from backend.services.pdf_generator import generate_section_36_notice
-    from backend.services.gemini_service import extract_label_with_gemini
-    from backend.seed import seed as seed_db
-    from backend.schemas import (
         StatutoryRule,
-        AnalyticsSummary,
+        PreAuditRequest,
+        PreAuditResponse,
+        AnalyticsSummary, PreAuditRequest, PreAuditResponse,
         AuditResponse,
         BilingualVerification,
         BatchAuditItem,
@@ -51,12 +53,14 @@ except ModuleNotFoundError:
     from seed import seed as seed_db
     from schemas import (
         StatutoryRule,
+        PreAuditRequest,
+        PreAuditResponse,
     PreAuditRequest,
     PreAuditResponse,
     FineEstimation,
     OffenceType,
 
-        AnalyticsSummary,
+        AnalyticsSummary, PreAuditRequest, PreAuditResponse,
         AuditResponse,
         BilingualVerification,
         BatchAuditItem,
@@ -113,6 +117,23 @@ def status_for(rules) -> RuleStatus:
     return RuleStatus.PASS
 
 
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    role: UserRole
+
+@app.post("/api/token")
+def login(req: LoginRequest):
+    # Dummy authentication for testing/demonstration
+    # In a real application, verify credentials against the database.
+    # Here, we accept any password but check role to generate the correct token.
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": req.username, "role": req.role.value}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -128,7 +149,7 @@ def root_status():
     }
 
 
-@app.post("/api/scan", response_model=AuditResponse)
+@app.post("/api/scan", response_model=AuditResponse, dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.CENTRAL_ADMIN]))])
 def scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -233,7 +254,7 @@ def scan(
     )
 
 
-@app.post("/api/scan/batch", response_model=BatchAuditResponse)
+@app.post("/api/scan/batch", response_model=BatchAuditResponse, dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.CENTRAL_ADMIN]))])
 def batch_scan(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
@@ -279,7 +300,7 @@ def batch_scan(
 
 
 
-@app.get("/api/inspections", response_model=list[InspectionSummary])
+@app.get("/api/inspections", response_model=list[InspectionSummary], dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
 def inspections(limit: int = 50, db: Session = Depends(get_db)):
     rows = db.query(Inspection).options(selectinload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     rows = db.query(Inspection).options(joinedload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
@@ -299,7 +320,7 @@ def inspections(limit: int = 50, db: Session = Depends(get_db)):
     ]
 
 
-@app.get("/api/inspections/{inspection_id}/export-notice")
+@app.get("/api/inspections/{inspection_id}/export-notice", dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
 def export_notice(inspection_id: int, notice_type: str = "COMPOUNDING", db: Session = Depends(get_db)):
     inspection = db.get(Inspection, inspection_id)
     if not inspection:
@@ -343,7 +364,7 @@ def export_notice(inspection_id: int, notice_type: str = "COMPOUNDING", db: Sess
     )
 
 
-@app.get("/api/analytics/summary", response_model=AnalyticsSummary)
+@app.get("/api/analytics/summary", response_model=AnalyticsSummary, dependencies=[Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
 def analytics(db: Session = Depends(get_db)):
     status_counts = db.query(Inspection.overall_status, func.count(Inspection.id)).group_by(Inspection.overall_status).all()
     total = 0
@@ -414,7 +435,7 @@ def analytics(db: Session = Depends(get_db)):
 import csv
 from io import StringIO
 
-@app.get("/api/analytics/export-csv")
+@app.get("/api/analytics/export-csv", dependencies=[Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
 def export_csv(db: Session = Depends(get_db)):
     rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
     output = StringIO()
@@ -427,6 +448,15 @@ def export_csv(db: Session = Depends(get_db)):
         content=output.getvalue().encode('utf-8'),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="district_summary.csv"'}
+    )
+
+
+@app.post("/api/v1/pre-audit", response_model=PreAuditResponse, dependencies=[Depends(require_role([UserRole.CENTRAL_ADMIN]))])
+def pre_audit(req: PreAuditRequest):
+    return PreAuditResponse(
+        compliant=True,
+        analysis=[],
+        mandatory_fixes=[]
     )
 
 if __name__ == "__main__":

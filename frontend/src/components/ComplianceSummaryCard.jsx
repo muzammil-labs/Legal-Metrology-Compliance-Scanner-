@@ -155,6 +155,10 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                   ? "✓ Consistent"
                   : "✗ Discrepancy Found"}
               </b>
+            </div>
+          </div>
+        </div>
+      )}
 
       {audit.penalty && audit.penalty.estimated_fine_range && (
         <div className="usp-audit-card" style={{ marginTop: '16px' }}>

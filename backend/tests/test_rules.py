@@ -1,9 +1,10 @@
+import pytest
 from datetime import date, datetime
 from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
-from services.pdf_generator import generate_section_36_notice
+
 from services.evidence_ledger import compute_ledger_hash
 from schemas import RuleStatus, StatutoryRule
 
@@ -189,7 +190,7 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_exact_match():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
@@ -200,14 +201,14 @@ def test_bilingual_match_passes():
 def test_bilingual_mrp_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹200 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
 def test_bilingual_qty_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 400 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
@@ -217,7 +218,7 @@ def test_bilingual_mismatch_fails():
 
 def test_bilingual_no_hindi():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
-    rules, _, _, _ = audit_text(english_text)
+    rules, _, _, _, _ = audit_text(english_text)
     res = {r.rule: r for r in rules}
     # If hindi_text is None, BILINGUAL shouldn't be evaluated, or shouldn't fail.
     # Currently it might not be in rules if hindi_text is None
@@ -369,3 +370,63 @@ def test_ledger_chain_hashing():
     expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
 
     assert result == expected
+
+# ------------------------------------------------------------------
+# Auth and Role Middleware Tests
+# ------------------------------------------------------------------
+
+def test_jwt_token_generation():
+    from services.auth import create_access_token, UserRole
+    token = create_access_token(data={"sub": "inspector1", "role": UserRole.FIELD_INSPECTOR.value})
+    assert isinstance(token, str)
+    assert len(token) > 0
+
+    import jwt
+    from services.auth import SECRET_KEY, ALGORITHM
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    assert payload.get("sub") == "inspector1"
+    assert payload.get("role") == UserRole.FIELD_INSPECTOR.value
+
+
+def test_role_permissions():
+    import pytest
+    from fastapi.testclient import TestClient
+    from main import app
+    from services.auth import create_access_token, UserRole
+
+    client = TestClient(app)
+
+    # Test FIELD_INSPECTOR access to /api/inspections/{inspection_id}/export-notice
+    token_inspector = create_access_token(data={"sub": "inspector1", "role": UserRole.FIELD_INSPECTOR.value})
+    headers_inspector = {"Authorization": f"Bearer {token_inspector}"}
+
+    # It should return 404 because inspection 9999 doesn't exist, not 401 or 403
+    response = client.get("/api/inspections/9999/export-notice", headers=headers_inspector)
+    assert response.status_code == 404
+
+    # Test FIELD_INSPECTOR access to /api/analytics/summary (forbidden)
+    response = client.get("/api/analytics/summary", headers=headers_inspector)
+    assert response.status_code == 403
+
+    # Test DISTRICT_MAGISTRATE access to /api/analytics/summary (allowed)
+    token_magistrate = create_access_token(data={"sub": "dm1", "role": UserRole.DISTRICT_MAGISTRATE.value})
+    headers_magistrate = {"Authorization": f"Bearer {token_magistrate}"}
+
+    response = client.get("/api/analytics/summary", headers=headers_magistrate)
+    assert response.status_code == 200
+
+    # Test without token (unauthorized)
+    response = client.get("/api/analytics/summary")
+    assert response.status_code == 401
+
+    # Test pre-audit endpoint access
+    token_admin = create_access_token(data={"sub": "admin1", "role": UserRole.CENTRAL_ADMIN.value})
+    headers_admin = {"Authorization": f"Bearer {token_admin}"}
+
+    # CENTRAL_ADMIN allowed
+    response = client.post("/api/v1/pre-audit", headers=headers_admin, json={"text": "test"})
+    assert response.status_code == 200
+
+    # DISTRICT_MAGISTRATE forbidden for pre-audit
+    response = client.post("/api/v1/pre-audit", headers=headers_magistrate, json={"text": "test"})
+    assert response.status_code == 403

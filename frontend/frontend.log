@@ -1,0 +1,9 @@
+
+> legal-metrology-scanner-frontend@1.0.0 dev
+> vite --host 0.0.0.0 --port 5173
+
+
+  VITE v8.2.2  ready in 278 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.2:5173/  eth0
