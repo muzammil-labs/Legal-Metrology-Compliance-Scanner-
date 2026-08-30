@@ -1,6 +1,7 @@
 from datetime import date, datetime
+from decimal import Decimal
 
-from services.rule_engine import audit_text, calculate_trust_score
+from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_section_36_notice
 from schemas import RuleStatus, StatutoryRule
 
@@ -250,3 +251,63 @@ def test_missing_tax_suffix():
     test_text = VALID.replace("MRP Rs. 100 (incl. of all taxes)", "MRP Rs. 100/-")
     results, _, _ = statuses(test_text)
     assert results[StatutoryRule.RULE_6_1_E] == RuleStatus.FAIL
+
+
+# ------------------------------------------------------------------
+# Rule engine internal helpers and edge cases tests
+# ------------------------------------------------------------------
+
+def test_base_quantity_conversion_kg_to_g():
+    qty, unit = _base_quantity(Decimal("2.5"), "kg")
+    assert qty == Decimal("2500")
+    assert unit == "g"
+
+    qty, unit = _base_quantity(Decimal("2.5"), "KG")
+    assert qty == Decimal("2500")
+    assert unit == "g"
+
+def test_base_quantity_conversion_l_to_ml():
+    qty, unit = _base_quantity(Decimal("1.5"), "l")
+    assert qty == Decimal("1500")
+    assert unit == "ml"
+
+    qty, unit = _base_quantity(Decimal("1.5"), "L")
+    assert qty == Decimal("1500")
+    assert unit == "ml"
+
+def test_base_quantity_unchanged_units():
+    qty, unit = _base_quantity(Decimal("500"), "g")
+    assert qty == Decimal("500")
+    assert unit == "g"
+
+    qty, unit = _base_quantity(Decimal("500"), "G")
+    assert qty == Decimal("500")
+    assert unit == "g"
+
+    qty, unit = _base_quantity(Decimal("500"), "ml")
+    assert qty == Decimal("500")
+    assert unit == "ml"
+
+    qty, unit = _base_quantity(Decimal("5"), "U")
+    assert qty == Decimal("5")
+    assert unit == "u"
+
+
+def test_audit_usp_missing_mrp():
+    # Calling audit_usp with None mrp
+    rule_result, usp_result = audit_usp("Some text with 50/kg", None, (Decimal("2"), "kg"))
+
+    assert rule_result.rule == StatutoryRule.RULE_6_11
+    assert rule_result.status == RuleStatus.WARNING
+    assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
+    assert usp_result.applicable is False
+
+
+def test_audit_usp_missing_quantity_data():
+    # Calling audit_usp with None quantity_data
+    rule_result, usp_result = audit_usp("Some text with 50/kg", Decimal("100"), None)
+
+    assert rule_result.rule == StatutoryRule.RULE_6_11
+    assert rule_result.status == RuleStatus.WARNING
+    assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
+    assert usp_result.applicable is False
