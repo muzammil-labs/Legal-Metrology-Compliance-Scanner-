@@ -1,4 +1,5 @@
 
+import html
 import hashlib
 from datetime import datetime
 from io import BytesIO
@@ -41,6 +42,11 @@ def generate_section_36_notice(
     under Section 36 of the Legal Metrology Act, 2009.
     Admissible under Section 65B of the Indian Evidence Act.
     """
+    source_filename = html.escape(source_filename)
+    region = html.escape(region)
+    gps_location = html.escape(gps_location) if gps_location else ""
+    ocr_text = html.escape(ocr_text) if ocr_text else ""
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -160,9 +166,9 @@ def generate_section_36_notice(
 
     if violations:
         for v in violations:
-            rule_name = getattr(v, 'rule', str(v))
+            rule_name = html.escape(getattr(v, 'rule', str(v)))
             v_status = getattr(v, 'status', 'FAIL')
-            v_reason = getattr(v, 'reason', 'Statutory declaration defect detected.')
+            v_reason = html.escape(getattr(v, 'reason', 'Statutory declaration defect detected.'))
             st_color = "#dc2626" if v_status == "FAIL" else "#d97706"
             v_rows.append([
                 Paragraph(f"<b>{rule_name}</b>", body_text),
