@@ -25,7 +25,17 @@ Base.metadata.create_all(bind=engine)
 # Because main.py executes init_db() and seed_db() on load, they will run against our testing engine!
 # That's perfectly fine, because it initializes the test DB with seed data.
 
-from main import app, get_db, status_for
+from fastapi import Depends
+from main import app
+from services.auth import RoleChecker, User, Role
+
+def override_role_checker(allowed_roles=None):
+    def checker():
+        return User(username="test_user", role=Role.CENTRAL_ADMIN)
+    return checker
+
+app.dependency_overrides[RoleChecker] = override_role_checker()
+from main import get_db, status_for
 from schemas import RuleResult, RuleStatus, StatutoryRule, USPResult, PenaltyEstimate
 from models import Inspection, Violation, AuditCertificate
 
@@ -38,6 +48,11 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
+from services.auth import create_access_token, Role
+token = create_access_token({"sub": "test", "role": Role.CENTRAL_ADMIN.value})
+client.headers.update({"Authorization": f"Bearer {token}"})
+
 
 @pytest.fixture(autouse=True)
 def clean_db():
@@ -99,11 +114,11 @@ def test_inspections_empty():
     assert response.json() == []
 
 def test_analytics_export_csv_empty():
-    response = client.get("/api/analytics/export-csv")
+    response = client.get("/api/analytics/export-excel")
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
     content = response.text.strip().replace("\r\n", "\n")
-    assert content == "inspection_id,inspected_at,region,overall_status,violation_count"
+    assert content == "inspection_id,inspected_at,region,source_filename,overall_status,violation_count,trust_score"
 
 @patch("main.audit_text")
 @patch("main.extract_label_with_gemini")
@@ -125,11 +140,9 @@ def test_scan_api(mock_extract, mock_audit):
     mock_audit.return_value = (mock_rules, mock_usp, mock_fields, mock_penalty, None)
 
     # Prepare dummy file
-    dummy_file = ("file", ("test_image.jpg", b"dummy image data", "image/jpeg"))
-
     response = client.post(
         "/api/scan",
-        files=[dummy_file],
+        files={"file": ("test_image.jpg", b"dummy image data", "image/jpeg")},
         data={"region": "Test Region", "gps_location": "0.0, 0.0"}
     )
 
