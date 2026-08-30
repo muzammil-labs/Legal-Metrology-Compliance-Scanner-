@@ -21,6 +21,11 @@ from sqlalchemy.orm import Session, joinedload
 
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
+    from services.rule_engine import audit_text, calculate_trust_score
+    from services.pdf_generator import generate_section_36_notice
+    from services.gemini_service import extract_label_with_gemini
+    from seed import seed as seed_db
+    from schemas import (
     from backend.services.rule_engine import audit_text, calculate_trust_score
     from backend.services.pdf_generator import generate_section_36_notice
     from backend.services.gemini_service import extract_label_with_gemini
@@ -135,6 +140,7 @@ def scan(
     content = file.file.read(MAX_FILE_SIZE + 1)
     file.file.seek(0)
     content = file.file.read()
+
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
