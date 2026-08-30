@@ -27,7 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b",
+    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
 MRP_RE = re.compile(
