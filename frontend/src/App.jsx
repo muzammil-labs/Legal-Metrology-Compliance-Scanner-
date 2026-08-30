@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import CameraScanner from "./components/CameraScanner";
 import ComplianceSummaryCard from "./components/ComplianceSummaryCard";
 import InspectorAnalyticsDashboard from "./components/InspectorAnalyticsDashboard";
 import SellerBulkAudit from "./components/SellerBulkAudit";
 import NoticePreviewModal from "./components/NoticePreviewModal";
+import PublicCitizenPortal from "./components/PublicCitizenPortal";
 import {
   executeScanWithCircuitBreaker,
   loadPrecachedFixture,
@@ -21,7 +22,22 @@ export default function App() {
   const [message, setMessage] = useState(
     "System ready for statutory inspection",
   );
+  const [noticeModalType, setNoticeModalType] = useState(null);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
+
+  if (currentPath === "/citizen") {
+    return <PublicCitizenPortal />;
+  }
 
   function handleChooseMode(key) {
     setDemoMode(key);
@@ -99,7 +115,7 @@ export default function App() {
           />
           <ComplianceSummaryCard
             audit={audit}
-            onOpenNoticeModal={() => setIsNoticeModalOpen(true)}
+            onOpenNoticeModal={(type) => setNoticeModalType(type)}
           />
         </section>
       )}
@@ -109,9 +125,10 @@ export default function App() {
       {activeTab === "seller" && <SellerBulkAudit />}
 
       <NoticePreviewModal
-        isOpen={isNoticeModalOpen}
-        onClose={() => setIsNoticeModalOpen(false)}
+        isOpen={!!noticeModalType}
+        onClose={() => setNoticeModalType(null)}
         audit={audit}
+        noticeType={noticeModalType}
       />
     </main>
   );
