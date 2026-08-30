@@ -197,3 +197,57 @@ def test_bilingual_mismatch_fails():
     rules, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
+
+
+def test_invalid_units_rejected():
+    invalid_units = ["gm", "gms", "m.l.", "ltr", "kgs", "gm."]
+    for invalid_unit in invalid_units:
+        test_text = VALID.replace("2 kg", f"2 {invalid_unit}")
+        results, _, _ = statuses(test_text)
+        assert results[StatutoryRule.RULE_6_1_C] == RuleStatus.FAIL
+
+
+def test_missing_mfg_prefix_rejected():
+    test_text = VALID.replace("Manufactured by ", "")
+    results, _, _ = statuses(test_text)
+    assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
+
+
+def test_missing_pin_code_rejected():
+    test_text = VALID.replace("411001", "")
+    results, _, _ = statuses(test_text)
+    assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
+
+
+def test_usp_rounding_edge_cases():
+    # 1050g with specific MRP to trigger rounding within ±₹0.01 margin
+    # 1050g = 1.05kg. Let's say MRP is 100. USP should be 100 / 1.05 = 95.238... -> 95.24
+    test_text_g = VALID.replace("2 kg", "1050 g").replace("100", "100").replace("50/kg", "95.24/kg")
+    results_g, usp_g, _ = statuses(test_text_g)
+    assert results_g[StatutoryRule.RULE_6_11] == RuleStatus.PASS
+
+    # 1.5L = 1500ml. Let's say MRP is 100. USP should be 100 / 1.5 = 66.666... -> 66.67
+    test_text_l = VALID.replace("2 kg", "1.5 L").replace("100", "100").replace("50/kg", "66.67/l")
+    results_l, usp_l, _ = statuses(test_text_l)
+    assert results_l[StatutoryRule.RULE_6_11] == RuleStatus.PASS
+
+    # Test tolerance margin. 95.23 should pass (diff 0.01)
+    test_text_g_lower = VALID.replace("2 kg", "1050 g").replace("100", "100").replace("50/kg", "95.23/kg")
+    results_g_lower, usp_g_lower, _ = statuses(test_text_g_lower)
+    assert results_g_lower[StatutoryRule.RULE_6_11] == RuleStatus.PASS
+
+    # 95.25 should pass (diff 0.01)
+    test_text_g_upper = VALID.replace("2 kg", "1050 g").replace("100", "100").replace("50/kg", "95.25/kg")
+    results_g_upper, usp_g_upper, _ = statuses(test_text_g_upper)
+    assert results_g_upper[StatutoryRule.RULE_6_11] == RuleStatus.PASS
+
+    # 95.26 should fail (diff > 0.01)
+    test_text_g_fail = VALID.replace("2 kg", "1050 g").replace("100", "100").replace("50/kg", "95.26/kg")
+    results_g_fail, usp_g_fail, _ = statuses(test_text_g_fail)
+    assert results_g_fail[StatutoryRule.RULE_6_11] == RuleStatus.FAIL
+
+
+def test_missing_tax_suffix():
+    test_text = VALID.replace("MRP Rs. 100 (incl. of all taxes)", "MRP Rs. 100/-")
+    results, _, _ = statuses(test_text)
+    assert results[StatutoryRule.RULE_6_1_E] == RuleStatus.FAIL

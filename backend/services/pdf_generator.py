@@ -1,3 +1,4 @@
+
 import hashlib
 from datetime import datetime
 from io import BytesIO
@@ -279,5 +280,7 @@ def generate_section_36_notice(
     except Exception:
         pass  # Graceful degradation if QR generation fails
 
+    doc.build(elements)
+    return buffer.getvalue()
     doc.build(elements)
     return buffer.getvalue()
