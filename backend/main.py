@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, selectinload, joinedload
 from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm import Session, joinedload
 
 try:
@@ -247,6 +248,7 @@ def batch_scan(
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
 def inspections(limit: int = 50, db: Session = Depends(get_db)):
+    rows = db.query(Inspection).options(selectinload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     rows = db.query(Inspection).options(joinedload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     return [
         InspectionSummary(
