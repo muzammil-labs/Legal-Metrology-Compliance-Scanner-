@@ -56,17 +56,17 @@ def test_usp_mismatch_rejected():
 
 
 def test_missing_pin_code_fails_rule_6_1_a():
-    results, _, _ = statuses(VALID.replace("411001", ""))
+    results, *_ = statuses(VALID.replace("411001", ""))
     assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
 
 
 def test_future_date_rejected():
-    results, _, _ = statuses(VALID.replace("01/2026", "01/2030"), audit_dt=date(2026, 8, 23))
+    results, *_ = statuses(VALID.replace("01/2026", "01/2030"), audit_dt=date(2026, 8, 23))
     assert results[StatutoryRule.RULE_6_1_D] == RuleStatus.FAIL
 
 
 def test_missing_consumer_care_fails_rule_6_1_f():
-    results, _, _ = statuses(VALID.replace("care@acme.example", ""))
+    results, *_ = statuses(VALID.replace("care@acme.example", ""))
     assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
 
 
@@ -101,14 +101,14 @@ def test_imported_goods_without_country_of_origin_fails_rule_6_1_a():
         "Consumer Care Cell, 400001 9898989898 care@globalfoods.example\n"
         # No 'Country of Origin:' line
     )
-    results, _, _ = statuses(imported_no_origin)
+    results, *_ = statuses(imported_no_origin)
     assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
 
 
 def test_future_month_same_year_rejected():
     """A manufacture month in the future within the same audit year must fail Rule 6(1)(d)."""
     # Audit date is August 2026; manufacture date December 2026 is future
-    results, _, _ = statuses(VALID.replace("01/2026", "12/2026"), audit_dt=date(2026, 8, 23))
+    results, *_ = statuses(VALID.replace("01/2026", "12/2026"), audit_dt=date(2026, 8, 23))
     assert results[StatutoryRule.RULE_6_1_D] == RuleStatus.FAIL
 
 
@@ -119,21 +119,21 @@ def test_brand_only_commodity_name_fails_rule_6_1_b():
         "BRANDO CLASSIC Net Qty 200 g MRP Rs. 50 (incl. of all taxes) 06/2026\n"
         "Consumer Care Cell, 411001 9876543210 care@acme.example"
     )
-    results, _, _ = statuses(brand_only)
+    results, *_ = statuses(brand_only)
     assert results[StatutoryRule.RULE_6_1_B] == RuleStatus.FAIL
 
 
 def test_missing_phone_fails_rule_6_1_f():
     """Consumer care without a valid phone number must fail Rule 6(1)(f)."""
     no_phone = VALID.replace("9876543210", "")
-    results, _, _ = statuses(no_phone)
+    results, *_ = statuses(no_phone)
     assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
 
 
 def test_missing_email_fails_rule_6_1_f():
     """Consumer care without an email address must fail Rule 6(1)(f)."""
     no_email = VALID.replace("care@acme.example", "")
-    results, _, _ = statuses(no_email)
+    results, *_ = statuses(no_email)
     assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
 
 
@@ -156,28 +156,28 @@ def test_trust_score_decremented_per_violation():
 
 def test_rule5_font_height_valid():
     text = "Net Qty 100 g"
-    rules, _, _ = audit_text(text, font_height_mm=2.0)
+    rules, *_ = audit_text(text, font_height_mm=2.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.PASS
 
 
 def test_rule5_font_height_invalid_small():
     text = "Net Qty 100 g"
-    rules, _, _ = audit_text(text, font_height_mm=1.5)
+    rules, *_ = audit_text(text, font_height_mm=1.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_medium():
     text = "Net Qty 300 g"
-    rules, _, _ = audit_text(text, font_height_mm=3.5)
+    rules, *_ = audit_text(text, font_height_mm=3.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_large():
     text = "Net Qty 600 g"
-    rules, _, _ = audit_text(text, font_height_mm=5.0)
+    rules, *_ = audit_text(text, font_height_mm=5.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
@@ -185,7 +185,7 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
-    rules, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, *_ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.PASS
 
@@ -193,7 +193,7 @@ def test_bilingual_match_passes():
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
-    rules, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, *_ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
@@ -202,19 +202,19 @@ def test_invalid_units_rejected():
     invalid_units = ["gm", "gms", "m.l.", "ltr", "kgs", "gm."]
     for invalid_unit in invalid_units:
         test_text = VALID.replace("2 kg", f"2 {invalid_unit}")
-        results, _, _ = statuses(test_text)
+        results, *_ = statuses(test_text)
         assert results[StatutoryRule.RULE_6_1_C] == RuleStatus.FAIL
 
 
 def test_missing_mfg_prefix_rejected():
     test_text = VALID.replace("Manufactured by ", "")
-    results, _, _ = statuses(test_text)
+    results, *_ = statuses(test_text)
     assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
 
 
 def test_missing_pin_code_rejected():
     test_text = VALID.replace("411001", "")
-    results, _, _ = statuses(test_text)
+    results, *_ = statuses(test_text)
     assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
 
 
@@ -248,5 +248,5 @@ def test_usp_rounding_edge_cases():
 
 def test_missing_tax_suffix():
     test_text = VALID.replace("MRP Rs. 100 (incl. of all taxes)", "MRP Rs. 100/-")
-    results, _, _ = statuses(test_text)
+    results, *_ = statuses(test_text)
     assert results[StatutoryRule.RULE_6_1_E] == RuleStatus.FAIL
