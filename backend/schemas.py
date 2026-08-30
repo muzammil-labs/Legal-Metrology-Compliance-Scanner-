@@ -100,6 +100,7 @@ class BilingualVerification(BaseModel):
     hindi_taxes_included: bool | None = None
     mrp_match: bool | None = None
     qty_match: bool | None = None
+
 class OffenceType(str, Enum):
     PROCEDURAL_FIRST_TIME = "PROCEDURAL_FIRST_TIME"
     REPEAT_METRIC_FRAUD = "REPEAT_METRIC_FRAUD"
