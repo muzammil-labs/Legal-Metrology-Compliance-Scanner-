@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 try:
     from backend.models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
@@ -233,7 +233,7 @@ async def batch_scan(
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
 def inspections(limit: int = 50, db: Session = Depends(get_db)):
-    rows = db.query(Inspection).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
+    rows = db.query(Inspection).options(joinedload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     return [
         InspectionSummary(
             inspection_id=row.id,
