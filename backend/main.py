@@ -11,6 +11,9 @@ from hashlib import sha256
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from sqlalchemy.orm import Session, joinedload
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file uploads
 from sqlalchemy.orm import Session, selectinload, joinedload
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
@@ -120,9 +123,13 @@ def scan(
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
 ):
+    content = file.file.read(MAX_FILE_SIZE + 1)
     content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+
     digest = sha256(content).hexdigest()
     # If OCR text wasn't supplied directly in Form, attempt vision extraction via Gemini
     gemini_res = {}
@@ -213,6 +220,10 @@ def batch_scan(
     passed_count = 0
 
     for idx, f in enumerate(files):
+        content = f.file.read(MAX_FILE_SIZE + 1)
+        if content and len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+
         content = f.file.read()
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
