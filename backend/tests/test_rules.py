@@ -339,6 +339,99 @@ def test_audit_usp_missing_quantity_data():
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
 
+# ------------------------------------------------------------------
+# B2B SaaS API Rate Limiting and Authentication Tests
+# ------------------------------------------------------------------
+from fastapi.testclient import TestClient
+import time
+from main import app
+import routers.b2b_saas as b2b_saas
+
+# Monkey-patch time.time to simulate rate limiting correctly
+import time
+original_time = time.time
+
+class MockTime:
+    def __init__(self):
+        self.current_time = 10000.0
+    def time(self):
+        return self.current_time
+    def sleep(self, seconds):
+        self.current_time += seconds
+
+def test_b2b_saas_auth_missing():
+    client = TestClient(app)
+    response = client.post("/api/v1/pre-audit", json={"ocr_text": "Net Qty 100 g"})
+    assert response.status_code == 401
+    assert "X-API-Key header missing" in response.json()["detail"]
+
+def test_b2b_saas_auth_invalid_format():
+    client = TestClient(app)
+    response = client.post("/api/v1/pre-audit", json={"ocr_text": "Net Qty 100 g"}, headers={"X-API-Key": "invalid_key_format"})
+    assert response.status_code == 403
+    assert "Invalid API Key format" in response.json()["detail"]
+
+def test_b2b_saas_rate_limit_trial():
+    mock_time = MockTime()
+    b2b_saas.time.time = mock_time.time
+
+    # Clear rate limit store
+    b2b_saas.RATE_LIMIT_STORE = {}
+
+    client = TestClient(app)
+    headers = {"X-API-Key": "trial_testkey"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+
+    # Send 100 requests (the limit)
+    for _ in range(100):
+        response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+        assert response.status_code == 200
+
+    # The 101st request should fail
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 429
+    assert "Rate limit exceeded" in response.json()["detail"]
+
+    # Fast forward time by 61 seconds
+    mock_time.sleep(61)
+
+    # The next request should pass again
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 200
+
+    b2b_saas.time.time = original_time
+
+def test_b2b_saas_rate_limit_enterprise():
+    mock_time = MockTime()
+    b2b_saas.time.time = mock_time.time
+
+    # Clear rate limit store
+    b2b_saas.RATE_LIMIT_STORE = {}
+
+    client = TestClient(app)
+    headers = {"X-API-Key": "enterprise_testkey"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+
+    # Send 150 requests (above trial limit, but well below enterprise limit)
+    for _ in range(150):
+        response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+        assert response.status_code == 200
+
+    b2b_saas.time.time = original_time
+
+def test_b2b_saas_pre_audit_response_format():
+    client = TestClient(app)
+    headers = {"X-API-Key": "enterprise_formatcheck"}
+    payload = {"ocr_text": "Net Qty 100 g"}
+    response = client.post("/api/v1/pre-audit", json=payload, headers=headers)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "overall_status" in data
+    assert "rules" in data
+    assert "mandatory_fixes" in data
+    assert "penalty" in data
+    assert "usp" in data
 import io
 import zipfile
 from services.batch_processor import process_csv_batch, process_zip_batch, process_batch

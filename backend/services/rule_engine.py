@@ -30,6 +30,7 @@ NET_QTY_RE = re.compile(
     re.UNICODE,
 )
 # Reject all non-SI / legacy unit notations
+INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(\d+(?:\.\d+)?)\s*(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)", re.I)
 INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)", re.I)
 INVALID_UNIT_RE = re.compile(
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
