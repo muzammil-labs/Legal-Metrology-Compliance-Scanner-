@@ -9,48 +9,13 @@ import {
   Download,
   Sparkles,
 } from "lucide-react";
-import { executeBatchScan } from "../services/api";
+import BatchAuditModal from "./BatchAuditModal";
 
 export default function SellerBulkAudit() {
-  const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [batchResult, setBatchResult] = useState(null);
 
-  async function handleBatchUpload(e) {
-    e.preventDefault();
-    if (!files.length) return;
-
-    setLoading(true);
-    try {
-      const res = await executeBatchScan(files);
-      setBatchResult(res);
-    } catch (err) {
-      console.warn("Batch scan API fallback", err);
-      // Deterministic demo fallback for seller view
-      setBatchResult({
-        batch_id: "BATCH-2026-X941",
-        total_skus: files.length || 3,
-        passed_skus: files.length || 3,
-        failed_skus: 0,
-        compliance_badge_eligible: true,
-        items: files.map((f, i) => ({
-          sku_id: `SKU-DOCA-${i + 101}`,
-          filename: f.name,
-          overall_status: "PASS",
-          trust_score: 100,
-          violation_count: 0,
-          rule_results: [],
-        })),
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleFileSelection(e) {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
-    }
+  function handleBatchComplete(result) {
+    setBatchResult(result);
   }
 
   return (
@@ -72,45 +37,7 @@ export default function SellerBulkAudit() {
             <span className="mono">{files.length} SKUs Selected</span>
           </div>
 
-          <div className="batch-dropzone">
-            <Upload size={36} className="text-cyan" />
-            <h3>Upload Product Labels for Batch Audit</h3>
-            <p>
-              Select multiple SKU packaging photos or label artworks (PNG, JPG,
-              ZIP)
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileSelection}
-              disabled={loading}
-            />
-          </div>
-
-          {files.length > 0 && (
-            <div className="file-list-preview">
-              <small>Selected for Compliance Verification:</small>
-              <div className="file-chips">
-                {files.map((f, i) => (
-                  <span className="chip" key={i}>
-                    {f.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button
-            className="scan-button"
-            disabled={loading || files.length === 0}
-            onClick={handleBatchUpload}
-          >
-            <Store size={18} />{" "}
-            {loading
-              ? "Auditing Catalogue SKUs..."
-              : `Batch Audit ${files.length} SKUs`}
-          </button>
+          <BatchAuditModal onBatchComplete={handleBatchComplete} />
         </div>
 
         {/* Verified Badge Generator Card */}
@@ -156,13 +83,20 @@ export default function SellerBulkAudit() {
       {/* Batch Results Table */}
       {batchResult && (
         <div className="docket-panel mt-6">
+
           <div className="panel-head">
             <span>Batch Audit Report · {batchResult.batch_id}</span>
-            <span className="badge pass">
-              <CheckCircle2 size={15} /> {batchResult.passed_skus} /{" "}
-              {batchResult.total_skus} SKUs Passed
-            </span>
+            <div style={{display: "flex", gap: "1rem", alignItems: "center"}}>
+                <span className="badge pass">
+                  <CheckCircle2 size={15} /> {batchResult.passed_skus} /{" "}
+                  {batchResult.total_skus} SKUs Passed
+                </span>
+                <a href={`/api/v1/batch-audit/download/${batchResult.batch_id}`} className="scan-button" style={{padding: "0.25rem 0.75rem", fontSize: "0.85rem", textDecoration: "none"}}>
+                    <Download size={14} /> Download Notices ZIP
+                </a>
+            </div>
           </div>
+
 
           <div className="table-responsive">
             <table className="docket-table">

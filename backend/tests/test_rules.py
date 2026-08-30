@@ -189,7 +189,7 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_exact_match():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
@@ -200,14 +200,14 @@ def test_bilingual_match_passes():
 def test_bilingual_mrp_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹200 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
 def test_bilingual_qty_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 400 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
@@ -217,7 +217,7 @@ def test_bilingual_mismatch_fails():
 
 def test_bilingual_no_hindi():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
-    rules, _, _, _ = audit_text(english_text)
+    rules, _, _, _, _ = audit_text(english_text)
     res = {r.rule: r for r in rules}
     # If hindi_text is None, BILINGUAL shouldn't be evaluated, or shouldn't fail.
     # Currently it might not be in rules if hindi_text is None
@@ -369,3 +369,168 @@ def test_ledger_chain_hashing():
     expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
 
     assert result == expected
+
+import io
+import zipfile
+from unittest.mock import patch
+from fastapi.testclient import TestClient
+
+def test_csv_batch_parsing():
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+    from sqlalchemy.orm import sessionmaker
+    import models
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    models.Base.metadata.create_all(bind=engine)
+
+    with patch("models.engine", engine), patch("models.SessionLocal", TestingSessionLocal):
+        from main import app
+
+        client = TestClient(app)
+
+        csv_content = """id,label_text\n1,Manufactured by Acme, Pune 411001. Net Qty 100g, MRP Rs 50 (incl. of all taxes)\n"""
+
+        response = client.post(
+            "/api/v1/batch-audit",
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode('utf-8')), "text/csv")}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "batch_id" in data
+        assert data["total_skus"] == 1
+        assert "items" in data
+        assert len(data["items"]) == 1
+
+        batch_id = data["batch_id"]
+        download_response = client.get(f"/api/v1/batch-audit/download/{batch_id}")
+        assert download_response.status_code == 200
+        assert download_response.headers["content-type"] == "application/zip"
+
+def test_zip_batch_parsing():
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+    from sqlalchemy.orm import sessionmaker
+    import models
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    models.Base.metadata.create_all(bind=engine)
+
+    with patch("models.engine", engine), patch("models.SessionLocal", TestingSessionLocal):
+        from main import app
+        from services.gemini_service import extract_label_with_gemini
+
+        client = TestClient(app)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zf:
+            zf.writestr('label1.jpg', b'dummy_image_bytes')
+        zip_buffer.seek(0)
+
+        with patch("services.batch_processor.extract_label_with_gemini", return_value={"ocr_text": "Net Qty 100g, MRP Rs 50 (incl. of all taxes) Pune 411001"}):
+            response = client.post(
+                "/api/v1/batch-audit",
+                files={"file": ("test.zip", zip_buffer, "application/zip")}
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "batch_id" in data
+            assert data["total_skus"] == 1
+
+            download_response = client.get(f"/api/v1/batch-audit/download/{data['batch_id']}")
+            assert download_response.status_code == 200
+            assert download_response.headers["content-type"] == "application/zip"
+
+import io
+import zipfile
+from unittest.mock import patch
+from fastapi.testclient import TestClient
+
+def test_csv_batch_parsing():
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+    from sqlalchemy.orm import sessionmaker
+    import models
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    models.Base.metadata.create_all(bind=engine)
+
+    with patch("models.engine", engine), patch("models.SessionLocal", TestingSessionLocal):
+        from main import app
+
+        client = TestClient(app)
+
+        csv_content = """id,label_text\n1,Manufactured by Acme, Pune 411001. Net Qty 100g, MRP Rs 50 (incl. of all taxes)\n"""
+
+        response = client.post(
+            "/api/v1/batch-audit",
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode('utf-8')), "text/csv")}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "batch_id" in data
+        assert data["total_skus"] == 1
+        assert "items" in data
+        assert len(data["items"]) == 1
+
+        batch_id = data["batch_id"]
+        download_response = client.get(f"/api/v1/batch-audit/download/{batch_id}")
+        assert download_response.status_code == 200
+        assert download_response.headers["content-type"] == "application/zip"
+
+def test_zip_batch_parsing():
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+    from sqlalchemy.orm import sessionmaker
+    import models
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    models.Base.metadata.create_all(bind=engine)
+
+    with patch("models.engine", engine), patch("models.SessionLocal", TestingSessionLocal):
+        from main import app
+
+        client = TestClient(app)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zf:
+            zf.writestr('label1.jpg', b'dummy_image_bytes')
+        zip_buffer.seek(0)
+
+        with patch("services.batch_processor.extract_label_with_gemini", return_value={"ocr_text": "Net Qty 100g, MRP Rs 50 (incl. of all taxes) Pune 411001"}):
+            response = client.post(
+                "/api/v1/batch-audit",
+                files={"file": ("test.zip", zip_buffer, "application/zip")}
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "batch_id" in data
+            assert data["total_skus"] == 1
+
+            download_response = client.get(f"/api/v1/batch-audit/download/{data['batch_id']}")
+            assert download_response.status_code == 200
+            assert download_response.headers["content-type"] == "application/zip"

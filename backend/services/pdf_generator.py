@@ -401,3 +401,12 @@ def generate_improvement_notice_pdf(*args, **kwargs) -> bytes:
 def generate_compounding_notice_pdf(*args, **kwargs) -> bytes:
     kwargs["notice_type"] = "COMPOUNDING"
     return _generate_pdf(*args, **kwargs)
+
+def generate_section_36_notice(*args, **kwargs) -> bytes:
+    kwargs["notice_type"] = "SECTION_36"
+    return _generate_pdf(*args, **kwargs)
+
+
+def generate_section_36_notice(*args, **kwargs) -> bytes:
+    kwargs['notice_type'] = 'SECTION_36'
+    return _generate_pdf(*args, **kwargs)

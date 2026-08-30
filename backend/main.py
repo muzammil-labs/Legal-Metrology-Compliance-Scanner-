@@ -1,3 +1,4 @@
+from schemas import BatchAuditResponse
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,14 +24,10 @@ try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
     from services.pdf_generator import generate_section_36_notice
+    from services.batch_processor import process_batch
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
     from schemas import (
-    from backend.services.rule_engine import audit_text, calculate_trust_score
-    from backend.services.pdf_generator import generate_section_36_notice
-    from backend.services.gemini_service import extract_label_with_gemini
-    from backend.seed import seed as seed_db
-    from backend.schemas import (
         StatutoryRule,
         AnalyticsSummary,
         AuditResponse,
@@ -69,6 +66,27 @@ except ModuleNotFoundError:
     )
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
+
+BATCH_ZIPS_CACHE = {}
+
+@app.post("/api/v1/batch-audit", response_model=BatchAuditResponse)
+async def batch_audit_endpoint(file: UploadFile = File(...)):
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large")
+    response, zip_bytes = await process_batch(file)
+    BATCH_ZIPS_CACHE[response.batch_id] = zip_bytes
+    return response
+
+@app.get("/api/v1/batch-audit/download/{batch_id}")
+def batch_audit_download(batch_id: str):
+    if batch_id not in BATCH_ZIPS_CACHE:
+        raise HTTPException(status_code=404, detail="Batch ZIP not found or expired")
+    return Response(
+        content=BATCH_ZIPS_CACHE[batch_id],
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={batch_id}_notices.zip"}
+    )
+
 
 # Read allowed origins from environment variable, fallback to common dev ports
 cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
