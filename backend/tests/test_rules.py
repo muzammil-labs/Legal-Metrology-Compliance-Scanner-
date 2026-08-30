@@ -339,6 +339,33 @@ def test_audit_usp_missing_quantity_data():
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
 
+import io
+import zipfile
+from services.batch_processor import process_csv_batch, process_zip_batch, process_batch
+
+def test_csv_batch_parsing():
+    csv_str = "sku_id,ocr_text\nSKU1,Manufactured by Acme 2 kg\nSKU2,Imported by Bob 1 kg\n"
+    # Ensure it only extracts up to 50
+    for i in range(3, 55):
+        csv_str += f"SKU{i},Text{i}\n"
+
+    items = process_csv_batch(csv_str)
+    assert len(items) == 50
+    assert items[0]["filename"] == "row_1.csv"
+    assert b"SKU1 Manufactured by Acme 2 kg" in items[0]["content"]
+
+def test_zip_batch_parsing():
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i in range(55):
+            zf.writestr(f"image_{i}.jpg", b"fake_image_data")
+
+    zip_bytes = zip_buffer.getvalue()
+
+    items = process_zip_batch(zip_bytes)
+    assert len(items) == 50
+    assert items[0]["filename"] == "image_0.jpg"
+    assert items[0]["content"] == b"fake_image_data"
 
 from services.ecommerce_parser import audit_digital_listing
 def test_digital_listing_pass():
