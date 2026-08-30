@@ -26,6 +26,12 @@ class Inspection(Base):
     trust_score: Mapped[int] = mapped_column(Integer, default=100)
     overall_status: Mapped[str] = mapped_column(String(20), index=True)
     ocr_text: Mapped[str] = mapped_column(Text, default="")
+    previous_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    current_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    gps_latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gps_longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    device_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    inspector_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
     violations: Mapped[list["Violation"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")
     certificate: Mapped["AuditCertificate | None"] = relationship(back_populates="inspection", uselist=False, cascade="all, delete-orphan")
 
