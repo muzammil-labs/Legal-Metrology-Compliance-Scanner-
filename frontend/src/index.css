@@ -131,8 +131,12 @@ body {
   transition: all 0.15s ease;
 }
 
-.tab-btn { min-height: 48px; }
-.tab-btn:active { transform: scale(0.95); }
+.tab-btn {
+  min-height: 48px;
+}
+.tab-btn:active {
+  transform: scale(0.95);
+}
 
 .tab-btn.active {
   background: #ffffff;
@@ -455,8 +459,12 @@ h1 {
   transition: all 0.2s;
 }
 
-.ocr-toggle-btn { min-height: 48px; }
-.ocr-toggle-btn:active { transform: scale(0.95); }
+.ocr-toggle-btn {
+  min-height: 48px;
+}
+.ocr-toggle-btn:active {
+  transform: scale(0.95);
+}
 
 .ocr-toggle-btn:hover {
   background: #f8fafc;
@@ -873,8 +881,12 @@ h1 {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.refresh-btn { min-height: 48px; }
-.refresh-btn:active { transform: scale(0.95); }
+.refresh-btn {
+  min-height: 48px;
+}
+.refresh-btn:active {
+  transform: scale(0.95);
+}
 
 .refresh-btn:hover {
   background: #f8fafc;
@@ -1511,4 +1523,136 @@ h1 {
 }
 .preset-btn:active {
   transform: scale(0.95);
+/* Additional styles for BatchAuditModal */
+.batch-modal {
+  max-width: 700px;
+  width: 90%;
+}
+
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.02);
+  margin-top: 20px;
+}
+
+.dropzone:hover,
+.dropzone.has-file {
+  border-color: var(--cyan);
+  background: rgba(34, 211, 238, 0.05);
+}
+
+.selected-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-container {
+  width: 100%;
+  background-color: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 6px;
+}
+
+.progress-bar-indeterminate {
+  height: 100%;
+  background-color: var(--cyan);
+  width: 50%;
+  animation: indeterminate 1.5s infinite linear;
+  transform-origin: 0% 50%;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+    width: 50%;
+  }
+  50% {
+    transform: translateX(50%);
+    width: 100%;
+  }
+  100% {
+    transform: translateX(200%);
+    width: 50%;
+  }
+}
+
+.summary-stats {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.stat-box {
+  background: var(--bg-hover);
+  padding: 16px;
+  border-radius: 8px;
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.text-emerald {
+  color: #10b981;
+}
+.text-rose {
+  color: #f43f5e;
+}
+.text-cyan {
+  color: var(--cyan);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Fixes for dark mode text contrast in BatchAuditModal */
+.batch-modal h2 {
+  color: #f1f5f9; /* Slate 100 for high contrast heading */
+  margin-bottom: 0.5rem;
+}
+
+.batch-modal p {
+  color: #cbd5e1; /* Slate 300 for readable paragraph text */
+}
+
+.batch-modal h3,
+.batch-modal h4 {
+  color: #e2e8f0;
+}
+
+.batch-results h3 {
+  color: #f1f5f9;
+}
+
+/* Update text in the empty dropzone */
+.empty-dropzone h4 {
+  color: var(--cyan);
+  margin-top: 10px;
+}
+
+.empty-dropzone p {
+  color: #94a3b8; /* Slate 400 for secondary instructions */
 }

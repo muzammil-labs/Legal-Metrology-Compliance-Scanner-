@@ -13,6 +13,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("consumer");
+  const [role, setRole] = useState("FIELD_INSPECTOR");
   const [demoMode, setDemoMode] = useState(null);
   const [file, setFile] = useState(null);
   const [audit, setAudit] = useState(() =>
@@ -78,6 +79,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         demoMode={demoMode}
         setDemoMode={handleChooseMode}
+        role={role}
+        setRole={setRole}
       />
 
       <section className="intro">

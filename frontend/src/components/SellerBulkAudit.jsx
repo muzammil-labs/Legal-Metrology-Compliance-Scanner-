@@ -10,11 +10,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { executeBatchScan } from "../services/api";
+import BatchAuditModal from "./BatchAuditModal";
 
 export default function SellerBulkAudit() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [batchResult, setBatchResult] = useState(null);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   async function handleBatchUpload(e) {
     e.preventDefault();
@@ -72,44 +74,24 @@ export default function SellerBulkAudit() {
             <span className="mono">{files.length} SKUs Selected</span>
           </div>
 
-          <div className="batch-dropzone">
+          <div
+            className="batch-dropzone"
+            onClick={() => setIsBatchModalOpen(true)}
+            style={{ cursor: "pointer" }}
+          >
             <Upload size={36} className="text-cyan" />
             <h3>Upload Product Labels for Batch Audit</h3>
             <p>
-              Select multiple SKU packaging photos or label artworks (PNG, JPG,
-              ZIP)
+              Click here to open the High-Throughput Batch Audit Engine
+              (ZIP/CSV)
             </p>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileSelection}
-              disabled={loading}
-            />
           </div>
 
-          {files.length > 0 && (
-            <div className="file-list-preview">
-              <small>Selected for Compliance Verification:</small>
-              <div className="file-chips">
-                {files.map((f, i) => (
-                  <span className="chip" key={i}>
-                    {f.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           <button
-            className="scan-button"
-            disabled={loading || files.length === 0}
-            onClick={handleBatchUpload}
+            className="scan-button mt-4"
+            onClick={() => setIsBatchModalOpen(true)}
           >
-            <Store size={18} />{" "}
-            {loading
-              ? "Auditing Catalogue SKUs..."
-              : `Batch Audit ${files.length} SKUs`}
+            <Store size={18} /> Launch High-Throughput Batch Audit
           </button>
         </div>
 
@@ -212,6 +194,10 @@ export default function SellerBulkAudit() {
           </div>
         </div>
       )}
+      <BatchAuditModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+      />
     </section>
   );
 }
