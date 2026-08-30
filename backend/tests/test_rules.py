@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
-from services.pdf_generator import generate_section_36_notice
+from services.pdf_generator import generate_improvement_notice_pdf
 from services.evidence_ledger import compute_ledger_hash
 from schemas import RuleStatus, StatutoryRule
 
@@ -189,7 +189,7 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_exact_match():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
@@ -200,14 +200,14 @@ def test_bilingual_match_passes():
 def test_bilingual_mrp_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹200 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
 def test_bilingual_qty_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 400 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
@@ -217,7 +217,7 @@ def test_bilingual_mismatch_fails():
 
 def test_bilingual_no_hindi():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
-    rules, _, _, _ = audit_text(english_text)
+    rules, _, _, _, _ = audit_text(english_text)
     res = {r.rule: r for r in rules}
     # If hindi_text is None, BILINGUAL shouldn't be evaluated, or shouldn't fail.
     # Currently it might not be in rules if hindi_text is None
@@ -369,3 +369,33 @@ def test_ledger_chain_hashing():
     expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
 
     assert result == expected
+
+def test_rule5_font_height_valid_1mm():
+    text = "Net Qty 10 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=5.0, pdp_height_cm=10.0, char_height_mm=1.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_1_5mm():
+    text = "Net Qty 100 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=10.0, pdp_height_cm=10.0, char_height_mm=1.5)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_2_0mm():
+    text = "Net Qty 300 g"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=20.0, pdp_height_cm=20.0, char_height_mm=2.0)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_6_0mm_net_qty():
+    text = "Net Qty 1 kg"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=30.0, pdp_height_cm=20.0, char_height_mm=6.0, is_net_qty=True)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
+
+def test_rule5_font_height_valid_4_0mm_not_net_qty():
+    text = "Net Qty 1 kg"
+    rules, _, _, _, _ = audit_text(text, pdp_width_cm=30.0, pdp_height_cm=20.0, char_height_mm=4.0, is_net_qty=False)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_5_PDP] == RuleStatus.PASS
