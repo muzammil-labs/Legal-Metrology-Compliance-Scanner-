@@ -163,6 +163,8 @@ export default function CameraScanner({
             <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
               <button
                 type="button"
+                onClick={() => setCustomOcr("https://blinkit.com/prn/product/12345")}
+                className="preset-btn"
                 onClick={() =>
                   setCustomOcr("https://blinkit.com/prn/product/12345")
                 }
@@ -180,6 +182,8 @@ export default function CameraScanner({
               </button>
               <button
                 type="button"
+                onClick={() => setCustomOcr("https://zeptonow.com/pn/product/54321")}
+                className="preset-btn"
                 onClick={() =>
                   setCustomOcr("https://zeptonow.com/pn/product/54321")
                 }
@@ -197,6 +201,8 @@ export default function CameraScanner({
               </button>
               <button
                 type="button"
+                onClick={() => setCustomOcr("https://www.swiggy.com/instamart/item/98765")}
+                className="preset-btn"
                 onClick={() =>
                   setCustomOcr("https://www.swiggy.com/instamart/item/98765")
                 }

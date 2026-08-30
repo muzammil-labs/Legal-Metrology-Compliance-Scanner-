@@ -10,7 +10,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'PakkaLabel India',
-        short_name: 'PakkaLabel',
+        short_name: 'LegalMetrology',
         description: 'PakkaLabel — Legal Metrology Compliance Scanner',
         theme_color: '#09090b',
         background_color: '#09090b',
@@ -29,7 +29,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2,ttf}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
