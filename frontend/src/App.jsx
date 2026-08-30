@@ -22,6 +22,7 @@ export default function App() {
   const [message, setMessage] = useState(
     "System ready for statutory inspection",
   );
+  const [noticeModalType, setNoticeModalType] = useState(null);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
@@ -114,7 +115,7 @@ export default function App() {
           />
           <ComplianceSummaryCard
             audit={audit}
-            onOpenNoticeModal={() => setIsNoticeModalOpen(true)}
+            onOpenNoticeModal={(type) => setNoticeModalType(type)}
           />
         </section>
       )}
@@ -124,9 +125,10 @@ export default function App() {
       {activeTab === "seller" && <SellerBulkAudit />}
 
       <NoticePreviewModal
-        isOpen={isNoticeModalOpen}
-        onClose={() => setIsNoticeModalOpen(false)}
+        isOpen={!!noticeModalType}
+        onClose={() => setNoticeModalType(null)}
         audit={audit}
+        noticeType={noticeModalType}
       />
     </main>
   );

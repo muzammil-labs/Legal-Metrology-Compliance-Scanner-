@@ -122,7 +122,7 @@ def test_scan_api(mock_extract, mock_audit):
     mock_fields = []
     mock_penalty = PenaltyEstimate(sections_violated=[], estimated_fine_range="0")
 
-    mock_audit.return_value = (mock_rules, mock_usp, mock_fields, mock_penalty)
+    mock_audit.return_value = (mock_rules, mock_usp, mock_fields, mock_penalty, None)
 
     # Prepare dummy file
     dummy_file = ("file", ("test_image.jpg", b"dummy image data", "image/jpeg"))
