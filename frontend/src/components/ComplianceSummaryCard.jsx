@@ -11,6 +11,8 @@ const RULE_PLAIN_TEXT = {
   'Rule 6(1)(f)': 'The consumer helpline, email, or grievance officer contact is missing or incomplete.',
   'Rule 6(11)': 'The Unit Sale Price (₹ per g/kg/ml/l) is missing or mathematically incorrect.',
   'Rule 5/9 (Font / PDP)': 'Printed numerals may be too small to read — font height may violate legal minimum standards.',
+  'Rule 5': 'PDP font height does not meet the minimum requirements for this package size.',
+  'Bilingual Consistency': 'Hindi and English label declarations (quantity or MRP) do not match.',
 };
 
 export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
@@ -72,6 +74,7 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         {audit.rules.map((rule) => {
           const isPass = rule.status === 'PASS';
           const plainText = !isPass ? RULE_PLAIN_TEXT[rule.rule] : null;
+          const isExpandable = rule.rule === 'Rule 5' || rule.rule === 'Bilingual Consistency';
           return (
             <div className="rule" key={rule.rule}>
               <span className={isPass ? 'rule-icon pass' : 'rule-icon fail'}>
@@ -88,6 +91,13 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                 )}
                 {rule.evidence && rule.evidence.length > 0 && (
                   <div className="rule-evidence">Evidence: <code>{rule.evidence.join(', ')}</code></div>
+                )}
+                {/* Expandable calculated_values for Rule 5 and Bilingual checks */}
+                {isExpandable && rule.calculated_values && Object.keys(rule.calculated_values).length > 0 && (
+                  <details className="rule-details" style={{ marginTop: '6px', fontSize: '11px' }}>
+                    <summary style={{ cursor: 'pointer', color: '#71717a' }}>View calculated values</summary>
+                    <pre style={{ margin: '4px 0 0', color: '#a1a1aa' }}>{JSON.stringify(rule.calculated_values, null, 2)}</pre>
+                  </details>
                 )}
               </div>
               <span className={`rule-status ${isPass ? 'pass' : 'fail'}`}>{rule.status}</span>

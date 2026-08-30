@@ -186,7 +186,7 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
     return max(0, min(100, score))
 
 
-def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField]]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField]]:
     audit_date = audit_date or date.today()
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
@@ -323,9 +323,60 @@ def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResu
     rules.append(usp_rule)
 
     # ------------------------------------------------------------------
-    # Rule 5 / 9 — Font Height & PDP Area Check
+    # Rule 5 / 9 — Font Height & PDP Area Check (HEAD's default PDP auditor)
     # ------------------------------------------------------------------
     rules.append(audit_font_and_pdp(text))
+
+    # ------------------------------------------------------------------
+    # Rule 5 — Package-size-based font height (feature branch's granular check)
+    # ------------------------------------------------------------------
+    if font_height_mm is not None and quantity_data:
+        quantity, unit = quantity_data
+        base_quantity, base_unit = _base_quantity(quantity, unit)
+        is_ml_or_g = base_unit in {"g", "ml"}
+
+        rule_5_status = RuleStatus.PASS
+        rule_5_reason = "PDP font height is compliant for this package size."
+
+        if is_ml_or_g:
+            if base_quantity <= Decimal("200") and font_height_mm < 2.0:
+                rule_5_status = RuleStatus.FAIL
+                rule_5_reason = f"Font height ({font_height_mm}mm) is less than required 2mm for packages <=200g/ml."
+            elif Decimal("200") < base_quantity <= Decimal("500") and font_height_mm < 4.0:
+                rule_5_status = RuleStatus.FAIL
+                rule_5_reason = f"Font height ({font_height_mm}mm) is less than required 4mm for packages 200g-500g/ml."
+            elif base_quantity > Decimal("500") and font_height_mm < 6.0:
+                rule_5_status = RuleStatus.FAIL
+                rule_5_reason = f"Font height ({font_height_mm}mm) is less than required 6mm for packages >500g/ml."
+
+        rules.append(result(StatutoryRule.RULE_5, rule_5_status, rule_5_reason, values={"font_height_mm": font_height_mm, "base_quantity": float(base_quantity), "base_unit": base_unit}))
+    elif font_height_mm is not None:
+        rules.append(result(StatutoryRule.RULE_5, RuleStatus.FAIL, "Cannot verify Rule 5 font height without a valid net quantity."))
+
+    # ------------------------------------------------------------------
+    # Bilingual Consistency — Hindi vs English label cross-check
+    # ------------------------------------------------------------------
+    if hindi_text is not None:
+        hindi_quantity_data = _quantity(hindi_text)
+        hindi_mrp_match = MRP_RE.search(hindi_text)
+        hindi_mrp = Decimal(hindi_mrp_match.group(1)) if hindi_mrp_match else None
+
+        bilingual_status = RuleStatus.PASS
+        bilingual_reason = "Hindi and English labels are consistent."
+
+        if quantity_data != hindi_quantity_data:
+            bilingual_status = RuleStatus.FAIL
+            bilingual_reason = "Net Quantity mismatch between Hindi and English labels."
+        elif mrp != hindi_mrp:
+            bilingual_status = RuleStatus.FAIL
+            bilingual_reason = "MRP mismatch between Hindi and English labels."
+
+        rules.append(result(StatutoryRule.BILINGUAL, bilingual_status, bilingual_reason, values={
+            "english_quantity": str(quantity_data) if quantity_data else None,
+            "hindi_quantity": str(hindi_quantity_data) if hindi_quantity_data else None,
+            "english_mrp": str(mrp) if mrp else None,
+            "hindi_mrp": str(hindi_mrp) if hindi_mrp else None
+        }))
 
     fields = [ExtractedField(name="ocr_text", value=text)]
     if quantity_data:
