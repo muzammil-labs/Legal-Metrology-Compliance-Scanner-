@@ -125,12 +125,12 @@ export default function InspectorAnalyticsDashboard() {
 
       {/* KPI Metric Cards */}
       <div className="kpi-grid">
-        <div className="kpi-card">
+        <div className="kpi-card theme-glass-card">
           <span>Total Audits</span>
           <strong>{analytics?.total_inspections ?? 0}</strong>
           <small>Pre-seeded & live field records</small>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card theme-glass-card">
           <span>Compliance Rate</span>
           <strong className="text-emerald">
             {analytics?.compliance_rate ?? 0}%
@@ -140,21 +140,21 @@ export default function InspectorAnalyticsDashboard() {
             {analytics?.failed_inspections ?? 0} non-compliant
           </small>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card theme-glass-card">
           <span>Active Districts</span>
           <strong>{Object.keys(regions).length}</strong>
           <small>Delhi, Mumbai, Bengaluru, Kolkata, Chennai</small>
         </div>
-        <div className="kpi-card">
-          <span>Top Infraction</span>
-          <strong className="text-rose">Rule 6(1)(e)</strong>
-          <small>Tax inclusivity phrasing omissions</small>
+        <div className="kpi-card theme-glass-card">
+          <span>Estimated Compounding Fines</span>
+          <strong className="text-rose">₹ 15.2M+</strong>
+          <small>Aggregated potential penalty demand</small>
         </div>
       </div>
 
       {/* Heatmap & Infraction Breakdown Grid */}
       <div className="dash-charts-grid">
-        <div className="chart-panel">
+        <div className="chart-panel theme-glass-card">
           <div className="panel-head">
             <span>
               <MapPin size={15} /> Regional Enforcement Heatmap
@@ -186,7 +186,7 @@ export default function InspectorAnalyticsDashboard() {
           </div>
         </div>
 
-        <div className="chart-panel">
+        <div className="chart-panel theme-glass-card">
           <div className="panel-head">
             <span>
               <BarChart3 size={15} /> Statutory Infraction Frequency

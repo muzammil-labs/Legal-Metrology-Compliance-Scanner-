@@ -24,8 +24,8 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
       <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <div className="badge-mini text-cyan">
-              <ShieldCheck size={13} /> Notice Preview
+            <div className={`badge-mini ${isFail ? 'text-rose border-rose-200 bg-rose-50' : 'text-emerald border-emerald-200 bg-emerald-50'} mb-2 inline-flex items-center gap-1 px-2 py-1 rounded`}>
+              <ShieldCheck size={13} /> {isFail ? "Compounding Penalty Demand Notice" : "Section 36 Improvement Notice (15-Day Grace)"}
             </div>
             <h3>Section 36 Inspection Notice</h3>
             <p className="mono">
@@ -66,7 +66,7 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
 
         <div className="modal-hash-banner">
           <small className="mono">
-            SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):
+            <ShieldCheck size={14} /> SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):
           </small>
           <code className="mono">{sha256}</code>
         </div>
@@ -122,8 +122,8 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
           <button className="secondary-btn" onClick={onClose}>
             Close Preview
           </button>
-          <a href={downloadUrl} className="primary-download-btn" download>
-            <FileDown size={16} /> Download Notice PDF
+          <a href={downloadUrl} className="primary-download-btn active:scale-95 transition-all duration-200" download>
+            <FileDown size={16} /> Download Court-Admissible Notice (PDF)
           </a>
         </div>
       </div>
