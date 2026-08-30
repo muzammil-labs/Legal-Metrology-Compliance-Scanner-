@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_section_36_notice
+from services.evidence_ledger import compute_ledger_hash
 from schemas import RuleStatus, StatutoryRule
 
 VALID = """Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001
@@ -328,3 +329,17 @@ def test_audit_usp_missing_quantity_data():
     assert rule_result.status == RuleStatus.WARNING
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
+
+def test_ledger_chain_hashing():
+    prev = "abc123hash"
+    ts = "2026-08-29T10:00:00"
+    img_hash = "def456hash"
+    gps = "28.7180° N, 77.1750° E"
+    summary = "Rule 6(1)(e): FAIL"
+
+    result = compute_ledger_hash(prev, ts, img_hash, gps, summary)
+
+    import hashlib
+    expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
+
+    assert result == expected

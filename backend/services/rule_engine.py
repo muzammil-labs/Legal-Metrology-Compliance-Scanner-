@@ -28,6 +28,10 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)", re.I)
+INVALID_UNIT_RE = re.compile(
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
+    re.I,
+)
 MRP_RE = re.compile(
     r"\b(?:MRP|M\.R\.P\.|MAX\.?\s*RETAIL|अधिकतम\s*खुदरा\s*मूल्य)\s*(?:RS\.?|INR|₹)?\s*([0-9]+(?:\.[0-9]{1,2})?)\b",
     re.I | re.UNICODE,
