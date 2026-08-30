@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, FileScan, Eye, CameraOff } from 'lucide-react';
 
 export default function CameraScanner({ file, setFile, demoMode, loading, message, onScan }) {
   const [showOcrInput, setShowOcrInput] = useState(false);
   const [customOcr, setCustomOcr] = useState('');
   const [permissionDenied, setPermissionDenied] = useState(false);
+
+  // Haptic feedback on demo fixture switch (from PWA branch)
+  useEffect(() => {
+    if (demoMode && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  }, [demoMode]);
 
   function handleFileChange(event) {
     const chosen = event.target.files?.[0] ?? null;
@@ -70,7 +77,10 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
         <button
           className="scan-button"
           disabled={loading || (!file && !demoMode)}
-          onClick={() => onScan(customOcr)}
+          onClick={() => {
+            if (navigator.vibrate) navigator.vibrate(50);
+            onScan(customOcr);
+          }}
           aria-label={loading ? 'Scan in progress' : 'Run compliance scan'}
         >
           <FileScan size={18} />

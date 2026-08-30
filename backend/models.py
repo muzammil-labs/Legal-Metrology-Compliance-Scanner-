@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, ForeignKey
+from sqlalchemy import DateTime, Float, Integer, String, Text, create_engine, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 import os
@@ -22,13 +22,9 @@ class Inspection(Base):
     source_filename: Mapped[str] = mapped_column(String(255))
     sha256: Mapped[str] = mapped_column(String(64), index=True)
     region: Mapped[str] = mapped_column(String(120), default="Unknown")
-<<<<<<< HEAD
     gps_location: Mapped[str] = mapped_column(String(120), default="28.6139° N, 77.2090° E")
     trust_score: Mapped[int] = mapped_column(Integer, default=100)
-    overall_status: Mapped[str] = mapped_column(String(20))
-=======
     overall_status: Mapped[str] = mapped_column(String(20), index=True)
->>>>>>> origin/feat/check-demo-readiness-454878615019827795
     ocr_text: Mapped[str] = mapped_column(Text, default="")
     violations: Mapped[list["Violation"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")
     certificate: Mapped["AuditCertificate | None"] = relationship(back_populates="inspection", uselist=False, cascade="all, delete-orphan")

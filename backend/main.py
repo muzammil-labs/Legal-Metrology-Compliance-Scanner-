@@ -97,17 +97,14 @@ def root_status():
 
 
 @app.post("/api/scan", response_model=AuditResponse)
-<<<<<<< HEAD
 async def scan(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     ocr_text: str = Form(default=""),
     region: str = Form(default="New Delhi - Connaught Place"),
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
 ):
-=======
-async def scan(background_tasks: BackgroundTasks, file: UploadFile = File(...), ocr_text: str = Form(default=""), region: str = Form(default="Unknown"), db: Session = Depends(get_db)):
->>>>>>> origin/feat/check-demo-readiness-454878615019827795
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
@@ -152,7 +149,6 @@ async def scan(background_tasks: BackgroundTasks, file: UploadFile = File(...), 
         ocr_text=ocr_text,
     )
     db.add(inspection)
-<<<<<<< HEAD
     db.flush()
 
     for rule in rules:
@@ -232,15 +228,6 @@ async def batch_scan(
         compliance_badge_eligible=failed_count == 0,
         items=items,
     )
-=======
-    db.commit()
-    db.refresh(inspection)
-
-    background_tasks.add_task(save_violations_and_certificate, inspection.id, rules)
-
-    metadata = InspectionMetadata(inspection_id=inspection.id, inspected_at=inspection.inspected_at, audit_date=date.today(), source_filename=inspection.source_filename, sha256=digest, region=region)
-    return AuditResponse(metadata=metadata, extracted_fields=fields, rules=rules, overall_status=overall, usp=usp, ocr_text=ocr_text)
->>>>>>> origin/feat/check-demo-readiness-454878615019827795
 
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])

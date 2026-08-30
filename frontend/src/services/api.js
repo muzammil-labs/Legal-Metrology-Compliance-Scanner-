@@ -1,6 +1,7 @@
 import controlPass from '../fixtures/control_pass.json';
 import controlFailTax from '../fixtures/control_fail_tax.json';
 import controlFailUnit from '../fixtures/control_fail_unit.json';
+import { saveOfflineScan } from './offlineStorage';
 
 const fixtures = {
   control_pass: controlPass,
@@ -29,8 +30,11 @@ export async function executeScanWithCircuitBreaker(imageFile, fixtureOverride =
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {
-    console.warn('Scan unavailable; serving deterministic fallback.', error);
-    return loadPrecachedFixture('control_pass');
+    console.warn('Scan unavailable; serving deterministic fallback and saving for later.', error);
+    const fallbackResult = loadPrecachedFixture('control_pass');
+    // Save to local storage for offline sync (from PWA branch)
+    await saveOfflineScan(imageFile, ocrText, fallbackResult);
+    return fallbackResult;
   } finally {
     clearTimeout(timeoutId);
   }
