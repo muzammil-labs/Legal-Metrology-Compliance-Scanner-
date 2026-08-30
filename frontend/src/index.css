@@ -122,6 +122,9 @@ body {
   transition: all 0.15s ease;
 }
 
+.tab-btn { min-height: 48px; }
+.tab-btn:active { transform: scale(0.95); }
+
 .tab-btn.active {
   background: #ffffff;
   color: #2563eb;
@@ -423,7 +426,7 @@ h1 {
 }
 
 .scan-button:not(:disabled):active {
-  transform: translateY(1px);
+  transform: scale(0.95);
 }
 
 .ocr-toggle-btn {
@@ -442,6 +445,9 @@ h1 {
   gap: 8px;
   transition: all 0.2s;
 }
+
+.ocr-toggle-btn { min-height: 48px; }
+.ocr-toggle-btn:active { transform: scale(0.95); }
 
 .ocr-toggle-btn:hover {
   background: #f8fafc;
@@ -594,8 +600,12 @@ h1 {
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s ease;
-  min-height: 36px;
+  min-height: 48px;
   white-space: nowrap;
+}
+
+.fixture-segment-btn:active {
+  transform: scale(0.95);
 }
 
 .fixture-segment-btn:focus-visible {
@@ -858,6 +868,9 @@ h1 {
   transition: all 0.2s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+
+.refresh-btn { min-height: 48px; }
+.refresh-btn:active { transform: scale(0.95); }
 
 .refresh-btn:hover {
   background: #f8fafc;
