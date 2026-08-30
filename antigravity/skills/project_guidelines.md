@@ -7,9 +7,9 @@
 - Multimodal Vision Runtime: Google GenAI SDK (`gemini-2.5-flash`) via structured JSON schema.
 
 ## Tri-Engine Territorial Division (Strict Multi-Agent Governance)
-1. Backend Realm (`/backend`): Exclusively managed via Antigravity CLI in the central terminal.
-2. Frontend Realm (`/frontend`): Exclusively built & styled via Google Antigravity in local editors.
-3. Architecture & Pitch: Generated via Antigravity (Web with Extended Thinking).
+1. Backend Realm (`/backend`): Managed via Antigravity CLI in the central terminal.
+2. Frontend Realm (`/frontend`): Built & styled via Google Antigravity in local editors.
+3. Architecture & Pitch: Generated via Antigravity.
 4. Zero External Stitch: Build natively inside the Vite dev server with instant HMR feedback.
 
 ## Core Non-Negotiables & Demo Resilience
@@ -21,5 +21,12 @@
 6. Clean Build Rule: Run `npm run build` and `pytest tests/` every 4 hours.
 
 ## Dev Commands
-- Frontend: cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
-- Backend: cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+- Frontend: `cd frontend && npm run dev`
+- Backend: `cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000`
+
+## File Boundary Rules
+Only modify files within these scopes:
+- **Backend changes** → `/backend/**` only
+- **Frontend changes** → `/frontend/**` only
+- **Config / docs** → Root-level `.md`, `.json`, `.cursorrules` files
+- **Do NOT modify** → `.claude/`, `.git/`, `inspections.db`, `node_modules/`

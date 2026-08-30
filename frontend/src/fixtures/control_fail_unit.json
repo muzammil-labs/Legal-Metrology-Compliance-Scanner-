@@ -1,1 +1,51 @@
-{"metadata":{"inspection_id":null,"inspected_at":"2026-08-23T00:00:00Z","audit_date":"2026-08-23","source_filename":"control-fail-unit.jpg","sha256":"2222222222222222222222222222222222222222222222222222222222222222","region":"Demo","source":"fixture"},"extracted_fields":[{"name":"product","value":"Grain 1000 gm","bounding_box":null,"confidence":1}],"rules":[{"rule":"Rule 6(1)(c)","status":"FAIL","evidence":["1000 gm"],"reason":"Legacy unit gm is not permitted.","calculated_values":{}},{"rule":"Rule 6(11)","status":"FAIL","evidence":[],"reason":"Required Unit Sale Price is missing.","calculated_values":{}}],"overall_status":"FAIL","usp":{"applicable":true,"declared_value":null,"declared_unit":null,"calculated_value":null,"quantity_in_base_unit":"1000","ratio":null,"within_tolerance":false},"ocr_text":"Control fixture: Net Wt 1000 gm"}
+{
+  "metadata": {
+    "inspection_id": null,
+    "inspected_at": "2026-08-29T10:30:00Z",
+    "audit_date": "2026-08-29",
+    "source_filename": "rice-1000gm-unit-violation.jpg",
+    "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "region": "East Delhi — Laxmi Nagar Market",
+    "gps_location": "28.6321° N, 77.2732° E",
+    "source": "fixture"
+  },
+  "extracted_fields": [
+    { "name": "product", "value": "Basmati Rice 1000 gm", "bounding_box": null, "confidence": 1 },
+    { "name": "net_quantity", "value": "1000 gm (ILLEGAL UNIT)", "bounding_box": null, "confidence": 1 },
+    { "name": "mrp", "value": "120.00", "bounding_box": null, "confidence": 1 }
+  ],
+  "rules": [
+    { "rule": "Rule 6(1)(a)", "status": "PASS", "evidence": [], "reason": "Entity prefix, address, PIN, and import origin declaration are present.", "calculated_values": {} },
+    { "rule": "Rule 6(1)(b)", "status": "PASS", "evidence": [], "reason": "Generic commodity name is present.", "calculated_values": {} },
+    {
+      "rule": "Rule 6(1)(c)",
+      "status": "FAIL",
+      "evidence": ["1000 gm"],
+      "reason": "Invalid non-SI unit notation detected: 'gm'. Use 'g' not 'gm', 'ml' not 'ml.'.",
+      "calculated_values": {}
+    },
+    { "rule": "Rule 6(1)(d)", "status": "PASS", "evidence": [], "reason": "Manufacture/import date is present and not in the future.", "calculated_values": {} },
+    { "rule": "Rule 6(1)(e)", "status": "PASS", "evidence": [], "reason": "MRP includes the required statutory tax-inclusion declaration.", "calculated_values": {} },
+    { "rule": "Rule 6(1)(f)", "status": "PASS", "evidence": [], "reason": "Consumer grievance designation, address, phone, and email are all present.", "calculated_values": {} },
+    {
+      "rule": "Rule 6(11)",
+      "status": "FAIL",
+      "evidence": [],
+      "reason": "Required Unit Sale Price is missing. For packs > 1 kg, ₹/kg must be declared.",
+      "calculated_values": { "expected": "120.00", "unit": "kg" }
+    },
+    { "rule": "Rule 5/9 (Font / PDP)", "status": "PASS", "evidence": [], "reason": "Numeral height (2.5mm) satisfies statutory minimum (2.5mm) for PDP area 120cm².", "calculated_values": {} }
+  ],
+  "overall_status": "FAIL",
+  "trust_score": 50,
+  "usp": {
+    "applicable": true,
+    "declared_value": null,
+    "declared_unit": null,
+    "calculated_value": "120.00",
+    "quantity_in_base_unit": "1000",
+    "ratio": "120.00",
+    "within_tolerance": false
+  },
+  "ocr_text": "Packed by Grain Mill Ltd, Plot 9 Industrial Area, Delhi 110092. Basmati Rice Net Wt 1000 gm MRP Rs. 120 (incl. of all taxes) 05/2026. Consumer Care 9876543210 care@grainmill.example"
+}
