@@ -1500,3 +1500,8 @@ h1 {
 .modal-close:active {
   transform: scale(0.95);
 }
+@keyframes shimmer {
+  100% {
+    transform: translateX(200%);
+  }
+}

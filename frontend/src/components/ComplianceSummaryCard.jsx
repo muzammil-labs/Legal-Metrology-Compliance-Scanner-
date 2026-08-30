@@ -165,22 +165,77 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         })}
       </div>
 
-      <div className="result-footer-actions">
-        <button className="notice-btn" onClick={onOpenNoticeModal}>
-          <FileText size={16} /> Generate Official Inspection Notice
-        </button>
+      {/* EXPORT STATUTORY NOTICE HERO SECTION */}
+      <div className="bg-gradient-to-b from-slate-900/90 via-slate-900/60 to-slate-950/90 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden my-6">
+        {/* Ambient radial glow accent */}
+        <div className="absolute -right-16 -top-16 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* One-tap NCH Grievance Filing — visible only on FAIL results */}
-        {failed && (
-          <a
-            href="tel:18001144000"
-            className="grievance-btn"
-            title="National Consumer Helpline — 1800-11-4000 (Toll Free)"
+        {/* Structured Information Hierarchy & Typography */}
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase font-mono">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+            </span>
+            Legal Metrology Synthesis
+          </div>
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight mt-3 mb-0">Court-Admissible Statutory Notice Generator</h3>
+          <p className="text-sm text-slate-400 leading-relaxed max-w-2xl mt-1.5 mb-0">
+            Synthesize an official Section 36 compounding notice embedded with a SHA-256 digital signature to ensure chain-of-custody under Sec 65B of the Indian Evidence Act.
+          </p>
+        </div>
+
+        {/* Dynamic Multi-Column Metadata Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-5 relative z-10">
+          {/* Card 1 (Notice Classification) */}
+          <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-center">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">Classification</span>
+            {failed ? (
+              <span className="text-rose-400 font-mono text-[11px] font-bold">Compounding Fine Demand</span>
+            ) : (
+              <span className="text-emerald-400 font-mono text-[11px] font-bold">Compliant Ledger Entry</span>
+            )}
+          </div>
+          {/* Card 2 (Fine Exposure) */}
+          <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-center">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">Fine Exposure</span>
+            {failed ? (
+              <span className="text-rose-400 font-mono text-sm font-bold tracking-tight">Est. INR ₹15,000</span>
+            ) : (
+              <span className="text-slate-300 font-mono text-sm font-bold tracking-tight">₹0 Liability</span>
+            )}
+          </div>
+          {/* Card 3 (Chain-of-Custody) */}
+          <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-center">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">Chain of Custody</span>
+            <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px] font-bold">
+              <ShieldCheck size={12}/> Sec 65B Secured
+            </span>
+          </div>
+        </div>
+
+        {/* Primary Action Call-to-Action (CTA) Cluster */}
+        <div className="flex flex-col sm:flex-row gap-3 relative z-10 mt-6">
+          <button
+            className="flex-1 relative group overflow-hidden bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold px-6 py-3.5 rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.35)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 text-sm sm:text-base cursor-pointer"
+            onClick={onOpenNoticeModal}
           >
-            <Phone size={15} />
-            Report to Consumer Helpline (1800-11-4000)
-          </a>
-        )}
+            <span className="absolute inset-0 w-full h-full -ml-[100%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-shimmer skew-x-12 transition-transform duration-700 ease-in-out group-hover:translate-x-[200%]"></span>
+            <FileText size={18} />
+            Generate Statutory Notice
+          </button>
+
+          {failed && (
+            <a
+              href="tel:18001144000"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2.5 bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-slate-700/60 px-5 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer no-underline active:scale-[0.98]"
+              title="National Consumer Helpline — 1800-11-4000 (Toll Free)"
+            >
+              <Phone size={16} />
+              Consumer Helpline
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
