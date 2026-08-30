@@ -18,7 +18,7 @@ VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune,
 मूल देश: India 50/kg"""
 
 def statuses(text, audit_dt=date(2026, 8, 23), **kwargs):
-    rules, usp, fields, penalty, fine = audit_text(text, audit_dt, **kwargs)
+    rules, usp, fields, penalty, fine, _ = audit_text(text, audit_dt, **kwargs)
     return {rule.rule: rule.status for rule in rules}, usp, rules
 
 
@@ -159,28 +159,28 @@ def test_trust_score_decremented_per_violation():
 
 def test_rule5_font_height_valid():
     text = "Net Qty 100 g"
-    rules, _, _, _, _ = audit_text(text, font_height_mm=2.0)
+    rules, _, _, _, _, _ = audit_text(text, font_height_mm=2.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.PASS
 
 
 def test_rule5_font_height_invalid_small():
     text = "Net Qty 100 g"
-    rules, _, _, _, _ = audit_text(text, font_height_mm=1.5)
+    rules, _, _, _, _, _ = audit_text(text, font_height_mm=1.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_medium():
     text = "Net Qty 300 g"
-    rules, _, _, _, _ = audit_text(text, font_height_mm=3.5)
+    rules, _, _, _, _, _ = audit_text(text, font_height_mm=3.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_large():
     text = "Net Qty 600 g"
-    rules, _, _, _, _ = audit_text(text, font_height_mm=5.0)
+    rules, _, _, _, _, _ = audit_text(text, font_height_mm=5.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
@@ -189,35 +189,35 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_exact_match():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
-    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.PASS
 
 def test_bilingual_mrp_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹200 सभी करों सहित"
-    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
 def test_bilingual_qty_mismatch():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
     hindi_text = "शुद्ध मात्रा 400 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
-    rules, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    rules, _, _, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
-    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
 def test_bilingual_no_hindi():
     english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
-    rules, _, _, _, _ = audit_text(english_text)
+    rules, _, _, _, _, _ = audit_text(english_text)
     res = {r.rule: r for r in rules}
     # If hindi_text is None, BILINGUAL shouldn't be evaluated, or shouldn't fail.
     # Currently it might not be in rules if hindi_text is None
@@ -369,3 +369,25 @@ def test_ledger_chain_hashing():
     expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
 
     assert result == expected
+
+def test_fssai_valid_and_veg_symbol():
+    text = "FSSAI Lic No: 10012011000124 with green circle"
+    _, _, _, _, _, fssai = audit_text(text)
+    assert fssai is not None
+    assert fssai.license_number == "10012011000124"
+    assert fssai.is_valid_format is True
+    assert fssai.veg_nonveg_symbol == "green circle (Veg)"
+    assert fssai.status == RuleStatus.PASS
+
+def test_fssai_food_category_strict_units():
+    text = "FSSAI Lic No: 10012011000124 Net Qty 500 gm"
+    rules, _, _, _, _, fssai = audit_text(text)
+    c_rule = next((r for r in rules if r.rule == StatutoryRule.RULE_6_1_C), None)
+    assert c_rule is not None
+    assert c_rule.status == RuleStatus.FAIL
+    assert "Food safety regulations mandate strict SI units" in c_rule.reason
+
+def test_fssai_missing():
+    text = "Just some text without license"
+    _, _, _, _, _, fssai = audit_text(text)
+    assert fssai is None

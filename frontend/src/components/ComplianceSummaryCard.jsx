@@ -109,6 +109,63 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {audit.fssai_verification && (
+        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-cyan" />
+            <strong>FSSAI & Food Safety Compliance</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>FSSAI License No</span>
+              <b>{audit.fssai_verification.license_number || "Not Found"}</b>
+            </div>
+            <div>
+              <span>License Format Status</span>
+              <b
+                className={
+                  audit.fssai_verification.is_valid_format
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.is_valid_format
+                  ? "✓ Valid 14-Digit Format"
+                  : "✗ Invalid / Missing"}
+              </b>
+            </div>
+            <div>
+              <span>Veg/Non-Veg Symbol</span>
+              <b
+                className={
+                  audit.fssai_verification.veg_nonveg_symbol
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.veg_nonveg_symbol
+                  ? `✓ Detected (${audit.fssai_verification.veg_nonveg_symbol})`
+                  : "✗ Missing / Undetected"}
+              </b>
+            </div>
+            <div>
+              <span>Strict SI Units (Food)</span>
+              <b
+                className={
+                  audit.fssai_verification.status === "PASS"
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.status === "PASS"
+                  ? "✓ Validated"
+                  : "✗ See Rule 6(1)(c)"}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
       {audit.bilingual_verification && (
         <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
           <div className="usp-header">
@@ -155,14 +212,18 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                   ? "✓ Consistent"
                   : "✗ Discrepancy Found"}
               </b>
+            </div>
+          </div>
+        </div>
+      )}
 
       {audit.penalty && audit.penalty.estimated_fine_range && (
-        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
           <div className="usp-header">
             <ShieldCheck size={16} className="text-rose" />
             <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
           </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               <span>Legal Section</span>
               <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
@@ -176,64 +237,76 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
       )}
 
       {audit.fine_risk && (
-        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
           <div className="usp-header">
             <ShieldCheck size={16} className="text-rose" />
             <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
           </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               <span>Legal Section</span>
               <b>{audit.fine_risk.legal_section}</b>
             </div>
             <div>
               <span>Estimated Fine</span>
-              <b className="text-rose">₹{audit.fine_risk.min_penalty_inr} - ₹{audit.fine_risk.max_penalty_inr}</b>
+              <b className="text-rose">
+                ₹{audit.fine_risk.min_penalty_inr} - ₹
+                {audit.fine_risk.max_penalty_inr}
+              </b>
             </div>
           </div>
         </div>
       )}
 
-            {audit.fine_risk && (
-        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+      {audit.fine_risk && (
+        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
           <div className="usp-header">
             <ShieldCheck size={16} className="text-rose" />
             <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
           </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               <span>Legal Section</span>
               <b>{audit.fine_risk.legal_section}</b>
             </div>
             <div>
               <span>Estimated Fine</span>
-              <b className="text-rose">₹{audit.fine_risk.min_penalty_inr} - ₹{audit.fine_risk.max_penalty_inr}</b>
+              <b className="text-rose">
+                ₹{audit.fine_risk.min_penalty_inr} - ₹
+                {audit.fine_risk.max_penalty_inr}
+              </b>
             </div>
           </div>
         </div>
       )}
 
-      {audit.penalty && audit.penalty.estimated_fine_range && !audit.fine_risk && (
-        <div className="usp-audit-card" style={{ marginTop: '16px' }}>
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-rose" />
-            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
-          </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            <div>
-              <span>Legal Section</span>
-              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
+      {audit.penalty &&
+        audit.penalty.estimated_fine_range &&
+        !audit.fine_risk && (
+          <div className="usp-audit-card" style={{ marginTop: "16px" }}>
+            <div className="usp-header">
+              <ShieldCheck size={16} className="text-rose" />
+              <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
             </div>
-            <div>
-              <span>Estimated Fine</span>
-              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
+            <div
+              className="usp-grid"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
+              <div>
+                <span>Legal Section</span>
+                <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
+              </div>
+              <div>
+                <span>Estimated Fine</span>
+                <b className="text-rose">
+                  {audit.penalty.estimated_fine_range}
+                </b>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="rule-list">
-
         {audit.rules.map((rule) => {
           const isPass = rule.status === "PASS";
           const plainText = !isPass ? RULE_PLAIN_TEXT[rule.rule] : null;
@@ -290,11 +363,27 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         })}
       </div>
 
-      <div className="result-footer-actions" style={{ flexDirection: 'column' }}>
-        <button className="notice-btn" onClick={() => onOpenNoticeModal("IMPROVEMENT")} style={{ width: '100%' }}>
+      <div
+        className="result-footer-actions"
+        style={{ flexDirection: "column" }}
+      >
+        <button
+          className="notice-btn"
+          onClick={() => onOpenNoticeModal("IMPROVEMENT")}
+          style={{ width: "100%" }}
+        >
           <FileText size={16} /> Generate Improvement Notice (15-Day Grace)
         </button>
-        <button className="notice-btn" onClick={() => onOpenNoticeModal("COMPOUNDING")} style={{ width: '100%', background: 'rgba(225, 29, 72, 0.1)', color: '#fb7185', border: '1px solid rgba(225, 29, 72, 0.2)' }}>
+        <button
+          className="notice-btn"
+          onClick={() => onOpenNoticeModal("COMPOUNDING")}
+          style={{
+            width: "100%",
+            background: "rgba(225, 29, 72, 0.1)",
+            color: "#fb7185",
+            border: "1px solid rgba(225, 29, 72, 0.2)",
+          }}
+        >
           <FileText size={16} /> Generate Compounding Penalty Demand
         </button>
 

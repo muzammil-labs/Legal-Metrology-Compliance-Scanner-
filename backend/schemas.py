@@ -91,6 +91,16 @@ class PenaltyEstimate(BaseModel):
     director_liability: bool = False
 
 
+
+class FSSAIVerification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    license_number: str | None = None
+    is_valid_format: bool = False
+    veg_nonveg_symbol: str | None = None
+    category_claims: str | None = None
+    status: RuleStatus = RuleStatus.FAIL
+    reason: str = ""
+
 class BilingualVerification(BaseModel):
     model_config = ConfigDict(extra="forbid")
     english_mrp: float | None = None
@@ -134,6 +144,7 @@ class AuditResponse(BaseModel):
     trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
     bilingual_verification: BilingualVerification | None = None
+    fssai_verification: FSSAIVerification | None = None
     penalty: PenaltyEstimate | None = None
     ocr_text: str
 
