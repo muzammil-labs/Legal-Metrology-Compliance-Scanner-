@@ -14,6 +14,10 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file uploads
+from sqlalchemy.orm import Session, selectinload, joinedload
+from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload
 
 try:
     from backend.models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
@@ -120,6 +124,7 @@ def scan(
     db: Session = Depends(get_db),
 ):
     content = file.file.read(MAX_FILE_SIZE + 1)
+    content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
@@ -219,6 +224,7 @@ def batch_scan(
         if content and len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
 
+        content = f.file.read()
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
@@ -253,6 +259,7 @@ def batch_scan(
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
 def inspections(limit: int = 50, db: Session = Depends(get_db)):
+    rows = db.query(Inspection).options(selectinload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     rows = db.query(Inspection).options(joinedload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     return [
         InspectionSummary(
@@ -298,6 +305,25 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
 def analytics(db: Session = Depends(get_db)):
+    status_counts = db.query(Inspection.overall_status, func.count(Inspection.id)).group_by(Inspection.overall_status).all()
+    total = 0
+    compliant = 0
+    failed = 0
+    warning = 0
+
+    for status, count in status_counts:
+        total += count
+        if status == "PASS":
+            compliant = count
+        elif status == "FAIL":
+            failed = count
+        elif status == "WARNING":
+            warning = count
+
+    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
+
+    region_counts = db.query(Inspection.region, func.count(Inspection.id)).group_by(Inspection.region).all()
+    by_region = {region: count for region, count in region_counts}
     rows = db.query(Inspection).all()
     total = len(rows)
 
@@ -322,10 +348,11 @@ def analytics(db: Session = Depends(get_db)):
     compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
     active_districts = len(by_region)
 
-    violations_query = db.query(Violation).all()
-    violation_breakdown: dict[str, int] = {}
-    for v in violations_query:
-        violation_breakdown[v.rule] = violation_breakdown.get(v.rule, 0) + 1
+    regional_nc_counts = db.query(Inspection.region, func.count(Inspection.id)).filter(Inspection.overall_status != "PASS").group_by(Inspection.region).all()
+    regional_non_compliance = {region: count for region, count in regional_nc_counts}
+
+    violation_counts = db.query(Violation.rule, func.count(Violation.id)).group_by(Violation.rule).all()
+    violation_breakdown = {rule: count for rule, count in violation_counts}
 
     top_violations = [{"rule": k, "count": v} for k, v in sorted(violation_breakdown.items(), key=lambda item: item[1], reverse=True)[:5]]
 
@@ -341,7 +368,6 @@ def analytics(db: Session = Depends(get_db)):
         regional_non_compliance=regional_non_compliance,
         by_region=by_region,
         by_rule_infractions=violation_breakdown
-
     )
 
 
@@ -350,7 +376,7 @@ from io import StringIO
 
 @app.get("/api/analytics/export-csv")
 def export_csv(db: Session = Depends(get_db)):
-    rows = db.query(Inspection).all()
+    rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["inspection_id", "inspected_at", "region", "overall_status", "violation_count"])

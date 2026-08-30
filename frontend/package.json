@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest run --coverage",
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "preview": "vite preview"
@@ -21,6 +24,11 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "playwright": "^1.62.1"
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@vitest/coverage-v8": "^4.1.11",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.62.1",
+    "vitest": "^4.1.11"
   }
 }

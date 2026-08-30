@@ -1,2 +1,7 @@
 node_modules/
 dist/
+coverage/
+
+# Playwright Test Artifacts
+playwright-report/
+test-results/

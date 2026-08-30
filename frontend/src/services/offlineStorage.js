@@ -1,6 +1,6 @@
-import { get, set, update } from 'idb-keyval';
+import { get, set, update } from "idb-keyval";
 
-const OFFLINE_SCANS_KEY = 'offline_scans';
+const OFFLINE_SCANS_KEY = "offline_scans";
 
 /**
  * Persist a scan (metadata, image, and evaluation result) locally.
@@ -18,9 +18,9 @@ export async function saveOfflineScan(imageFile, ocrText, evaluationResult) {
       const scans = val || [];
       return [...scans, scanRecord];
     });
-    console.log('Saved offline scan to local storage.');
+    console.log("Saved offline scan to local storage.");
   } catch (error) {
-    console.error('Failed to save offline scan:', error);
+    console.error("Failed to save offline scan:", error);
   }
 }
 
@@ -31,7 +31,7 @@ export async function getOfflineScans() {
   try {
     return (await get(OFFLINE_SCANS_KEY)) || [];
   } catch (error) {
-    console.error('Failed to get offline scans:', error);
+    console.error("Failed to get offline scans:", error);
     return [];
   }
 }
@@ -43,10 +43,10 @@ export async function removeOfflineScan(id) {
   try {
     await update(OFFLINE_SCANS_KEY, (val) => {
       const scans = val || [];
-      return scans.filter(scan => scan.id !== id);
+      return scans.filter((scan) => scan.id !== id);
     });
   } catch (error) {
-    console.error('Failed to remove offline scan:', error);
+    console.error("Failed to remove offline scan:", error);
   }
 }
 
@@ -62,18 +62,23 @@ export async function syncOfflineScans() {
     try {
       const formData = new FormData();
       if (scan.imageFile) {
-        formData.append('file', scan.imageFile);
+        formData.append("file", scan.imageFile);
       }
-      formData.append('ocr_text', scan.ocrText || '');
+      formData.append("ocr_text", scan.ocrText || "");
       // Note: we can also pass the evaluationResult if the backend expects it,
       // but usually the backend will re-evaluate or just store it.
 
-      const response = await fetch('/api/scan', { method: 'POST', body: formData });
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        body: formData,
+      });
       if (response.ok) {
         console.log(`Synced scan ${scan.id} successfully.`);
         await removeOfflineScan(scan.id);
       } else {
-        console.error(`Failed to sync scan ${scan.id}: HTTP ${response.status}`);
+        console.error(
+          `Failed to sync scan ${scan.id}: HTTP ${response.status}`,
+        );
       }
     } catch (error) {
       console.error(`Error syncing scan ${scan.id}:`, error);
@@ -84,9 +89,9 @@ export async function syncOfflineScans() {
 }
 
 // Automatically try to sync when network comes online
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    console.log('Network is back online, syncing offline scans...');
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    console.log("Network is back online, syncing offline scans...");
     syncOfflineScans();
   });
 }
