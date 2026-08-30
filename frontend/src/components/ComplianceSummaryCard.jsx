@@ -142,6 +142,18 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
       )}
 
       {audit.fssai_verification && (
+        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-cyan" />
+            <strong>FSSAI & Food Safety Compliance</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>FSSAI License No</span>
+              <b>{audit.fssai_verification.license_number || "Not Found"}</b>
+            </div>
+            <div>
+              <span>License Format Status</span>
         <div
           className="usp-audit-card fssai-audit-card"
           style={{ marginTop: "16px" }}
@@ -160,6 +172,9 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                     : "text-rose"
                 }
               >
+                {audit.fssai_verification.is_valid_format
+                  ? "✓ Valid 14-Digit Format"
+                  : "✗ Invalid / Missing"}
                 {audit.fssai_verification.fssai_license_number
                   ? audit.fssai_verification.fssai_license_number
                   : "Invalid/Missing"}
@@ -175,6 +190,28 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                 }
               >
                 {audit.fssai_verification.veg_nonveg_symbol
+                  ? `✓ Detected (${audit.fssai_verification.veg_nonveg_symbol})`
+                  : "✗ Missing / Undetected"}
+              </b>
+            </div>
+            <div>
+              <span>Strict SI Units (Food)</span>
+              <b
+                className={
+                  audit.fssai_verification.status === "PASS"
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.status === "PASS"
+                  ? "✓ Validated"
+                  : "✗ See Rule 6(1)(c)"}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
                   ? `✓ Detected`
                   : "✗ Missing"}
               </b>

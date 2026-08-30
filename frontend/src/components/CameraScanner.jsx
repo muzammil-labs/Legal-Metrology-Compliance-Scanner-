@@ -41,12 +41,27 @@ export default function CameraScanner({
         <span className="mono">{message}</span>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', background: '#18181b', padding: '4px', borderRadius: '8px' }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          marginBottom: "10px",
+          background: "#18181b",
+          padding: "4px",
+          borderRadius: "8px",
+        }}
+      >
         <button
           type="button"
           className={`tab-btn ${auditMode === "PHYSICAL" ? "active" : ""}`}
           onClick={() => setAuditMode("PHYSICAL")}
-          style={{ flex: 1, padding: '8px', borderRadius: '6px', background: auditMode === "PHYSICAL" ? '#27272a' : 'transparent', color: auditMode === "PHYSICAL" ? '#fff' : '#a1a1aa' }}
+          style={{
+            flex: 1,
+            padding: "8px",
+            borderRadius: "6px",
+            background: auditMode === "PHYSICAL" ? "#27272a" : "transparent",
+            color: auditMode === "PHYSICAL" ? "#fff" : "#a1a1aa",
+          }}
         >
           Physical Camera Audit
         </button>
@@ -54,7 +69,13 @@ export default function CameraScanner({
           type="button"
           className={`tab-btn ${auditMode === "ECOMMERCE" ? "active" : ""}`}
           onClick={() => setAuditMode("ECOMMERCE")}
-          style={{ flex: 1, padding: '8px', borderRadius: '6px', background: auditMode === "ECOMMERCE" ? '#27272a' : 'transparent', color: auditMode === "ECOMMERCE" ? '#fff' : '#a1a1aa' }}
+          style={{
+            flex: 1,
+            padding: "8px",
+            borderRadius: "6px",
+            background: auditMode === "ECOMMERCE" ? "#27272a" : "transparent",
+            color: auditMode === "ECOMMERCE" ? "#fff" : "#a1a1aa",
+          }}
         >
           E-Commerce Digital Listing
         </button>
@@ -69,7 +90,9 @@ export default function CameraScanner({
             {loading && <div className="scanline" aria-hidden="true" />}
 
             {/* Demo fixture active indicator */}
-            {demoMode && <div className="fixture-label">Demo Fixture Active</div>}
+            {demoMode && (
+              <div className="fixture-label">Demo Fixture Active</div>
+            )}
 
             {/* Permission-denied state */}
             {permissionDenied ? (
@@ -107,40 +130,110 @@ export default function CameraScanner({
             />
           </>
         ) : (
-          <div style={{ padding: '20px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          <div
+            style={{
+              padding: "20px",
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
             {/* Scanline Animation overlay during loading */}
-            {loading && <div className="scanline" aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '2px', background: 'cyan', boxShadow: '0 0 10px cyan', zIndex: 10, animation: 'scan 2s linear infinite' }} />}
+            {loading && (
+              <div
+                className="scanline"
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "2px",
+                  background: "cyan",
+                  boxShadow: "0 0 10px cyan",
+                  zIndex: 10,
+                  animation: "scan 2s linear infinite",
+                }}
+              />
+            )}
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
               <button
                 type="button"
-                onClick={() => setCustomOcr("https://blinkit.com/prn/product/12345")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                onClick={() =>
+                  setCustomOcr("https://blinkit.com/prn/product/12345")
+                }
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "11px",
+                  background: "#3f3f46",
+                  color: "#e4e4e7",
+                  borderRadius: "4px",
+                  border: "none",
+                }}
                 disabled={loading}
               >
                 Blinkit Preset
               </button>
               <button
                 type="button"
-                onClick={() => setCustomOcr("https://zeptonow.com/pn/product/54321")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                onClick={() =>
+                  setCustomOcr("https://zeptonow.com/pn/product/54321")
+                }
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "11px",
+                  background: "#3f3f46",
+                  color: "#e4e4e7",
+                  borderRadius: "4px",
+                  border: "none",
+                }}
                 disabled={loading}
               >
                 Zepto Preset
               </button>
               <button
                 type="button"
-                onClick={() => setCustomOcr("https://www.swiggy.com/instamart/item/98765")}
-                style={{ padding: '4px 10px', fontSize: '11px', background: '#3f3f46', color: '#e4e4e7', borderRadius: '4px', border: 'none' }}
+                onClick={() =>
+                  setCustomOcr("https://www.swiggy.com/instamart/item/98765")
+                }
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "11px",
+                  background: "#3f3f46",
+                  color: "#e4e4e7",
+                  borderRadius: "4px",
+                  border: "none",
+                }}
                 disabled={loading}
               >
                 Swiggy Preset
               </button>
             </div>
 
-            <label style={{ marginBottom: '8px', fontSize: '14px', color: '#e4e4e7' }}>Digital Listing URL / Text</label>
+            <label
+              style={{
+                marginBottom: "8px",
+                fontSize: "14px",
+                color: "#e4e4e7",
+              }}
+            >
+              Digital Listing URL / Text
+            </label>
             <textarea
-              style={{ flex: 1, width: '100%', background: 'transparent', border: '1px solid #3f3f46', borderRadius: '8px', padding: '12px', color: '#fff', resize: 'none' }}
+              style={{
+                flex: 1,
+                width: "100%",
+                background: "transparent",
+                border: "1px solid #3f3f46",
+                borderRadius: "8px",
+                padding: "12px",
+                color: "#fff",
+                resize: "none",
+              }}
               placeholder="Paste Blinkit, Zepto, Swiggy Instamart URL or extracted listing text here..."
               value={customOcr}
               onChange={(e) => setCustomOcr(e.target.value)}
@@ -153,7 +246,11 @@ export default function CameraScanner({
       <div className="capture-actions">
         <button
           className="scan-button"
-          disabled={loading || (auditMode === "PHYSICAL" && !file && !demoMode) || (auditMode === "ECOMMERCE" && !customOcr)}
+          disabled={
+            loading ||
+            (auditMode === "PHYSICAL" && !file && !demoMode) ||
+            (auditMode === "ECOMMERCE" && !customOcr)
+          }
           onClick={() => {
             if (navigator.vibrate) navigator.vibrate(50);
             onScan(customOcr);

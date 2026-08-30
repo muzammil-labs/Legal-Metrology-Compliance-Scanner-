@@ -3,7 +3,6 @@ load_dotenv()
 
 import os
 import json
-import os
 import uuid
 from datetime import date, datetime
 from hashlib import sha256
@@ -24,11 +23,29 @@ from pydantic import BaseModel
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from sqlalchemy.orm import Session, joinedload
-
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file uploads
 from sqlalchemy.orm import Session, selectinload, joinedload
 from sqlalchemy import func
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file uploads
+
+from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
+from services.rule_engine import audit_text, calculate_trust_score
+from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+from services.gemini_service import extract_label_with_gemini
+from seed import seed as seed_db
+from schemas import (
+    StatutoryRule,
+    AnalyticsSummary,
+    AuditResponse,
+    BilingualVerification,
+    FSSAIVerification,
+    BatchAuditItem,
+    BatchAuditResponse,
+    BoundingBox,
+    ExtractedField,
+    InspectionMetadata,
+    InspectionSummary,
+    RuleStatus,
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm import Session, joinedload
 
@@ -76,6 +93,7 @@ except ModuleNotFoundError:
     PreAuditResponse,
     FineEstimation,
     OffenceType,
+)
 
         AnalyticsSummary, PreAuditRequest, PreAuditResponse,
         AuditResponse,
@@ -102,11 +120,8 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-init_db()
-seed_db()
-
 
 def get_db():
     db = SessionLocal()
@@ -226,6 +241,7 @@ def scan(
         if gemini_res and "ocr_text" in gemini_res:
             ocr_text = gemini_res["ocr_text"]
 
+    rules, usp, fields, penalty, fine_estimation, fssai_verification = audit_text(ocr_text, audit_date=date.today(), json_artwork=gemini_res)
     rules, usp, fields, penalty, fssai_verification = audit_text(ocr_text, date.today())
     rules, usp, fields, penalty, fine_estimation = audit_text(ocr_text, audit_date=date.today())
     overall = status_for(rules)
@@ -311,6 +327,7 @@ def scan(
         trust_score=trust_score,
         usp=usp,
         bilingual_verification=bilingual_verification,
+        fssai_verification=fssai_verification,
         penalty=penalty,
         fssai_verification=fssai_verification,
         ocr_text=ocr_text,
@@ -388,6 +405,7 @@ def batch_scan(
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
+        rules, _, _, penalty, fine_estimation, _ = audit_text(mock_text, audit_date=date.today())
         rules, _, _, _, _ = audit_text(mock_text, date.today())
         rules, _, _, penalty, fine_estimation = audit_text(mock_text, audit_date=date.today())
         status = status_for(rules)

@@ -5,6 +5,7 @@ from services.bilingual_auditor import audit_bilingual_consistency
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, FSSAIVerification
     from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
@@ -13,7 +14,7 @@ except ModuleNotFoundError:
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
     from services.fine_calculator import calculate_penalty
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, FSSAIVerification
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -246,8 +247,42 @@ def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation |
             offence_type=offence_type
         )
 
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, json_artwork: dict | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None, FSSAIVerification | None]:
 def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, pdp_width_cm: float = 12.0, pdp_height_cm: float = 10.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
     audit_date = audit_date or date.today()
+    fssai_match = re.search(r"\b[0-9]{14}\b", text)
+    fssai_verification = None
+
+    veg_sym = None
+    lower_text = text.lower()
+    if "green circle" in lower_text or "veg" in lower_text:
+        veg_sym = "green circle (Veg)"
+    elif "brown circle" in lower_text or "non veg" in lower_text:
+        veg_sym = "brown circle (Non-Veg)"
+
+    if json_artwork and json_artwork.get("bounding_boxes"):
+        for box in json_artwork.get("bounding_boxes", []):
+            box_text = box.get("text", "").lower()
+            box_label = box.get("label", "").lower()
+            if "green circle" in box_text or "veg" in box_text or "green circle" in box_label or "veg" in box_label:
+                veg_sym = "green circle (Veg)"
+            elif "brown circle" in box_text or "non veg" in box_text or "brown circle" in box_label or "non veg" in box_label:
+                veg_sym = "brown circle (Non-Veg)"
+
+    if fssai_match or veg_sym:
+        fssai_verification = FSSAIVerification()
+        if fssai_match:
+            fssai_verification.license_number = fssai_match.group(0)
+            fssai_verification.is_valid_format = True
+            fssai_verification.status = RuleStatus.PASS
+            fssai_verification.reason = "Valid FSSAI license format detected."
+        else:
+            fssai_verification.status = RuleStatus.FAIL
+            fssai_verification.reason = "Missing 14-digit FSSAI license number."
+
+        fssai_verification.veg_nonveg_symbol = veg_sym
+
+
     penalty = None
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
@@ -319,6 +354,31 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Rule 6(1)(c) — Net Quantity & Strict SI Units
     # ------------------------------------------------------------------
     invalid = INVALID_UNIT_RE.search(text)
+    c_status = RuleStatus.PASS
+    c_reason = "Net quantity uses a recognized SI unit."
+    c_evidence = []
+
+    if fssai_verification and fssai_verification.is_valid_format and (invalid or quantity_data):
+        # Cross-validation: strict SI units for food products
+        unit = quantity_data[1] if quantity_data else (invalid.group(0).strip() if invalid else "")
+        if unit not in {"g", "kg", "ml", "l"}:
+            c_status = RuleStatus.FAIL
+            c_reason = f"Food safety regulations mandate strict SI units (g, kg, ml, l) for Net Quantity. Found '{unit}'."
+            c_evidence = [unit]
+    elif invalid:
+        c_status = RuleStatus.FAIL
+        c_reason = f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
+        c_evidence = [invalid.group(0)]
+    elif not quantity_data:
+        c_status = RuleStatus.FAIL
+        c_reason = "Net quantity declaration is missing."
+    elif fssai_verification and fssai_verification.is_valid_format and quantity_data:
+        # Cross-validation: strict SI units for food products
+        unit = quantity_data[1]
+        if unit not in {"g", "kg", "ml", "l"}:
+            c_status = RuleStatus.FAIL
+            c_reason = f"Food safety regulations mandate strict SI units (g, kg, ml, l) for Net Quantity. Found '{unit}'."
+            c_evidence = [unit]
     strict_si_fail = False
     si_fail_reason = ""
     if has_category and quantity_data and quantity_data[1].lower() not in ["g", "kg", "ml", "l"]:
@@ -328,6 +388,9 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     rules.append(
         result(
             StatutoryRule.RULE_6_1_C,
+            c_status,
+            c_reason,
+            evidence=c_evidence,
             RuleStatus.FAIL if invalid or not quantity_data or strict_si_fail else RuleStatus.PASS,
             si_fail_reason if strict_si_fail else (
                 f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
@@ -467,4 +530,4 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
 
     return rules, usp, fields, penalty, fssai_verification
     fine_estimation = calculate_compounding_fine([r for r in rules if r.status == RuleStatus.FAIL])
-    return rules, usp, fields, penalty, fine_estimation
+    return rules, usp, fields, penalty, fine_estimation, fssai_verification
