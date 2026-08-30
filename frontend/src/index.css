@@ -16,6 +16,15 @@
   box-sizing: border-box;
 }
 
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -606,11 +615,6 @@ h1 {
 
 .fixture-segment-btn:active {
   transform: scale(0.95);
-}
-
-.fixture-segment-btn:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
 }
 
 .fixture-segment-btn:hover {
