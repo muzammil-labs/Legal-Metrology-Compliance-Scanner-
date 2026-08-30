@@ -1,62 +1,46 @@
 import re
-from decimal import Decimal
-from typing import Optional, Tuple
+from typing import Dict, Any
 
-HINDI_MRP_RE = re.compile(
-    r"(?:अधिकतम खुदरा मूल्य|अ\.खु\.मू\.|MRP).*?(?:Rs\.?|₹)\s*(\d+(?:\.\d{1,2})?)",
-    re.IGNORECASE | re.UNICODE
-)
+ENG_PRICE_RE = re.compile(r'(?:MRP|Rs\.?|₹)\s*([\d\.]+)', re.IGNORECASE | re.UNICODE)
+ENG_WEIGHT_RE = re.compile(r'(\d+(?:\.\d+)?)\s*(g|kg|ml|l)\b', re.IGNORECASE | re.UNICODE)
 
-HINDI_QTY_RE = re.compile(
-    r"(?:शुद्ध मात्रा|मात्रा|Net Qty).*?(\d+(?:\.\d+)?)\s*(g|kg|ml|l|gm|gms|U|N)",
-    re.IGNORECASE | re.UNICODE
-)
+HINDI_PRICE_RE = re.compile(r'(?:अधिकतम\s*खुदरा\s*मूल्य|एम\.?आर\.?पी\.?|मूल्य)\s*[:₹\.]*\s*([\d\.]+)', re.IGNORECASE | re.UNICODE)
+HINDI_WEIGHT_RE = re.compile(r'(?:शुद्ध\s*मात्रा|मात्रा)\s*[:\.]*\s*([\d\.]+)\s*(ग्राम|किग्रा|मिली|ली)', re.IGNORECASE | re.UNICODE)
 
-HINDI_TAX_RE = re.compile(
-    r"(सभी करों सहित|incl\.\s+of\s+all\s+taxes)",
-    re.IGNORECASE | re.UNICODE
-)
+def audit_bilingual_text(text: str) -> Dict[str, Any]:
+    hindi_price_match = HINDI_PRICE_RE.search(text)
+    hindi_weight_match = HINDI_WEIGHT_RE.search(text)
 
-def audit_bilingual_consistency(
-    english_text: str,
-    hindi_text: str,
-    english_mrp: Optional[Decimal],
-    english_qty_data: Optional[Tuple[Decimal, str]]
-) -> Tuple[bool, str, dict]:
-    """
-    Audits the consistency between English and Hindi label declarations.
-    Returns (is_compliant, reason, verification_details).
-    """
-    if not hindi_text:
-        return True, "No Hindi text provided for cross-audit.", {}
+    if not hindi_price_match and not hindi_weight_match:
+        return {
+            "is_bilingual": False,
+            "english_declared_price": None,
+            "hindi_declared_price": None,
+            "price_match": True,
+            "status": "PASS",
+            "discrepancy_reason": None
+        }
 
-    hindi_mrp_match = HINDI_MRP_RE.search(hindi_text)
-    hindi_mrp = Decimal(hindi_mrp_match.group(1)) if hindi_mrp_match else None
+    eng_price_match = ENG_PRICE_RE.search(text)
+    eng_price = float(eng_price_match.group(1)) if eng_price_match else None
 
-    hindi_qty_match = HINDI_QTY_RE.search(hindi_text)
-    if hindi_qty_match:
-        qty_val = Decimal(hindi_qty_match.group(1))
-        unit_val = hindi_qty_match.group(2).lower()
-        hindi_qty_data = (qty_val, unit_val)
-    else:
-        hindi_qty_data = None
+    hindi_price = float(hindi_price_match.group(1)) if hindi_price_match else None
 
-    has_hindi_tax = bool(HINDI_TAX_RE.search(hindi_text))
+    is_bilingual = True
+    price_match = True
+    status = "PASS"
+    discrepancy_reason = None
 
-    details = {
-        "english_mrp": float(english_mrp) if english_mrp is not None else None,
-        "hindi_mrp": float(hindi_mrp) if hindi_mrp is not None else None,
-        "english_qty": f"{english_qty_data[0]} {english_qty_data[1]}" if english_qty_data else None,
-        "hindi_qty": f"{hindi_qty_data[0]} {hindi_qty_data[1]}" if hindi_qty_data else None,
-        "hindi_taxes_included": has_hindi_tax,
-        "mrp_match": english_mrp == hindi_mrp if english_mrp and hindi_mrp else None,
-        "qty_match": english_qty_data == hindi_qty_data if english_qty_data and hindi_qty_data else None
+    if eng_price is not None and hindi_price is not None and eng_price != hindi_price:
+        price_match = False
+        status = "FAIL"
+        discrepancy_reason = f"Price mismatch: English (₹{eng_price}) vs Hindi (₹{hindi_price})."
+
+    return {
+        "is_bilingual": is_bilingual,
+        "english_declared_price": eng_price,
+        "hindi_declared_price": hindi_price,
+        "price_match": price_match,
+        "status": status,
+        "discrepancy_reason": discrepancy_reason
     }
-
-    if english_mrp and hindi_mrp and english_mrp != hindi_mrp:
-        return False, "MRP mismatch between Hindi and English labels.", details
-
-    if english_qty_data and hindi_qty_data and english_qty_data != hindi_qty_data:
-        return False, "Net Quantity mismatch between Hindi and English labels.", details
-
-    return True, "Hindi and English labels are consistent.", details

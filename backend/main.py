@@ -52,6 +52,10 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
+    from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+    from services.gemini_service import extract_label_with_gemini
+    from seed import seed as seed_db
+    from backend.schemas import (
     from services.pdf_generator import generate_improvement_notice_pdf
 
     from services.gemini_service import extract_label_with_gemini
@@ -420,6 +424,9 @@ def batch_scan(
         if status == RuleStatus.PASS:
             passed_count += 1
 
+        from services.bilingual_auditor import audit_bilingual_text
+        bilingual_result = audit_bilingual_text(mock_text)
+        bilingual_verification = BilingualVerification(**bilingual_result)
         items.append(BatchAuditItem(
             sku_id=f"SKU-{uuid.uuid4().hex[:6].upper()}",
             filename=f.filename or f"item_{idx+1}.jpg",
@@ -427,6 +434,7 @@ def batch_scan(
             trust_score=score,
             violation_count=v_count,
             rule_results=rules,
+            bilingual_verification=bilingual_verification,
         ))
 
     failed_count = len(items) - passed_count

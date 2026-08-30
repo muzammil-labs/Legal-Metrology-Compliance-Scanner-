@@ -229,6 +229,23 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
             <strong>Bilingual Language Consistency</strong>
           </div>
           <div className="usp-grid">
+            {!audit.bilingual_verification?.is_bilingual ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-muted">Monolingual Label</b>
+              </div>
+            ) : audit.bilingual_verification?.price_match ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-emerald">
+                  ✓ Hindi & English Pricing Match Verified
+                </b>
+              </div>
+            ) : (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-rose">
+                  ✗ {audit.bilingual_verification?.discrepancy_reason}
+                </b>
+              </div>
+            )}
             <div>
               <span>English Details</span>
               <b>
