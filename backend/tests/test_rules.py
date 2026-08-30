@@ -341,7 +341,7 @@ def test_b2b_saas_auth_missing():
 def test_b2b_saas_auth_invalid_format():
     client = TestClient(app)
     response = client.post("/api/v1/pre-audit", json={"ocr_text": "Net Qty 100 g"}, headers={"X-API-Key": "invalid_key_format"})
-    assert response.status_code == 401
+    assert response.status_code == 403
     assert "Invalid API Key format" in response.json()["detail"]
 
 def test_b2b_saas_rate_limit_trial():

@@ -21,7 +21,7 @@ def check_rate_limit(x_api_key: str = Header(None)):
     elif x_api_key.startswith("enterprise_"):
         limit = 10000
     else:
-        raise HTTPException(status_code=401, detail="Invalid API Key format")
+        raise HTTPException(status_code=403, detail="Invalid API Key format")
 
     current_time = time.time()
 
@@ -36,6 +36,15 @@ def check_rate_limit(x_api_key: str = Header(None)):
 
     if len(RATE_LIMIT_STORE[x_api_key]) >= limit:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    # Actively evict completely stale API keys to prevent memory leak
+    keys_to_delete = []
+    for k, timestamps in RATE_LIMIT_STORE.items():
+        if not timestamps or current_time - timestamps[-1] >= 60.0:
+            if k != x_api_key: # Don't delete the current key we are updating
+                keys_to_delete.append(k)
+    for k in keys_to_delete:
+        del RATE_LIMIT_STORE[k]
 
     RATE_LIMIT_STORE[x_api_key].append(current_time)
     return x_api_key

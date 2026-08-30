@@ -28,7 +28,7 @@ export default function DeveloperPortal() {
   };
 
   const snippets = {
-    curl: `curl -X POST http://localhost:8000/api/v1/pre-audit \\
+    curl: `curl -X POST ${window.location.origin}/api/v1/pre-audit \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${apiKey || 'YOUR_API_KEY'}" \\
   -d '{
@@ -36,7 +36,7 @@ export default function DeveloperPortal() {
   }'`,
     python: `import requests
 
-url = "http://localhost:8000/api/v1/pre-audit"
+url = "${window.location.origin}/api/v1/pre-audit"
 headers = {
     "X-API-Key": "${apiKey || 'YOUR_API_KEY'}",
     "Content-Type": "application/json"
@@ -49,7 +49,7 @@ response = requests.post(url, json=data, headers=headers)
 print(response.json())`,
     nodejs: `const fetch = require('node-fetch');
 
-const url = 'http://localhost:8000/api/v1/pre-audit';
+const url = '${window.location.origin}/api/v1/pre-audit';
 const options = {
   method: 'POST',
   headers: {
