@@ -222,8 +222,6 @@ def batch_scan(
         content = f.file.read(MAX_FILE_SIZE + 1)
         if content and len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
-
-        content = f.file.read()
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
