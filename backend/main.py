@@ -5,7 +5,6 @@ import json
 import uuid
 from datetime import date, datetime
 from hashlib import sha256
-from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
