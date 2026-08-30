@@ -1,13 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, FileDown, MapPin, BarChart3, RefreshCw, Activity, ShieldAlert, Search, ListFilter, FileWarning } from 'lucide-react';
-import { fetchAnalyticsSummary, fetchInspections, getNoticeDownloadUrl } from '../services/api';
+import React, { useEffect, useState } from "react";
+import {
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  FileDown,
+  MapPin,
+  BarChart3,
+  RefreshCw,
+  Activity,
+  ShieldAlert,
+  Search,
+  ListFilter,
+  FileWarning,
+} from "lucide-react";
+import {
+  fetchAnalyticsSummary,
+  fetchInspections,
+  getNoticeDownloadUrl,
+} from "../services/api";
 
 export default function InspectorAnalyticsDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedDistrict, setSelectedDistrict] = useState("All");
 
   async function loadData() {
     setLoading(true);
@@ -21,7 +38,7 @@ export default function InspectorAnalyticsDashboard() {
       setInspections(list);
     } catch (e) {
       console.error(e);
-      setError('Failed to load analytics data.');
+      setError("Failed to load analytics data.");
     } finally {
       setLoading(false);
     }
@@ -43,12 +60,14 @@ export default function InspectorAnalyticsDashboard() {
   if (error && !analytics) {
     return (
       <div className="workspace">
-        <div className="capture-panel" style={{ width: '100%' }}>
+        <div className="capture-panel" style={{ width: "100%" }}>
           <div className="panel-head">
             <span>ERROR</span>
-            <span className="badge fail"><AlertTriangle size={15} /> FAILED</span>
+            <span className="badge fail">
+              <AlertTriangle size={15} /> FAILED
+            </span>
           </div>
-          <p style={{ color: '#fb7185' }}>{error}</p>
+          <p style={{ color: "#fb7185" }}>{error}</p>
         </div>
       </div>
     );
@@ -56,7 +75,7 @@ export default function InspectorAnalyticsDashboard() {
 
   const regions = analytics?.by_region || {};
   const infractions = analytics?.by_rule_infractions || {};
-  const districts = ['All', ...Object.keys(regions)];
+  const districts = ["All", ...Object.keys(regions)];
 
   return (
     <section className="dashboard-view">
@@ -65,31 +84,33 @@ export default function InspectorAnalyticsDashboard() {
           <h2>Enforcement Analytics</h2>
           <p className="mono">All India Retail Zones — Statutory Audit Trail</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           {/* District filter from feature branch */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <ListFilter size={14} color="#71717a" />
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               style={{
-                background: '#18181b',
-                color: '#f4f4f5',
-                border: '1px solid #27272a',
-                padding: '4px 10px',
+                background: "#18181b",
+                color: "#f4f4f5",
+                border: "1px solid #27272a",
+                padding: "4px 10px",
                 fontFamily: "'DM Mono', monospace",
-                fontSize: '11px',
-                outline: 'none',
-                cursor: 'pointer'
+                fontSize: "11px",
+                outline: "none",
+                cursor: "pointer",
               }}
             >
-              {districts.map(d => (
-                <option key={d} value={d}>{d.toUpperCase()}</option>
+              {districts.map((d) => (
+                <option key={d} value={d}>
+                  {d.toUpperCase()}
+                </option>
               ))}
             </select>
           </div>
           <button className="refresh-btn" onClick={loadData} disabled={loading}>
-            <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
+            <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
           </button>
           <a
             href="/api/analytics/export-csv"
@@ -111,8 +132,13 @@ export default function InspectorAnalyticsDashboard() {
         </div>
         <div className="kpi-card">
           <span>Compliance Rate</span>
-          <strong className="text-emerald">{analytics?.compliance_rate ?? 0}%</strong>
-          <small>{analytics?.compliant_inspections ?? 0} passed / {analytics?.failed_inspections ?? 0} non-compliant</small>
+          <strong className="text-emerald">
+            {analytics?.compliance_rate ?? 0}%
+          </strong>
+          <small>
+            {analytics?.compliant_inspections ?? 0} passed /{" "}
+            {analytics?.failed_inspections ?? 0} non-compliant
+          </small>
         </div>
         <div className="kpi-card">
           <span>Active Districts</span>
@@ -130,32 +156,41 @@ export default function InspectorAnalyticsDashboard() {
       <div className="dash-charts-grid">
         <div className="chart-panel">
           <div className="panel-head">
-            <span><MapPin size={15} /> Regional Enforcement Heatmap</span>
+            <span>
+              <MapPin size={15} /> Regional Enforcement Heatmap
+            </span>
             <span className="mono">Active Audit Hubs</span>
           </div>
           <div className="region-list">
             {Object.entries(regions)
-              .filter(([name]) => selectedDistrict === 'All' || name === selectedDistrict)
+              .filter(
+                ([name]) =>
+                  selectedDistrict === "All" || name === selectedDistrict,
+              )
               .map(([name, count]) => (
-              <div className="region-item" key={name}>
-                <div className="region-name">
-                  <b>{name}</b>
-                  <span>{count} Inspections</span>
+                <div className="region-item" key={name}>
+                  <div className="region-name">
+                    <b>{name}</b>
+                    <span>{count} Inspections</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${Math.min(100, (count / (analytics?.total_inspections || 1)) * 100 * 2.5)}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.min(100, (count / (analytics?.total_inspections || 1)) * 100 * 2.5)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
         <div className="chart-panel">
           <div className="panel-head">
-            <span><BarChart3 size={15} /> Statutory Infraction Frequency</span>
+            <span>
+              <BarChart3 size={15} /> Statutory Infraction Frequency
+            </span>
             <span className="mono">By Rule Code</span>
           </div>
           <div className="infraction-bars">
@@ -200,17 +235,25 @@ export default function InspectorAnalyticsDashboard() {
             <tbody>
               {inspections.map((row) => (
                 <tr key={row.inspection_id}>
-                  <td><code>LM-{String(row.inspection_id).padStart(6, '0')}</code></td>
-                  <td><b>{row.source_filename}</b></td>
+                  <td>
+                    <code>LM-{String(row.inspection_id).padStart(6, "0")}</code>
+                  </td>
+                  <td>
+                    <b>{row.source_filename}</b>
+                  </td>
                   <td>
                     <div>{row.region}</div>
-                    <small className="text-muted">{row.gps_location || '28.6139° N, 77.2090° E'}</small>
+                    <small className="text-muted">
+                      {row.gps_location || "28.6139° N, 77.2090° E"}
+                    </small>
                   </td>
                   <td>
                     <span className="trust-pill">{row.trust_score ?? 100}</span>
                   </td>
                   <td>
-                    <span className={`status-pill ${row.overall_status === 'PASS' ? 'pass' : 'fail'}`}>
+                    <span
+                      className={`status-pill ${row.overall_status === "PASS" ? "pass" : "fail"}`}
+                    >
                       {row.overall_status}
                     </span>
                   </td>
