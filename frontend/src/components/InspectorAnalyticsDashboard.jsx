@@ -91,6 +91,14 @@ export default function InspectorAnalyticsDashboard() {
           <button className="refresh-btn" onClick={loadData} disabled={loading}>
             <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
           </button>
+          <a
+            href="/api/analytics/export-csv"
+            className="refresh-btn"
+            download="district_audit_export.csv"
+            style={{ textDecoration: 'none', display: 'flex' }}
+          >
+            <FileDown size={14} /> Export CSV
+          </a>
         </div>
       </div>
 

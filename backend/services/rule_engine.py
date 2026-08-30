@@ -27,7 +27,9 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
+
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
+
     re.I,
 )
 MRP_RE = re.compile(
@@ -89,16 +91,12 @@ CARE_DESIGNATION_RE = re.compile(r"consumer\s+care|grievance\s+officer|उपभ
 ADDRESS_REF_RE = re.compile(r"postal|address|पता", re.I | re.UNICODE)
 PIECES_RE = re.compile(r"\b(?:pieces?|pcs|units?)\b", re.I | re.UNICODE)
 
-
 def _has_commodity(text: str) -> bool:
     """Returns True if the text contains a recognized generic commodity name (English or Hindi)."""
     return bool(COMMODITY_ASCII_RE.search(text) or COMMODITY_HINDI_RE.search(text))
 
-
-
 def result(rule: StatutoryRule, status: RuleStatus, reason: str, evidence=None, values=None) -> RuleResult:
     return RuleResult(rule=rule, status=status, reason=reason, evidence=evidence or [], calculated_values=values or {})
-
 
 def _quantity(text: str):
     match = NET_QTY_RE.search(text)
@@ -110,14 +108,12 @@ def _quantity(text: str):
     normalized_unit = unit_map.get(raw_unit, raw_unit)
     return Decimal(raw_val), normalized_unit
 
-
 def _base_quantity(quantity: Decimal, unit: str):
     if unit.lower() == "kg":
         return quantity * Decimal("1000"), "g"
     if unit.lower() == "l":
         return quantity * Decimal("1000"), "ml"
     return quantity, unit.lower()
-
 
 def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult, USPResult]:
     if not quantity_data or mrp is None:
@@ -161,8 +157,6 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     reason = "Declared USP matches the deterministic calculation." if within else "Declared USP has the wrong unit or differs from the calculated value by more than INR 0.01."
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
-
-
 def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
     """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
     if pdp_area_cm2 <= 50:
@@ -184,7 +178,6 @@ def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: f
         values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm},
     )
 
-
 def calculate_trust_score(rules: list[RuleResult]) -> int:
     """Calculates an explainable 0–100 Consumer Trust Score based on statutory infractions."""
     score = 100
@@ -197,7 +190,6 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
         elif r.status == RuleStatus.WARNING:
             score -= 5
     return max(0, min(100, score))
-
 
 def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
     audit_date = audit_date or date.today()
@@ -239,7 +231,6 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
             else "A generic or common commodity name is missing. Brand names alone do not satisfy Rule 6(1)(b).",
         )
     )
-
 
     # ------------------------------------------------------------------
     # Rule 6(1)(c) — Net Quantity & Strict SI Units
@@ -392,6 +383,25 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
         fields.append(ExtractedField(name="mrp", value=str(mrp)))
     failed_rules = [r for r in rules if r.status == RuleStatus.FAIL]
     if failed_rules:
-        penalty = PenaltyEstimate(sections_violated=["Section 36", "Section 49"], estimated_fine_range="₹25,000 - ₹50,000")
+        sections_violated = set()
+        for r in failed_rules:
+            # Rule 6(1)(a) failure typically falls under Section 49 / Rule 32 for lack of manufacturer/importer info
+            if r.rule == StatutoryRule.RULE_6_1_A:
+                sections_violated.add("Section 49")
+            # Other statutory omissions, unit issues, and pricing math fall under Section 36
+            else:
+                sections_violated.add("Section 36")
+
+        sections_list = sorted(list(sections_violated))
+        if "Section 36" in sections_list and "Section 49" in sections_list:
+            fine_range = "₹50,000 - ₹1,00,000"
+        elif "Section 36" in sections_list:
+            fine_range = "₹25,000 - ₹50,000"
+        elif "Section 49" in sections_list:
+            fine_range = "₹10,000 - ₹25,000"
+        else:
+            fine_range = "₹10,000 - ₹50,000"
+
+        penalty = PenaltyEstimate(sections_violated=sections_list, estimated_fine_range=fine_range)
 
     return rules, usp, fields, penalty
