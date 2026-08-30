@@ -87,6 +87,32 @@ class PenaltyEstimate(BaseModel):
     sections_violated: list[str]
     estimated_fine_range: str
 
+
+class OffenceType(str, Enum):
+    PROCEDURAL_FIRST_TIME = "PROCEDURAL_FIRST_TIME"
+    REPEAT_METRIC_FRAUD = "REPEAT_METRIC_FRAUD"
+
+
+class FineEstimation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    min_penalty_inr: int
+    max_penalty_inr: int
+    legal_section: str
+    offence_type: OffenceType
+
+
+class PreAuditRequest(BaseModel):
+    text: str | None = None
+    json_artwork: dict | None = None
+
+
+class PreAuditResponse(BaseModel):
+    compliant: bool
+    fine_risk: FineEstimation | None = None
+    analysis: list[RuleResult]
+    mandatory_fixes: list[str] = Field(default_factory=list)
+
+
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     metadata: InspectionMetadata

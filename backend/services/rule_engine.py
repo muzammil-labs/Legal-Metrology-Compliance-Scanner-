@@ -3,9 +3,9 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -27,6 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
@@ -200,7 +201,35 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
             score -= 5
     return max(0, min(100, score))
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
+
+def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation | None:
+    if not violations:
+        return None
+
+    # Determine offence type based on violations
+    # Section 36 Repeat Offence / Deceptive Fraud (Rule 6(11) USP math discrepancy, legacy non-SI units)
+    has_severe = any(v.rule == StatutoryRule.RULE_6_11 or v.rule == StatutoryRule.RULE_6_1_C for v in violations)
+    offence_type = OffenceType.REPEAT_METRIC_FRAUD if has_severe else OffenceType.PROCEDURAL_FIRST_TIME
+
+    if offence_type == OffenceType.REPEAT_METRIC_FRAUD:
+        # Calculate Tier-1 fine ranges (₹25,000 to ₹50,000). Add statutory director liability warning flags.
+        return FineEstimation(
+            min_penalty_inr=25000,
+            max_penalty_inr=50000,
+            legal_section="Section 36 & 49 (Repeat Offence / Deceptive Metric Fraud) + Corporate Director Liability Warning",
+            offence_type=offence_type
+        )
+    else:
+        # Section 36 First-Time Procedural (Rule 6(1) syntax/prefix misprints):
+        # Jan Vishwas Improvement Notice (₹0 immediate fine, 15-day rectification window).
+        return FineEstimation(
+            min_penalty_inr=0,
+            max_penalty_inr=0,
+            legal_section="Section 36 First-Time Procedural Misprint (Jan Vishwas Improvement Notice, 15-Day Grace Period)",
+            offence_type=offence_type
+        )
+
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
     audit_date = audit_date or date.today()
     penalty = None
     quantity_data = _quantity(text)
@@ -416,4 +445,5 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
 
         penalty = PenaltyEstimate(sections_violated=sections_list, estimated_fine_range=fine_range)
 
-    return rules, usp, fields, penalty
+    fine_estimation = calculate_compounding_fine([r for r in rules if r.status == RuleStatus.FAIL])
+    return rules, usp, fields, penalty, fine_estimation
