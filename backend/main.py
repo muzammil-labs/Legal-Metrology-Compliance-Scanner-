@@ -10,7 +10,8 @@ from pathlib import Path
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func
 
 try:
     from backend.models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
@@ -278,26 +279,32 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
 def analytics(db: Session = Depends(get_db)):
-    rows = db.query(Inspection).all()
-    total = len(rows)
-    compliant = sum(1 for row in rows if row.overall_status == "PASS")
-    failed = sum(1 for row in rows if row.overall_status == "FAIL")
-    warning = sum(1 for row in rows if row.overall_status == "WARNING")
+    status_counts = db.query(Inspection.overall_status, func.count(Inspection.id)).group_by(Inspection.overall_status).all()
+    total = 0
+    compliant = 0
+    failed = 0
+    warning = 0
+
+    for status, count in status_counts:
+        total += count
+        if status == "PASS":
+            compliant = count
+        elif status == "FAIL":
+            failed = count
+        elif status == "WARNING":
+            warning = count
+
     compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
 
-    by_region: dict[str, int] = {}
-    regional_non_compliance: dict[str, int] = {}
-    for row in rows:
-        by_region[row.region] = by_region.get(row.region, 0) + 1
-        if row.overall_status != "PASS":
-            regional_non_compliance[row.region] = regional_non_compliance.get(row.region, 0) + 1
-
+    region_counts = db.query(Inspection.region, func.count(Inspection.id)).group_by(Inspection.region).all()
+    by_region = {region: count for region, count in region_counts}
     active_districts = len(by_region)
 
-    violations_query = db.query(Violation).all()
-    violation_breakdown: dict[str, int] = {}
-    for v in violations_query:
-        violation_breakdown[v.rule] = violation_breakdown.get(v.rule, 0) + 1
+    regional_nc_counts = db.query(Inspection.region, func.count(Inspection.id)).filter(Inspection.overall_status != "PASS").group_by(Inspection.region).all()
+    regional_non_compliance = {region: count for region, count in regional_nc_counts}
+
+    violation_counts = db.query(Violation.rule, func.count(Violation.id)).group_by(Violation.rule).all()
+    violation_breakdown = {rule: count for rule, count in violation_counts}
 
     top_violations = [{"rule": k, "count": v} for k, v in sorted(violation_breakdown.items(), key=lambda item: item[1], reverse=True)[:5]]
 
@@ -313,7 +320,6 @@ def analytics(db: Session = Depends(get_db)):
         regional_non_compliance=regional_non_compliance,
         by_region=by_region,
         by_rule_infractions=violation_breakdown
-
     )
 
 
@@ -322,7 +328,7 @@ from io import StringIO
 
 @app.get("/api/analytics/export-csv")
 def export_csv(db: Session = Depends(get_db)):
-    rows = db.query(Inspection).all()
+    rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["inspection_id", "inspected_at", "region", "overall_status", "violation_count"])
