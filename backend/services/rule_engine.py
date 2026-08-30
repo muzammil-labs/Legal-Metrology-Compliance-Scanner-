@@ -3,7 +3,7 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 
