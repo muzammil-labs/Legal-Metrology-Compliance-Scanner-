@@ -22,15 +22,14 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
-    from services.pdf_generator import generate_section_36_notice
+
+    from services.gemini_service import extract_label_with_gemini
+    from seed import seed as seed_db
+    from services.rule_engine import audit_text, calculate_trust_score
+
     from services.gemini_service import extract_label_with_gemini
     from seed import seed as seed_db
     from schemas import (
-    from backend.services.rule_engine import audit_text, calculate_trust_score
-    from backend.services.pdf_generator import generate_section_36_notice
-    from backend.services.gemini_service import extract_label_with_gemini
-    from backend.seed import seed as seed_db
-    from backend.schemas import (
         StatutoryRule,
         AnalyticsSummary,
         AuditResponse,
@@ -429,7 +428,29 @@ def export_csv(db: Session = Depends(get_db)):
         headers={"Content-Disposition": 'attachment; filename="district_summary.csv"'}
     )
 
+
+from services.executive_reports import generate_executive_pdf_report, generate_excel_export
+
+@app.get("/api/analytics/export-executive-report")
+def export_executive_report(db: Session = Depends(get_db)):
+    pdf_bytes = generate_executive_pdf_report(db)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="executive_report.pdf"'}
+    )
+
+@app.get("/api/analytics/export-excel")
+def export_excel(db: Session = Depends(get_db)):
+    excel_bytes = generate_excel_export(db)
+    return Response(
+        content=excel_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="district_audit_logs.xlsx"'}
+    )
+
 if __name__ == "__main__":
+
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
