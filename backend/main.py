@@ -17,6 +17,11 @@ from services.auth import Role, RoleChecker, User, create_access_token
 from pydantic import BaseModel
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
+
+from services.auth import UserRole, create_access_token, require_role, verify_password, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
+from datetime import timedelta
+from pydantic import BaseModel
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
@@ -42,7 +47,9 @@ try:
     from seed import seed as seed_db
     from schemas import (
         StatutoryRule,
-        AnalyticsSummary,
+        PreAuditRequest,
+        PreAuditResponse,
+        AnalyticsSummary, PreAuditRequest, PreAuditResponse,
         AuditResponse,
         BilingualVerification,
         BatchAuditItem,
@@ -62,12 +69,14 @@ except ModuleNotFoundError:
     from seed import seed as seed_db
     from schemas import (
         StatutoryRule,
+        PreAuditRequest,
+        PreAuditResponse,
     PreAuditRequest,
     PreAuditResponse,
     FineEstimation,
     OffenceType,
 
-        AnalyticsSummary,
+        AnalyticsSummary, PreAuditRequest, PreAuditResponse,
         AuditResponse,
         BilingualVerification,
         BatchAuditItem,
@@ -126,6 +135,23 @@ def status_for(rules) -> RuleStatus:
     return RuleStatus.PASS
 
 
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    role: UserRole
+
+@app.post("/api/token")
+def login(req: LoginRequest):
+    # Dummy authentication for testing/demonstration
+    # In a real application, verify credentials against the database.
+    # Here, we accept any password but check role to generate the correct token.
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": req.username, "role": req.role.value}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -141,6 +167,7 @@ def root_status():
     }
 
 
+@app.post("/api/scan", response_model=AuditResponse, dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.CENTRAL_ADMIN]))])
 
 class LoginRequest(BaseModel):
     role: str
@@ -287,6 +314,7 @@ def scan(
     )
 
 
+@app.post("/api/scan/batch", response_model=BatchAuditResponse, dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.CENTRAL_ADMIN]))])
 import tempfile
 
 @app.post("/api/v1/batch-audit", response_model=BatchAuditResponse)
@@ -386,6 +414,8 @@ def batch_scan(
 
 
 
+@app.get("/api/inspections", response_model=list[InspectionSummary], dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
+def inspections(limit: int = 50, db: Session = Depends(get_db)):
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
 def inspections(limit: int = 50, db: Session = Depends(get_db),
@@ -407,7 +437,7 @@ def inspections(limit: int = 50, db: Session = Depends(get_db),
     ]
 
 
-@app.get("/api/inspections/{inspection_id}/export-notice")
+@app.get("/api/inspections/{inspection_id}/export-notice", dependencies=[Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
 def export_notice(inspection_id: int, notice_type: str = "COMPOUNDING", db: Session = Depends(get_db)):
     inspection = db.get(Inspection, inspection_id)
     if not inspection:
@@ -451,6 +481,8 @@ def export_notice(inspection_id: int, notice_type: str = "COMPOUNDING", db: Sess
     )
 
 
+@app.get("/api/analytics/summary", response_model=AnalyticsSummary, dependencies=[Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
+def analytics(db: Session = Depends(get_db)):
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
 def analytics(db: Session = Depends(get_db),
     user: User = Depends(RoleChecker([Role.DISTRICT_MAGISTRATE, Role.CENTRAL_ADMIN])),):
@@ -522,6 +554,8 @@ def analytics(db: Session = Depends(get_db),
 
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
 
+@app.get("/api/analytics/export-csv", dependencies=[Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))])
+def export_csv(db: Session = Depends(get_db)):
 @app.get("/api/analytics/export-csv")
 def export_csv(db: Session = Depends(get_db),
     user: User = Depends(RoleChecker([Role.DISTRICT_MAGISTRATE, Role.CENTRAL_ADMIN])),):
@@ -570,6 +604,15 @@ def export_excel(db: Session = Depends(get_db)):
         content=excel_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="district_audit_logs.xlsx"'}
+    )
+
+
+@app.post("/api/v1/pre-audit", response_model=PreAuditResponse, dependencies=[Depends(require_role([UserRole.CENTRAL_ADMIN]))])
+def pre_audit(req: PreAuditRequest):
+    return PreAuditResponse(
+        compliant=True,
+        analysis=[],
+        mandatory_fixes=[]
     )
 
 if __name__ == "__main__":

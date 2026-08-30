@@ -1,3 +1,4 @@
+import pytest
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -534,6 +535,64 @@ def test_ledger_chain_hashing():
     assert result == expected
 
 # ------------------------------------------------------------------
+# Auth and Role Middleware Tests
+# ------------------------------------------------------------------
+
+def test_jwt_token_generation():
+    from services.auth import create_access_token, UserRole
+    token = create_access_token(data={"sub": "inspector1", "role": UserRole.FIELD_INSPECTOR.value})
+    assert isinstance(token, str)
+    assert len(token) > 0
+
+    import jwt
+    from services.auth import SECRET_KEY, ALGORITHM
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    assert payload.get("sub") == "inspector1"
+    assert payload.get("role") == UserRole.FIELD_INSPECTOR.value
+
+
+def test_role_permissions():
+    import pytest
+    from fastapi.testclient import TestClient
+    from main import app
+    from services.auth import create_access_token, UserRole
+
+    client = TestClient(app)
+
+    # Test FIELD_INSPECTOR access to /api/inspections/{inspection_id}/export-notice
+    token_inspector = create_access_token(data={"sub": "inspector1", "role": UserRole.FIELD_INSPECTOR.value})
+    headers_inspector = {"Authorization": f"Bearer {token_inspector}"}
+
+    # It should return 404 because inspection 9999 doesn't exist, not 401 or 403
+    response = client.get("/api/inspections/9999/export-notice", headers=headers_inspector)
+    assert response.status_code == 404
+
+    # Test FIELD_INSPECTOR access to /api/analytics/summary (forbidden)
+    response = client.get("/api/analytics/summary", headers=headers_inspector)
+    assert response.status_code == 403
+
+    # Test DISTRICT_MAGISTRATE access to /api/analytics/summary (allowed)
+    token_magistrate = create_access_token(data={"sub": "dm1", "role": UserRole.DISTRICT_MAGISTRATE.value})
+    headers_magistrate = {"Authorization": f"Bearer {token_magistrate}"}
+
+    response = client.get("/api/analytics/summary", headers=headers_magistrate)
+    assert response.status_code == 200
+
+    # Test without token (unauthorized)
+    response = client.get("/api/analytics/summary")
+    assert response.status_code == 401
+
+    # Test pre-audit endpoint access
+    token_admin = create_access_token(data={"sub": "admin1", "role": UserRole.CENTRAL_ADMIN.value})
+    headers_admin = {"Authorization": f"Bearer {token_admin}"}
+
+    # CENTRAL_ADMIN allowed
+    response = client.post("/api/v1/pre-audit", headers=headers_admin, json={"text": "test"})
+    assert response.status_code == 200
+
+    # DISTRICT_MAGISTRATE forbidden for pre-audit
+    response = client.post("/api/v1/pre-audit", headers=headers_magistrate, json={"text": "test"})
+    assert response.status_code == 403
 # Executive Reports tests
 # ------------------------------------------------------------------
 

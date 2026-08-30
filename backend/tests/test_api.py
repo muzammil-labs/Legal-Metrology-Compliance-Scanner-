@@ -25,6 +25,12 @@ Base.metadata.create_all(bind=engine)
 # Because main.py executes init_db() and seed_db() on load, they will run against our testing engine!
 # That's perfectly fine, because it initializes the test DB with seed data.
 
+from main import app, get_db, status_for
+from services.auth import create_access_token, UserRole
+
+def get_auth_headers(role: UserRole = UserRole.CENTRAL_ADMIN):
+    token = create_access_token(data={"sub": "testuser", "role": role.value})
+    return {"Authorization": f"Bearer {token}"}
 from fastapi import Depends
 from main import app
 from services.auth import RoleChecker, User, Role
@@ -103,17 +109,18 @@ def test_status_for():
     assert status_for(rules_fail) == RuleStatus.FAIL
 
 def test_analytics_summary_empty():
-    response = client.get("/api/analytics/summary")
+    response = client.get("/api/analytics/summary", headers=get_auth_headers())
     assert response.status_code == 200
     data = response.json()
     assert data["total_inspections"] == 0
 
 def test_inspections_empty():
-    response = client.get("/api/inspections")
+    response = client.get("/api/inspections", headers=get_auth_headers())
     assert response.status_code == 200
     assert response.json() == []
 
 def test_analytics_export_csv_empty():
+    response = client.get("/api/analytics/export-csv", headers=get_auth_headers())
     response = client.get("/api/analytics/export-excel")
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
@@ -141,6 +148,11 @@ def test_scan_api(mock_extract, mock_audit):
 
     # Prepare dummy file
     response = client.post(
+            "/api/scan",
+            files=[dummy_file],
+            data={"region": "Test Region", "gps_location": "0.0, 0.0"},
+            headers=get_auth_headers()
+        )
         "/api/scan",
         files={"file": ("test_image.jpg", b"dummy image data", "image/jpeg")},
         data={"region": "Test Region", "gps_location": "0.0, 0.0"}
