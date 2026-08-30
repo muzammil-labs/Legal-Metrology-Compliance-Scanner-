@@ -10,11 +10,11 @@ import {
 } from "lucide-react";
 import { getNoticeDownloadUrl } from "../services/api";
 
-export default function NoticePreviewModal({ isOpen, onClose, audit }) {
+export default function NoticePreviewModal({ isOpen, onClose, audit, noticeType }) {
   if (!isOpen || !audit) return null;
 
   const inspectionId = audit.metadata?.inspection_id || 1;
-  const downloadUrl = getNoticeDownloadUrl(inspectionId);
+  const downloadUrl = getNoticeDownloadUrl(inspectionId, noticeType);
   const certNumber = `LM-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(inspectionId).padStart(6, "0")}`;
   const sha256 = audit.metadata?.sha256 || "0".repeat(64);
   const isFail = audit.overall_status === "FAIL";
@@ -27,7 +27,7 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
             <div className="badge-mini text-cyan">
               <ShieldCheck size={13} /> Notice Preview
             </div>
-            <h3>Section 36 Inspection Notice</h3>
+            <h3>{noticeType === "IMPROVEMENT" ? "Section 36 Improvement Notice" : "Section 36 Compounding Notice"}</h3>
             <p className="mono">
               Issued under Section 36, Legal Metrology Act, 2009
             </p>

@@ -3,9 +3,9 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -200,7 +200,31 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
             score -= 5
     return max(0, min(100, score))
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
+
+def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation | None:
+    if not violations:
+        return None
+
+    # Determine offence type based on violations
+    has_severe = any(v.rule == StatutoryRule.RULE_6_11 or v.rule == StatutoryRule.RULE_6_1_C for v in violations)
+    offence_type = OffenceType.REPEAT_METRIC_FRAUD if has_severe else OffenceType.PROCEDURAL_FIRST_TIME
+
+    if offence_type == OffenceType.REPEAT_METRIC_FRAUD:
+        return FineEstimation(
+            min_penalty_inr=50000,
+            max_penalty_inr=100000,
+            legal_section="Section 36 & 49 (Repeat Offence / Metric Fraud)",
+            offence_type=offence_type
+        )
+    else:
+        return FineEstimation(
+            min_penalty_inr=2000,
+            max_penalty_inr=10000,
+            legal_section="Section 36 (Procedural Misprint)",
+            offence_type=offence_type
+        )
+
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
     audit_date = audit_date or date.today()
     penalty = None
     quantity_data = _quantity(text)
@@ -416,4 +440,5 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
 
         penalty = PenaltyEstimate(sections_violated=sections_list, estimated_fine_range=fine_range)
 
-    return rules, usp, fields, penalty
+    fine_estimation = calculate_compounding_fine([r for r in rules if r.status == RuleStatus.FAIL])
+    return rules, usp, fields, penalty, fine_estimation

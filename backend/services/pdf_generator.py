@@ -26,7 +26,7 @@ def _generate_qr_code(data: str, size: int = 120) -> ImageReader:
     return ImageReader(img_buffer)
 
 
-def generate_section_36_notice(
+def _generate_pdf(
     inspection_id: int,
     source_filename: str,
     sha256_digest: str,
@@ -36,6 +36,8 @@ def generate_section_36_notice(
     overall_status: str,
     violations: list,
     ocr_text: str = "",
+    notice_type: str = "COMPOUNDING",
+    fine_estimation = None,
 ) -> bytes:
     """
     Generates a formal, court-admissible Inspection Notice & Compounding Demand
@@ -117,7 +119,10 @@ def generate_section_36_notice(
     # 1. Government Emblems & Header
     elements.append(Paragraph("GOVERNMENT OF INDIA • MINISTRY OF CONSUMER AFFAIRS", title_style))
     elements.append(Paragraph("DEPARTMENT OF CONSUMER AFFAIRS — LEGAL METROLOGY DIVISION", subtitle_style))
-    elements.append(Paragraph("STATUTORY INSPECTION REPORT & SECTION 36 COMPOUNDING NOTICE", ParagraphStyle('SubSub', parent=title_style, fontSize=11, leading=14, textColor=colors.HexColor('#1e293b'))))
+
+    notice_title = "STATUTORY INSPECTION REPORT & SECTION 36 COMPOUNDING NOTICE" if notice_type == "COMPOUNDING" else "SECTION 36 IMPROVEMENT NOTICE (JAN VISHWAS ACT)"
+    elements.append(Paragraph(notice_title, ParagraphStyle('SubSub', parent=title_style, fontSize=11, leading=14, textColor=colors.HexColor('#1e293b'))))
+
     elements.append(Paragraph("Issued under Section 18, 36 & 49 of The Legal Metrology Act, 2009 r/w PCR Rules, 2011", law_ref_style))
     elements.append(Spacer(1, 10))
     elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#0f172a'), spaceAfter=10))
@@ -209,6 +214,21 @@ def generate_section_36_notice(
         elements.append(Spacer(1, 12))
 
     # 5. Section 65B Evidence Act Certificate & Cryptographic Seal
+
+    if fine_estimation:
+        elements.append(Paragraph("ESTIMATED STATUTORY PENALTY", section_heading))
+        elements.append(Spacer(1, 4))
+        fine_text = f"<b>Legal Section:</b> {html.escape(fine_estimation.legal_section)}<br/><b>Fine Range:</b> INR {fine_estimation.min_penalty_inr} - INR {fine_estimation.max_penalty_inr}"
+        t_fine = Table([[Paragraph(fine_text, body_text)]], colWidths=[520])
+        t_fine.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef3c7')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#f59e0b')),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(t_fine)
+        elements.append(Spacer(1, 12))
+
     elements.append(Paragraph("EVIDENTIARY CERTIFICATE & CRYPTOGRAPHIC TAMPER-SEAL", section_heading))
     elements.append(Spacer(1, 4))
 
@@ -290,3 +310,12 @@ def generate_section_36_notice(
     return buffer.getvalue()
     doc.build(elements)
     return buffer.getvalue()
+
+
+def generate_improvement_notice_pdf(*args, **kwargs) -> bytes:
+    kwargs["notice_type"] = "IMPROVEMENT"
+    return _generate_pdf(*args, **kwargs)
+
+def generate_compounding_notice_pdf(*args, **kwargs) -> bytes:
+    kwargs["notice_type"] = "COMPOUNDING"
+    return _generate_pdf(*args, **kwargs)
