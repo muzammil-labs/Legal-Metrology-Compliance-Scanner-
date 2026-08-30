@@ -6,6 +6,7 @@ import {
   Scale,
   ShieldCheck,
   Phone,
+  Ruler,
 } from "lucide-react";
 
 // Plain-language consumer explanations for each rule failure
@@ -39,6 +40,11 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
   const passedRules = audit.rules.filter((r) => r.status === "PASS").length;
   const trustScore =
     audit.trust_score !== undefined ? audit.trust_score : failed ? 45 : 100;
+
+  const pdpRule = audit.rules.find((r) => r.rule === "Rule 5/9 (Font / PDP)");
+  const displayedRules = audit.rules.filter(
+    (r) => r.rule !== "Rule 5/9 (Font / PDP)",
+  );
 
   return (
     <div className="results-panel">
@@ -108,8 +114,51 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {pdpRule && (
+        <div className="usp-audit-card">
+          <div className="usp-header">
+            <Ruler size={16} className="text-cyan" />
+            <strong>Rule 5 PDP Font Height & Area Ratio</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>Calculated PDP Area</span>
+              <b>
+                {pdpRule.calculated_values?.pdp_area_cm2 !== undefined
+                  ? `${pdpRule.calculated_values.pdp_area_cm2} cm²`
+                  : "N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Est. Font Height</span>
+              <b>
+                {pdpRule.calculated_values?.char_height_mm !== undefined
+                  ? `${pdpRule.calculated_values.char_height_mm} mm`
+                  : "N/A"}
+              </b>
+            </div>
+            <div>
+              <span>Statutory Min</span>
+              <b
+                className={
+                  pdpRule.status === "PASS" ? "text-emerald" : "text-rose"
+                }
+              >
+                {pdpRule.calculated_values?.required_mm !== undefined
+                  ? `${pdpRule.status === "PASS" ? "✓" : "✗"} ${
+                      pdpRule.calculated_values.required_mm
+                    } mm`
+                  : pdpRule.status === "PASS"
+                    ? "✓ Compliant"
+                    : "✗ Micro-font"}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rule-list">
-        {audit.rules.map((rule) => {
+        {displayedRules.map((rule) => {
           const isPass = rule.status === "PASS";
           const plainText = !isPass ? RULE_PLAIN_TEXT[rule.rule] : null;
           const isExpandable =

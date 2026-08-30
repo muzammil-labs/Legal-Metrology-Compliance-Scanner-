@@ -116,7 +116,7 @@ export default function InspectorAnalyticsDashboard() {
             href="/api/analytics/export-csv"
             className="refresh-btn"
             download="district_audit_export.csv"
-            style={{ textDecoration: 'none', display: 'flex' }}
+            style={{ textDecoration: "none", display: "flex" }}
           >
             <FileDown size={14} /> Export CSV
           </a>
