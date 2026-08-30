@@ -27,6 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
 
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
@@ -79,6 +80,17 @@ COMMODITY_HINDI_RE = re.compile(
     r")(?:[\s,।]|$)",
     re.UNICODE,
 )
+
+ADDRESS_PART_RES = [
+    re.compile(r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b", re.I | re.UNICODE),
+    re.compile(r"\b(?:city|district|nagar|town|शहर|जिला)\b", re.I | re.UNICODE),
+    re.compile(r"\b(?:state|pradesh|maharashtra|delhi|karnataka|gujarat|tamil\s*nadu|telangana|west\s*bengal|uttar\s*pradesh|rajasthan|punjab|haryana)\b", re.I | re.UNICODE),
+]
+IMPORTED_RE = re.compile(r"imported\s+by|आयातित", re.I | re.UNICODE)
+ORIGIN_RE = re.compile(r"(?:country\s+of\s+origin|मूल\s*देश)\s*:", re.I | re.UNICODE)
+CARE_DESIGNATION_RE = re.compile(r"consumer\s+care|grievance\s+officer|उपभोक्ता\s*सेवा", re.I | re.UNICODE)
+ADDRESS_REF_RE = re.compile(r"postal|address|पता", re.I | re.UNICODE)
+PIECES_RE = re.compile(r"\b(?:pieces?|pcs|units?)\b", re.I | re.UNICODE)
 
 ADDRESS_PATTERN_1_RE = re.compile(r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b", re.I | re.UNICODE)
 ADDRESS_PATTERN_2_RE = re.compile(r"\b(?:city|district|nagar|town|शहर|जिला)\b", re.I | re.UNICODE)
@@ -205,6 +217,9 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # ------------------------------------------------------------------
     has_prefix = ENTITY_PREFIX_RE.search(text)
     has_pin = PIN_RE.search(text)
+    address_parts = sum(bool(pattern.search(text)) for pattern in ADDRESS_PART_RES)
+    imported = bool(ENTITY_PREFIX_RE.search(text) and IMPORTED_RE.search(text))
+    has_origin = bool(ORIGIN_RE.search(text))
     address_parts = sum(bool(pattern.search(text)) for pattern in ADDRESS_PATTERNS)
     imported = bool(ENTITY_PREFIX_RE.search(text) and IMPORTED_RE_INLINE.search(text))
     has_origin = bool(COUNTRY_ORIGIN_RE.search(text))
