@@ -366,6 +366,23 @@ def test_zip_batch_parsing():
     assert len(items) == 50
     assert items[0]["filename"] == "image_0.jpg"
     assert items[0]["content"] == b"fake_image_data"
+
+from services.ecommerce_parser import audit_digital_listing
+def test_digital_listing_pass():
+    text = (
+        "Country of Origin: India\n"
+        "Manufactured by Swiggy Instamart, Plot 5, New Delhi 411001\n"
+        "Net Qty 500 g\n"
+        "MRP Rs. 150 (incl. of all taxes)\n"
+        "Consumer Care: 1800 123 4567 care@swiggy.in"
+    )
+    rules = audit_digital_listing(text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_E] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_A] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_B] == RuleStatus.PASS
+    assert res[StatutoryRule.RULE_6_1_F] == RuleStatus.PASS
 def test_ledger_chain_hashing():
     prev = "abc123hash"
     ts = "2026-08-29T10:00:00"
