@@ -311,3 +311,62 @@ def test_audit_usp_missing_quantity_data():
     assert rule_result.status == RuleStatus.WARNING
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
+
+# ------------------------------------------------------------------
+# PDP Geometry & Rule 5 Font Height logic tests
+# ------------------------------------------------------------------
+from services.pdp_geometry import calculate_pdp_area, get_required_font_height
+
+def test_calculate_pdp_area():
+    assert calculate_pdp_area(10.0, 5.0) == 50.0
+    assert calculate_pdp_area(10.0, 10.0) == 100.0
+    assert calculate_pdp_area(20.0, 20.0) == 400.0
+
+def test_get_required_font_height():
+    # pdp_area_cm2 <= 50 -> 1.0mm
+    assert get_required_font_height(49.0) == 1.0
+    assert get_required_font_height(50.0) == 1.0
+
+    # pdp_area_cm2 <= 100 -> 1.5mm
+    assert get_required_font_height(51.0) == 1.5
+    assert get_required_font_height(100.0) == 1.5
+
+    # pdp_area_cm2 <= 500 -> 2.0mm
+    assert get_required_font_height(101.0) == 2.0
+    assert get_required_font_height(500.0) == 2.0
+
+    # pdp_area_cm2 > 500 -> 4.0mm (or 6.0mm for Net Qty)
+    assert get_required_font_height(501.0) == 4.0
+    assert get_required_font_height(1000.0) == 4.0
+    assert get_required_font_height(501.0, is_net_qty=True) == 6.0
+
+def test_audit_font_and_pdp_logic():
+    # Should PASS as height 1.5 is >= 1.5 required for area 60
+    rules, _, _, _ = audit_text("Net Qty 100 g", font_height_mm=1.5)
+    # The default pdp area in audit_font_and_pdp signature is 120 (requires 2.0 font height)
+    # So using audit_text directly with font height 1.5 is failing for area 120.
+
+    from services.rule_engine import audit_font_and_pdp
+
+    # test audit_font_and_pdp directly
+    # Area 50, required 1.0
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=50.0, char_height_mm=1.0)
+    assert res.status == RuleStatus.PASS
+
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=50.0, char_height_mm=0.9)
+    assert res.status == RuleStatus.FAIL
+
+    # Area 500, required 2.0
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=500.0, char_height_mm=2.0)
+    assert res.status == RuleStatus.PASS
+
+    # Area 501, required 4.0
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=501.0, char_height_mm=3.9)
+    assert res.status == RuleStatus.FAIL
+
+    # Area 501 Net Qty, required 6.0
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=501.0, char_height_mm=4.0, is_net_qty=True)
+    assert res.status == RuleStatus.FAIL
+
+    res = audit_font_and_pdp("Net Qty", pdp_area_cm2=501.0, char_height_mm=6.0, is_net_qty=True)
+    assert res.status == RuleStatus.PASS

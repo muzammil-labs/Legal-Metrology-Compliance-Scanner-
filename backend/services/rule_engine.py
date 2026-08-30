@@ -5,7 +5,8 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 try:
     from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from services.pdp_geometry import calculate_pdp_area, get_required_font_height
+from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -27,6 +28,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
@@ -166,16 +168,9 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     reason = "Declared USP matches the deterministic calculation." if within else "Declared USP has the wrong unit or differs from the calculated value by more than INR 0.01."
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
-def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
+def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> RuleResult:
     """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
-    if pdp_area_cm2 <= 50:
-        required_mm = 1.0
-    elif pdp_area_cm2 <= 100:
-        required_mm = 1.5
-    elif pdp_area_cm2 <= 500:
-        required_mm = 2.5
-    else:
-        required_mm = 4.0
+    required_mm = get_required_font_height(pdp_area_cm2, is_net_qty)
 
     is_compliant = char_height_mm >= required_mm
     return result(
