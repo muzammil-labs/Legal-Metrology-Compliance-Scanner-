@@ -87,6 +87,41 @@ class PenaltyEstimate(BaseModel):
     sections_violated: list[str]
     estimated_fine_range: str
 
+
+class BilingualVerification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    english_mrp: float | None = None
+    hindi_mrp: float | None = None
+    english_qty: str | None = None
+    hindi_qty: str | None = None
+    hindi_taxes_included: bool | None = None
+    mrp_match: bool | None = None
+    qty_match: bool | None = None
+class OffenceType(str, Enum):
+    PROCEDURAL_FIRST_TIME = "PROCEDURAL_FIRST_TIME"
+    REPEAT_METRIC_FRAUD = "REPEAT_METRIC_FRAUD"
+
+
+class FineEstimation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    min_penalty_inr: int
+    max_penalty_inr: int
+    legal_section: str
+    offence_type: OffenceType
+
+
+class PreAuditRequest(BaseModel):
+    text: str | None = None
+    json_artwork: dict | None = None
+
+
+class PreAuditResponse(BaseModel):
+    compliant: bool
+    fine_risk: FineEstimation | None = None
+    analysis: list[RuleResult]
+    mandatory_fixes: list[str] = Field(default_factory=list)
+
+
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     metadata: InspectionMetadata
@@ -95,6 +130,7 @@ class AuditResponse(BaseModel):
     overall_status: RuleStatus
     trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
+    bilingual_verification: BilingualVerification | None = None
     penalty: PenaltyEstimate | None = None
     ocr_text: str
 

@@ -2,7 +2,9 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
+from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
 from services.pdf_generator import generate_section_36_notice
+from services.evidence_ledger import compute_ledger_hash
 from schemas import RuleStatus, StatutoryRule
 
 VALID = """Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001
@@ -16,7 +18,7 @@ VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune,
 मूल देश: India 50/kg"""
 
 def statuses(text, audit_dt=date(2026, 8, 23), **kwargs):
-    rules, usp, fields, penalty = audit_text(text, audit_dt, **kwargs)
+    rules, usp, fields, penalty, fine = audit_text(text, audit_dt, **kwargs)
     return {rule.rule: rule.status for rule in rules}, usp, rules
 
 
@@ -72,7 +74,7 @@ def test_missing_consumer_care_fails_rule_6_1_f():
 
 
 def test_pdf_notice_generation():
-    pdf_bytes = generate_section_36_notice(
+    pdf_bytes = generate_compounding_notice_pdf(
         inspection_id=42,
         source_filename="test_packet.jpg",
         sha256_digest="a" * 64,
@@ -157,46 +159,71 @@ def test_trust_score_decremented_per_violation():
 
 def test_rule5_font_height_valid():
     text = "Net Qty 100 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=2.0)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=2.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.PASS
 
 
 def test_rule5_font_height_invalid_small():
     text = "Net Qty 100 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=1.5)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=1.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_medium():
     text = "Net Qty 300 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=3.5)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=3.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_large():
     text = "Net Qty 600 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=5.0)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=5.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
+
+def test_bilingual_exact_match():
+    english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
+    hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
+    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
-    rules, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.PASS
 
+def test_bilingual_mrp_mismatch():
+    english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
+    hindi_text = "शुद्ध मात्रा 500 g अधिकतम खुदरा मूल्य ₹200 सभी करों सहित"
+    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
+def test_bilingual_qty_mismatch():
+    english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
+    hindi_text = "शुद्ध मात्रा 400 g अधिकतम खुदरा मूल्य ₹250 सभी करों सहित"
+    rules, _, _, _ = audit_text(english_text, hindi_text=hindi_text)
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
-    rules, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
+
+def test_bilingual_no_hindi():
+    english_text = "Net Qty 500 g MRP Rs. 250 (incl. of all taxes)"
+    rules, _, _, _ = audit_text(english_text)
+    res = {r.rule: r for r in rules}
+    # If hindi_text is None, BILINGUAL shouldn't be evaluated, or shouldn't fail.
+    # Currently it might not be in rules if hindi_text is None
+    assert StatutoryRule.BILINGUAL not in res
+
+
 
 
 def test_invalid_units_rejected():
@@ -354,3 +381,16 @@ def test_excel_export_generation():
     assert "inspection_id" in csv_str
     assert "test.jpg" in csv_str
     assert "Delhi" in csv_str
+def test_ledger_chain_hashing():
+    prev = "abc123hash"
+    ts = "2026-08-29T10:00:00"
+    img_hash = "def456hash"
+    gps = "28.7180° N, 77.1750° E"
+    summary = "Rule 6(1)(e): FAIL"
+
+    result = compute_ledger_hash(prev, ts, img_hash, gps, summary)
+
+    import hashlib
+    expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
+
+    assert result == expected
