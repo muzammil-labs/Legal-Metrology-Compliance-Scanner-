@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session, joinedload
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
+    from services.pdf_generator import generate_compounding_notice_pdf, generate_improvement_notice_pdf
     from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
     from services.gemini_service import extract_label_with_gemini
     from services.batch_processor import process_batch
@@ -214,40 +215,50 @@ def scan(
                 bounding_box=bbox,
             ))
 
-    inspection = Inspection(
-        source_filename=file.filename or "upload.jpg",
-        sha256=digest,
-        region=region,
-        gps_location=gps_location,
-        trust_score=trust_score,
-        overall_status=overall.value,
-        ocr_text=ocr_text,
-    )
-    db.add(inspection)
-    db.flush()
+    # Create local instances so we can pass data to background task
+    inspection_data = {
+        "source_filename": file.filename or "upload.jpg",
+        "sha256": digest,
+        "region": region,
+        "gps_location": gps_location,
+        "trust_score": trust_score,
+        "overall_status": overall.value,
+        "ocr_text": ocr_text,
+    }
 
-    for rule in rules:
-        if rule.status != RuleStatus.PASS:
-            db.add(Violation(
-                inspection_id=inspection.id,
-                rule=rule.rule.value,
-                status=rule.status.value,
-                reason=rule.reason,
+    def save_inspection_bg(data, rules_list):
+        db_bg = SessionLocal()
+        try:
+            insp = Inspection(**data)
+            db_bg.add(insp)
+            db_bg.flush()
+
+            for rule in rules_list:
+                if rule.status != RuleStatus.PASS:
+                    db_bg.add(Violation(
+                        inspection_id=insp.id,
+                        rule=rule.rule.value,
+                        status=rule.status.value,
+                        reason=rule.reason,
+                    ))
+
+            cert_no = f"LM-{insp.inspected_at.strftime('%Y%m%d')}-{insp.id:06d}"
+            db_bg.add(AuditCertificate(
+                inspection_id=insp.id,
+                certificate_number=cert_no,
+                sha256_seal=sha256(f"DOCA_{cert_no}_{data['sha256']}".encode()).hexdigest(),
             ))
+            db_bg.commit()
+        finally:
+            db_bg.close()
 
-    cert_no = f"LM-{inspection.inspected_at.strftime('%Y%m%d')}-{inspection.id:06d}"
-    db.add(AuditCertificate(
-        inspection_id=inspection.id,
-        certificate_number=cert_no,
-        sha256_seal=sha256(f"DOCA_{cert_no}_{digest}".encode()).hexdigest(),
-    ))
-    db.commit()
+    background_tasks.add_task(save_inspection_bg, inspection_data, rules)
 
     metadata = InspectionMetadata(
-        inspection_id=inspection.id,
-        inspected_at=inspection.inspected_at,
+        inspection_id=0, # id will be assigned in bg task
+        inspected_at=datetime.utcnow(),
         audit_date=date.today(),
-        source_filename=inspection.source_filename,
+        source_filename=inspection_data["source_filename"],
         sha256=digest,
         region=region,
         gps_location=gps_location,
