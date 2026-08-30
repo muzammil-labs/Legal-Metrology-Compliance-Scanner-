@@ -20,12 +20,12 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm import Session, joinedload
 
 try:
-    from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
-    from services.rule_engine import audit_text, calculate_trust_score
-    from services.pdf_generator import generate_section_36_notice
-    from services.gemini_service import extract_label_with_gemini
-    from seed import seed as seed_db
-    from schemas import (
+    from backend.models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
+    from backend.services.rule_engine import audit_text, calculate_trust_score
+    from backend.services.pdf_generator import generate_section_36_notice
+    from backend.services.gemini_service import extract_label_with_gemini
+    from backend.seed import seed as seed_db
+    from backend.schemas import (
         AnalyticsSummary,
         AuditResponse,
         BatchAuditItem,

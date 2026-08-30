@@ -57,7 +57,7 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
           {/* Header Section */}
           <div className="flex justify-between items-start border-b border-slate-800 pb-6">
             <div>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-wider mb-4 transition-all ${isFail ? (isSevere ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(225,29,72,0.2)]' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]') : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]'}`}>
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-wider mb-4 transition-all ${isFail ? (isSevere ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(225,29,72,0.2)]' : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(217,119,6,0.15)]') : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]'}`}>
                 {isFail ? (
                    isSevere ? (
                      <>
