@@ -1,16 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   X,
   FileDown,
   ShieldCheck,
   MapPin,
   Hash,
-  CheckCircle2,
   AlertTriangle,
+  Lock
 } from "lucide-react";
 import { getNoticeDownloadUrl } from "../services/api";
 
 export default function NoticePreviewModal({ isOpen, onClose, audit }) {
+  // Support escape key to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !audit) return null;
 
   const inspectionId = audit.metadata?.inspection_id || 1;
@@ -19,21 +30,38 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
   const sha256 = audit.metadata?.sha256 || "0".repeat(64);
   const isFail = audit.overall_status === "FAIL";
 
+  // Logic for dual notice badges based on severity/violation count
+  const violationCount = audit.rules?.filter(r => r.status === "FAIL").length || 0;
+  const isSevere = violationCount >= 2;
+
+  const copyHashToClipboard = () => {
+    navigator.clipboard.writeText(sha256);
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div
+      className={`fixed inset-0 z-50 overflow-hidden bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 flex justify-end ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      onClick={onClose}
+    >
+      <div
+        className={`relative w-full max-w-md h-full bg-zinc-900/95 border-l border-zinc-800 p-6 flex flex-col gap-6 shadow-[-4px_0_24px_rgba(0,0,0,0.1)] transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{ color: "#f4f4f5" }}
+      >
+        <div className="flex justify-between items-start border-b border-zinc-800 pb-4">
           <div>
-            <div className="badge-mini text-cyan">
-              <ShieldCheck size={13} /> Notice Preview
+            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] font-semibold uppercase tracking-wider mb-3 ${isFail ? (isSevere ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_12px_rgba(244,63,94,0.15)]' : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.15)]') : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}`}>
+              {isFail ? (
+                 isSevere ? <><AlertTriangle size={13} /> [COMPOUNDING PENALTY DEMAND NOTICE]</> : <><ShieldCheck size={13} /> [IMPROVEMENT NOTICE — 15-DAY GRACE WINDOW]</>
+              ) : (
+                <><ShieldCheck size={13} /> COMPLIANT NOTICE</>
+              )}
             </div>
-            <h3>Section 36 Inspection Notice</h3>
-            <p className="mono">
-              Issued under Section 36, Legal Metrology Act, 2009
-            </p>
+            <h3 className="m-0 text-xl font-semibold text-zinc-100">Section 36 Inspection Notice</h3>
+            <p className="m-0 text-[13px] text-zinc-400 font-mono mt-1">Issued under Section 36, Legal Metrology Act, 2009</p>
           </div>
           <button
-            className="close-btn"
+            className="bg-transparent border-0 text-zinc-400 cursor-pointer p-2 rounded-md hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
             onClick={onClose}
             aria-label="Close modal"
           >
@@ -41,89 +69,60 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
           </button>
         </div>
 
-        <div className="modal-metadata-strip">
-          <div className="meta-block">
-            <span>
+        {/* Cryptographic Hash Banner */}
+        <div className="bg-emerald-950/30 border border-emerald-900/50 p-4 rounded-lg flex flex-col gap-2 relative">
+           <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+              <Lock size={14} /> SHA-256 Digital Signature Hash (Sec 65B)
+           </div>
+           <code className="text-[11px] text-emerald-200/80 break-all font-mono">
+             {sha256}
+           </code>
+           <button
+              onClick={copyHashToClipboard}
+              className="absolute top-3 right-3 bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-white px-2 py-1 rounded text-[10px] font-mono cursor-pointer transition-colors"
+            >
+              COPY
+           </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 bg-zinc-950/50 p-4 border border-zinc-800 rounded-lg">
+          <div className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
               <Hash size={12} /> Dossier ID
             </span>
-            <strong>{certNumber}</strong>
+            <strong className="text-[13px] font-mono text-zinc-200">{certNumber}</strong>
           </div>
-          <div className="meta-block">
-            <span>
+          <div className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
               <MapPin size={12} /> Jurisdiction GPS
             </span>
-            <strong>
+            <strong className="text-[13px] text-zinc-200">
               {audit.metadata?.gps_location || "28.6139° N, 77.2090° E"}
             </strong>
           </div>
-          <div className="meta-block">
-            <span>Finding Status</span>
-            <strong className={isFail ? "text-rose" : "text-emerald"}>
-              {audit.overall_status}
-            </strong>
-          </div>
         </div>
 
-        <div className="modal-hash-banner">
-          <small className="mono">
-            SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):
-          </small>
-          <code className="mono">{sha256}</code>
+        <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden min-h-[300px] relative">
+          <iframe
+            src={downloadUrl}
+            title="Notice PDF Preview"
+            className="w-full h-full border-0 absolute inset-0"
+          />
         </div>
 
-        <div className="notice-document-preview">
-          <div className="doc-header">
-            <h4>GOVERNMENT OF INDIA • MINISTRY OF CONSUMER AFFAIRS</h4>
-            <h5>DEPARTMENT OF CONSUMER AFFAIRS — LEGAL METROLOGY DIVISION</h5>
-            <p>COMPOUNDING NOTICE UNDER SECTION 18 / 36 / 49 OF LMA, 2009</p>
-          </div>
-
-          <div className="doc-body">
-            <p>
-              <b>Subject:</b> Statutory Inspection of Packaged Commodity Label (
-              {audit.metadata?.source_filename || "label_sample.jpg"})
-            </p>
-            <p>
-              This inspection was conducted using automated computer vision
-              tokenization and deterministic rule validation. The following
-              itemized statutory determinations were recorded:
-            </p>
-
-            <table className="doc-table">
-              <thead>
-                <tr>
-                  <th>Rule Clause</th>
-                  <th>Finding</th>
-                  <th>Statutory Mandate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {audit.rules?.map((r) => (
-                  <tr key={r.rule}>
-                    <td>
-                      <b>{r.rule}</b>
-                    </td>
-                    <td
-                      className={
-                        r.status === "PASS" ? "text-emerald" : "text-rose"
-                      }
-                    >
-                      <b>{r.status}</b>
-                    </td>
-                    <td>{r.reason}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <button className="secondary-btn" onClick={onClose}>
-            Close Preview
+        <div className="flex gap-4 mt-auto pt-4 border-t border-zinc-800">
+          <button
+            className="flex-1 bg-transparent border border-zinc-700 text-zinc-300 py-3 px-4 rounded-lg font-medium text-[13px] cursor-pointer hover:bg-zinc-800 transition-colors min-h-[48px] active:scale-[0.98]"
+            onClick={onClose}
+          >
+            Close Drawer
           </button>
-          <a href={downloadUrl} className="primary-download-btn" download>
-            <FileDown size={16} /> Download Notice PDF
+          <a
+            href={downloadUrl}
+            className="flex-[2] flex items-center justify-center gap-2 bg-cyan-600 text-white py-3 px-4 rounded-lg font-semibold text-[13px] no-underline cursor-pointer hover:bg-cyan-500 transition-colors min-h-[48px] active:scale-[0.98]"
+            download
+          >
+            <FileDown size={16} /> Download Court-Admissible Notice (PDF)
           </a>
         </div>
       </div>

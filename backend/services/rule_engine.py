@@ -3,7 +3,7 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 
@@ -27,7 +27,6 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
