@@ -1,15 +1,23 @@
-import React from 'react';
-import { X, FileDown, ShieldCheck, MapPin, Hash, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { getNoticeDownloadUrl } from '../services/api';
+import React from "react";
+import {
+  X,
+  FileDown,
+  ShieldCheck,
+  MapPin,
+  Hash,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-react";
+import { getNoticeDownloadUrl } from "../services/api";
 
 export default function NoticePreviewModal({ isOpen, onClose, audit }) {
   if (!isOpen || !audit) return null;
 
   const inspectionId = audit.metadata?.inspection_id || 1;
   const downloadUrl = getNoticeDownloadUrl(inspectionId);
-  const certNumber = `LM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(inspectionId).padStart(6, '0')}`;
-  const sha256 = audit.metadata?.sha256 || '0'.repeat(64);
-  const isFail = audit.overall_status === 'FAIL';
+  const certNumber = `LM-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(inspectionId).padStart(6, "0")}`;
+  const sha256 = audit.metadata?.sha256 || "0".repeat(64);
+  const isFail = audit.overall_status === "FAIL";
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -20,32 +28,46 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
               <ShieldCheck size={13} /> Notice Preview
             </div>
             <h3>Section 36 Inspection Notice</h3>
-            <p className="mono">Issued under Section 36, Legal Metrology Act, 2009</p>
+            <p className="mono">
+              Issued under Section 36, Legal Metrology Act, 2009
+            </p>
           </div>
-          <button className="close-btn" onClick={onClose} aria-label="Close modal">
+          <button
+            className="close-btn"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="modal-metadata-strip">
           <div className="meta-block">
-            <span><Hash size={12} /> Dossier ID</span>
+            <span>
+              <Hash size={12} /> Dossier ID
+            </span>
             <strong>{certNumber}</strong>
           </div>
           <div className="meta-block">
-            <span><MapPin size={12} /> Jurisdiction GPS</span>
-            <strong>{audit.metadata?.gps_location || '28.6139° N, 77.2090° E'}</strong>
+            <span>
+              <MapPin size={12} /> Jurisdiction GPS
+            </span>
+            <strong>
+              {audit.metadata?.gps_location || "28.6139° N, 77.2090° E"}
+            </strong>
           </div>
           <div className="meta-block">
             <span>Finding Status</span>
-            <strong className={isFail ? 'text-rose' : 'text-emerald'}>
+            <strong className={isFail ? "text-rose" : "text-emerald"}>
               {audit.overall_status}
             </strong>
           </div>
         </div>
 
         <div className="modal-hash-banner">
-          <small className="mono">SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):</small>
+          <small className="mono">
+            SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):
+          </small>
           <code className="mono">{sha256}</code>
         </div>
 
@@ -57,8 +79,15 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
           </div>
 
           <div className="doc-body">
-            <p><b>Subject:</b> Statutory Inspection of Packaged Commodity Label ({audit.metadata?.source_filename || 'label_sample.jpg'})</p>
-            <p>This inspection was conducted using automated computer vision tokenization and deterministic rule validation. The following itemized statutory determinations were recorded:</p>
+            <p>
+              <b>Subject:</b> Statutory Inspection of Packaged Commodity Label (
+              {audit.metadata?.source_filename || "label_sample.jpg"})
+            </p>
+            <p>
+              This inspection was conducted using automated computer vision
+              tokenization and deterministic rule validation. The following
+              itemized statutory determinations were recorded:
+            </p>
 
             <table className="doc-table">
               <thead>
@@ -71,8 +100,16 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
               <tbody>
                 {audit.rules?.map((r) => (
                   <tr key={r.rule}>
-                    <td><b>{r.rule}</b></td>
-                    <td className={r.status === 'PASS' ? 'text-emerald' : 'text-rose'}><b>{r.status}</b></td>
+                    <td>
+                      <b>{r.rule}</b>
+                    </td>
+                    <td
+                      className={
+                        r.status === "PASS" ? "text-emerald" : "text-rose"
+                      }
+                    >
+                      <b>{r.status}</b>
+                    </td>
                     <td>{r.reason}</td>
                   </tr>
                 ))}
