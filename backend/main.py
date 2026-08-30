@@ -242,6 +242,8 @@ def scan(
             ocr_text = gemini_res["ocr_text"]
 
     rules, usp, fields, penalty, fine_estimation, fssai_verification = audit_text(ocr_text, audit_date=date.today(), json_artwork=gemini_res)
+    rules, usp, fields, penalty, fssai_verification = audit_text(ocr_text, date.today())
+    rules, usp, fields, penalty, fine_estimation = audit_text(ocr_text, audit_date=date.today())
     overall = status_for(rules)
     trust_score = calculate_trust_score(rules)
 
@@ -327,6 +329,7 @@ def scan(
         bilingual_verification=bilingual_verification,
         fssai_verification=fssai_verification,
         penalty=penalty,
+        fssai_verification=fssai_verification,
         ocr_text=ocr_text,
     )
 
@@ -403,6 +406,8 @@ def batch_scan(
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
         rules, _, _, penalty, fine_estimation, _ = audit_text(mock_text, audit_date=date.today())
+        rules, _, _, _, _ = audit_text(mock_text, date.today())
+        rules, _, _, penalty, fine_estimation = audit_text(mock_text, audit_date=date.today())
         status = status_for(rules)
         score = calculate_trust_score(rules)
         v_count = sum(1 for r in rules if r.status != RuleStatus.PASS)

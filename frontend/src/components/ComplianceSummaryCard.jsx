@@ -154,6 +154,17 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
             </div>
             <div>
               <span>License Format Status</span>
+        <div
+          className="usp-audit-card fssai-audit-card"
+          style={{ marginTop: "16px" }}
+        >
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-emerald" />
+            <strong>FSSAI & Food Safety Regulation</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>14-Digit FSSAI License No.</span>
               <b
                 className={
                   audit.fssai_verification.is_valid_format
@@ -164,6 +175,9 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                 {audit.fssai_verification.is_valid_format
                   ? "✓ Valid 14-Digit Format"
                   : "✗ Invalid / Missing"}
+                {audit.fssai_verification.fssai_license_number
+                  ? audit.fssai_verification.fssai_license_number
+                  : "Invalid/Missing"}
               </b>
             </div>
             <div>
@@ -198,6 +212,16 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+                  ? `✓ Detected`
+                  : "✗ Missing"}
+              </b>
+            </div>
+            <div>
+              <span>SI Metric Unit Compliance</span>
+              <b
+                className={
+                  audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                  "PASS"
       {audit.bilingual_verification && (
         <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
           <div className="usp-header">
@@ -239,6 +263,10 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                     : "text-rose"
                 }
               >
+                {audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                "PASS"
+                  ? "✓ Verified"
+                  : "✗ Non-compliant"}
                 {audit.bilingual_verification.mrp_match !== false &&
                 audit.bilingual_verification.qty_match !== false
                   ? "✓ Consistent"

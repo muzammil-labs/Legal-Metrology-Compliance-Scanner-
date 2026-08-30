@@ -23,6 +23,8 @@ VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune,
 
 def statuses(text, audit_dt=date(2026, 8, 23), **kwargs):
     rules, usp, fields, penalty, fine, _ = audit_text(text, audit_dt, **kwargs)
+    rules, usp, fields, penalty, fssai_verification = audit_text(text, audit_dt, **kwargs)
+    rules, usp, fields, penalty, fine = audit_text(text, audit_dt, **kwargs)
     return {rule.rule: rule.status for rule in rules}, usp, rules
 
 
@@ -347,6 +349,42 @@ def test_audit_usp_missing_quantity_data():
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
 
+def test_fssai_license_regex():
+    # Valid 14 digits
+    text = "FSSAI Lic. No. 10014011000123"
+    rules, _, _, _, fssai_verification = audit_text(text)
+    assert fssai_verification.fssai_license_number == "10014011000123"
+    assert fssai_verification.is_valid_format is True
+
+    # Invalid 12 digits
+    text_invalid = "FSSAI 100140110001"
+    rules, _, _, _, fssai_verification = audit_text(text_invalid)
+    assert fssai_verification.fssai_license_number is None
+    assert fssai_verification.is_valid_format is False
+
+def test_veg_symbol_detection():
+    text = "Contains green circle in square"
+    rules, _, _, _, fssai_verification = audit_text(text)
+    assert fssai_verification.veg_nonveg_symbol is not None
+
+def test_fssai_category_requires_si_units():
+    # Food category triggers strict SI unit checks
+    text_non_strict = VALID.replace("2 kg", "2 gm") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_non_strict)
+    assert "Food Category" in fssai_verification.category_claims
+
+    text_strict_fail = VALID.replace("2 kg", "2 N") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_strict_fail)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.FAIL
+    fail_reason = next(r.reason for r in rules if r.rule == StatutoryRule.RULE_6_1_C)
+    assert "Food category detected, but Net Quantity uses non-strict SI unit: 'n'" in fail_reason
+
+    # Valid strict SI
+    text_strict_pass = VALID.replace("2 kg", "2 kg") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_strict_pass)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
 from schemas import AnalyticsSummary, ViolationCount
 from datetime import datetime
