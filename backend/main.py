@@ -3,7 +3,7 @@ load_dotenv()
 
 import json
 import uuid
-from datetime import date, datetime
+from datetime import date
 from hashlib import sha256
 from pathlib import Path
 
