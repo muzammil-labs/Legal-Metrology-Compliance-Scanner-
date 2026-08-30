@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
 from services.evidence_ledger import compute_ledger_hash
 from schemas import RuleStatus, StatutoryRule
@@ -531,3 +532,77 @@ def test_ledger_chain_hashing():
     expected = hashlib.sha256(f"{prev}{ts}{img_hash}{gps}{summary}".encode("utf-8")).hexdigest()
 
     assert result == expected
+
+# ------------------------------------------------------------------
+# Executive Reports tests
+# ------------------------------------------------------------------
+
+from services.executive_reports import generate_executive_pdf_report, generate_excel_export
+from models import Inspection, Violation
+from schemas import RuleStatus
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+def test_generate_executive_pdf_report():
+    engine = create_engine("sqlite:///:memory:")
+    from models import Base
+    Base.metadata.create_all(bind=engine)
+    TestingSession = sessionmaker(bind=engine)
+    db = TestingSession()
+
+    # Add dummy data
+    insp1 = Inspection(
+        source_filename="test_brand_A.jpg",
+        sha256="abc1",
+        region="Test Region",
+        overall_status=RuleStatus.PASS
+    )
+    insp2 = Inspection(
+        source_filename="test_brand_B.jpg",
+        sha256="abc2",
+        region="Test Region",
+        overall_status=RuleStatus.FAIL
+    )
+    db.add_all([insp1, insp2])
+    db.flush()
+
+    v1 = Violation(
+        inspection_id=insp2.id,
+        rule=StatutoryRule.RULE_6_1_A,
+        status=RuleStatus.FAIL,
+        reason="Missing"
+    )
+    db.add(v1)
+    db.commit()
+
+    pdf_bytes = generate_executive_pdf_report(db)
+
+    # Assert valid PDF output
+    assert pdf_bytes is not None
+    assert pdf_bytes.startswith(b"%PDF-")
+
+    db.close()
+
+def test_generate_excel_export():
+    engine = create_engine("sqlite:///:memory:")
+    from models import Base
+    Base.metadata.create_all(bind=engine)
+    TestingSession = sessionmaker(bind=engine)
+    db = TestingSession()
+
+    insp1 = Inspection(
+        source_filename="test_brand_A.jpg",
+        sha256="abc1",
+        region="Test Region",
+        overall_status=RuleStatus.PASS
+    )
+    db.add(insp1)
+    db.commit()
+
+    excel_bytes = generate_excel_export(db)
+
+    # Assert valid zip/xlsx signature (starts with PK)
+    assert excel_bytes is not None
+    assert excel_bytes.startswith(b"PK")
+
+    db.close()

@@ -115,6 +115,8 @@ export default function InspectorAnalyticsDashboard() {
           <a
             href="/api/analytics/export-executive-report"
             className="refresh-btn"
+            download="district_audit_export.csv"
+            style={{ textDecoration: "none", display: "flex" }}
             download="executive_report.pdf"
             style={{ textDecoration: 'none', display: 'flex' }}
           >
@@ -127,6 +129,28 @@ export default function InspectorAnalyticsDashboard() {
             style={{ textDecoration: "none", display: "flex" }}
           >
             <FileDown size={14} /> Export Excel Data
+          </a>
+          <a
+            href="/api/analytics/export-excel"
+            className="refresh-btn"
+            download="district_audit_logs.xlsx"
+            style={{ textDecoration: "none", display: "flex" }}
+          >
+            <FileDown size={14} /> Export Excel Data
+          </a>
+          <a
+            href="/api/analytics/export-executive-report"
+            className="refresh-btn"
+            download="executive_report.pdf"
+            style={{
+              textDecoration: "none",
+              display: "flex",
+              background: "#3b82f6",
+              borderColor: "#2563eb",
+              color: "white",
+            }}
+          >
+            <FileDown size={14} /> Export Executive PDF Report
           </a>
         </div>
       </div>
@@ -162,6 +186,53 @@ export default function InspectorAnalyticsDashboard() {
 
       {/* Heatmap & Infraction Breakdown Grid */}
       <div className="dash-charts-grid">
+        <div className="chart-panel">
+          <div className="panel-head">
+            <span>
+              <MapPin size={15} /> Top Non-Compliant Brands
+            </span>
+            <span className="mono">District Watchlist</span>
+          </div>
+          <div className="region-list">
+            <div className="region-item">
+              <div className="region-name">
+                <b>Acme Foods Corp</b>
+                <span>12 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "80%" }}
+                />
+              </div>
+            </div>
+            <div className="region-item">
+              <div className="region-name">
+                <b>Global FMCG Ltd</b>
+                <span>8 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "55%" }}
+                />
+              </div>
+            </div>
+            <div className="region-item">
+              <div className="region-name">
+                <b>Sunrise Snacks</b>
+                <span>5 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "35%" }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="chart-panel">
           <div className="panel-head">
             <span>
