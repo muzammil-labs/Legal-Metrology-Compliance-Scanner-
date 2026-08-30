@@ -232,7 +232,7 @@ def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation |
             offence_type=offence_type
         )
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, is_food_product: bool = False, veg_symbol_present: bool = False, json_artwork: dict | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None, None]:
     audit_date = audit_date or date.today()
     penalty = None
     quantity_data = _quantity(text)
