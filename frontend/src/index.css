@@ -1509,6 +1509,20 @@ h1 {
   transform: scale(0.95);
 }
 
+
+.preset-btn {
+  min-height: 48px;
+  border-radius: 4px;
+  border: none;
+  padding: 4px 10px;
+  font-size: 11px;
+  background: #3f3f46;
+  color: #e4e4e7;
+  transition: transform 0.1s;
+  cursor: pointer;
+}
+.preset-btn:active {
+  transform: scale(0.95);
 /* Additional styles for BatchAuditModal */
 .batch-modal {
   max-width: 700px;

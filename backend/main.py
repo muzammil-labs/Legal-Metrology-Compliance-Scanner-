@@ -89,6 +89,9 @@ except ModuleNotFoundError:
         StatutoryRule,
         PreAuditRequest,
         PreAuditResponse,
+        FineEstimation,
+        OffenceType,
+        AnalyticsSummary,
     PreAuditRequest,
     PreAuditResponse,
     FineEstimation,
@@ -106,6 +109,8 @@ except ModuleNotFoundError:
         InspectionSummary,
         RuleStatus,
     )
+except ModuleNotFoundError:
+    pass
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
 from routers.b2b_saas import router as b2b_saas_router
