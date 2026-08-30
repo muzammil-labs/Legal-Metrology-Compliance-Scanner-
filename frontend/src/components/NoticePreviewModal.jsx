@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   X,
   FileDown,
@@ -19,20 +19,32 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
   const sha256 = audit.metadata?.sha256 || "0".repeat(64);
   const isFail = audit.overall_status === "FAIL";
 
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} role="presentation" tabIndex="-1">
+      <div className="modal-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="modal-header">
           <div>
             <div className={`badge-mini ${isFail ? 'text-rose border-rose-200 bg-rose-50' : 'text-emerald border-emerald-200 bg-emerald-50'} mb-2 inline-flex items-center gap-1 px-2 py-1 rounded`}>
               <ShieldCheck size={13} /> {isFail ? "Compounding Penalty Demand Notice" : "Section 36 Improvement Notice (15-Day Grace)"}
             </div>
-            <h3>Section 36 Inspection Notice</h3>
+            <h3 id="modal-title">Section 36 Inspection Notice</h3>
             <p className="mono">
               Issued under Section 36, Legal Metrology Act, 2009
             </p>
           </div>
           <button
+            type="button"
             className="close-btn"
             onClick={onClose}
             aria-label="Close modal"
@@ -119,7 +131,7 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
         </div>
 
         <div className="modal-footer">
-          <button className="secondary-btn" onClick={onClose}>
+          <button type="button" className="secondary-btn" onClick={onClose}>
             Close Preview
           </button>
           <a href={downloadUrl} className="primary-download-btn active:scale-95 transition-all duration-200" download>
