@@ -2,10 +2,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import json
+import os
 import uuid
 from datetime import date, datetime
 from hashlib import sha256
-from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,7 +48,18 @@ except ModuleNotFoundError:
     )
 
 app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Read allowed origins from environment variable, fallback to common dev ports
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
+origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 init_db()
 seed_db()
 
@@ -97,7 +108,7 @@ def root_status():
 
 
 @app.post("/api/scan", response_model=AuditResponse)
-async def scan(
+def scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     ocr_text: str = Form(default=""),
@@ -105,7 +116,7 @@ async def scan(
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
 ):
-    content = await file.read()
+    content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     digest = sha256(content).hexdigest()
@@ -189,7 +200,7 @@ async def scan(
 
 
 @app.post("/api/scan/batch", response_model=BatchAuditResponse)
-async def batch_scan(
+def batch_scan(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
@@ -198,7 +209,7 @@ async def batch_scan(
     passed_count = 0
 
     for idx, f in enumerate(files):
-        content = await f.read()
+        content = f.file.read()
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
@@ -280,18 +291,26 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 def analytics(db: Session = Depends(get_db)):
     rows = db.query(Inspection).all()
     total = len(rows)
-    compliant = sum(1 for row in rows if row.overall_status == "PASS")
-    failed = sum(1 for row in rows if row.overall_status == "FAIL")
-    warning = sum(1 for row in rows if row.overall_status == "WARNING")
-    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
 
+    compliant = 0
+    failed = 0
+    warning = 0
     by_region: dict[str, int] = {}
     regional_non_compliance: dict[str, int] = {}
+
     for row in rows:
+        if row.overall_status == "PASS":
+            compliant += 1
+        elif row.overall_status == "FAIL":
+            failed += 1
+        elif row.overall_status == "WARNING":
+            warning += 1
+
         by_region[row.region] = by_region.get(row.region, 0) + 1
         if row.overall_status != "PASS":
             regional_non_compliance[row.region] = regional_non_compliance.get(row.region, 0) + 1
 
+    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
     active_districts = len(by_region)
 
     violations_query = db.query(Violation).all()
