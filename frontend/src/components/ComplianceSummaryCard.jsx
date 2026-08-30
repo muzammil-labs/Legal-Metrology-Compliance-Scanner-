@@ -70,6 +70,38 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       </div>
 
+
+
+      {(() => {
+        const rule5 = audit.rules.find(r => r.rule === "Rule 5 PDP Font Height & Area Ratio" || r.rule === "Rule 5 PDP" || r.rule.includes("Rule 5"));
+        if (!rule5 || !rule5.calculated_values || rule5.calculated_values.pdp_area_cm2 === undefined) return null;
+        const vals = rule5.calculated_values;
+        return (
+          <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+            <div className="usp-header">
+              <Scale size={16} className="text-cyan" />
+              <strong>Rule 5 PDP Font Height & Area Ratio</strong>
+            </div>
+            <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <div>
+                <span>PDP Area</span>
+                <b>{vals.pdp_area_cm2.toFixed(1)} cm²</b>
+              </div>
+              <div>
+                <span>Font Height</span>
+                <b>{vals.char_height_mm.toFixed(1)} mm</b>
+              </div>
+              <div>
+                <span>Minimum Required</span>
+                <b className={vals.char_height_mm >= vals.required_mm ? "text-emerald" : "text-rose"}>
+                  {vals.required_mm.toFixed(1)} mm
+                </b>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {audit.usp && audit.usp.applicable && (
         <div className="usp-audit-card">
           <div className="usp-header">
