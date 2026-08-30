@@ -109,7 +109,6 @@ async def scan(
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     digest = sha256(content).hexdigest()
-
     # If OCR text wasn't supplied directly in Form, attempt vision extraction via Gemini
     gemini_res = {}
     if not ocr_text or len(ocr_text.strip()) == 0:
@@ -117,7 +116,7 @@ async def scan(
         if gemini_res and "ocr_text" in gemini_res:
             ocr_text = gemini_res["ocr_text"]
 
-    rules, usp, fields = audit_text(ocr_text, date.today())
+    rules, usp, fields, penalty = audit_text(ocr_text, date.today())
     overall = status_for(rules)
     trust_score = calculate_trust_score(rules)
 
@@ -184,6 +183,7 @@ async def scan(
         overall_status=overall,
         trust_score=trust_score,
         usp=usp,
+        penalty=penalty,
         ocr_text=ocr_text,
     )
 
@@ -202,7 +202,7 @@ async def batch_scan(
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
-        rules, _, _ = audit_text(mock_text, date.today())
+        rules, _, _, _ = audit_text(mock_text, date.today())
         status = status_for(rules)
         score = calculate_trust_score(rules)
         v_count = sum(1 for r in rules if r.status != RuleStatus.PASS)
@@ -228,6 +228,7 @@ async def batch_scan(
         compliance_badge_eligible=failed_count == 0,
         items=items,
     )
+
 
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
@@ -315,6 +316,24 @@ def analytics(db: Session = Depends(get_db)):
 
     )
 
+
+import csv
+from io import StringIO
+
+@app.get("/api/analytics/export-csv")
+def export_csv(db: Session = Depends(get_db)):
+    rows = db.query(Inspection).all()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["inspection_id", "inspected_at", "region", "overall_status", "violation_count"])
+    for row in rows:
+        writer.writerow([row.id, row.inspected_at.isoformat(), row.region, row.overall_status, len(row.violations)])
+
+    return Response(
+        content=output.getvalue().encode('utf-8'),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="district_summary.csv"'}
+    )
 
 if __name__ == "__main__":
     import uvicorn

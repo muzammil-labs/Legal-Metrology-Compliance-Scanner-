@@ -14,9 +14,8 @@ VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune,
 उपभोक्ता सेवा, Plot 4 Industrial Road, Pune, Maharashtra 411001 9876543210 care@acme.example
 मूल देश: India 50/kg"""
 
-
 def statuses(text, audit_dt=date(2026, 8, 23), **kwargs):
-    rules, usp, _ = audit_text(text, audit_dt, **kwargs)
+    rules, usp, _, penalty = audit_text(text, audit_dt, **kwargs)
     return {rule.rule: rule.status for rule in rules}, usp, rules
 
 

@@ -82,6 +82,11 @@ class USPResult(BaseModel):
     within_tolerance: bool | None = None
 
 
+class PenaltyEstimate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    sections_violated: list[str]
+    estimated_fine_range: str
+
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     metadata: InspectionMetadata
@@ -90,6 +95,7 @@ class AuditResponse(BaseModel):
     overall_status: RuleStatus
     trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
+    penalty: PenaltyEstimate | None = None
     ocr_text: str
 
 

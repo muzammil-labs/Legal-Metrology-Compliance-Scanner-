@@ -3,9 +3,9 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -150,6 +150,7 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
 
+
 def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
     """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
     if pdp_area_cm2 <= 50:
@@ -186,8 +187,9 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
     return max(0, min(100, score))
 
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField]]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
     audit_date = audit_date or date.today()
+    penalty = None
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
     mrp = Decimal(mrp_match.group(1)) if mrp_match else None
@@ -383,5 +385,8 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
         fields.append(ExtractedField(name="net_quantity", value=f"{quantity_data[0]} {quantity_data[1]}"))
     if mrp is not None:
         fields.append(ExtractedField(name="mrp", value=str(mrp)))
+    failed_rules = [r for r in rules if r.status == RuleStatus.FAIL]
+    if failed_rules:
+        penalty = PenaltyEstimate(sections_violated=["Section 36", "Section 49"], estimated_fine_range="₹25,000 - ₹50,000")
 
-    return rules, usp, fields
+    return rules, usp, fields, penalty
