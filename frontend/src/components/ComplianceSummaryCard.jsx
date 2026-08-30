@@ -1,39 +1,61 @@
-import React from 'react';
-import { AlertTriangle, CheckCircle2, FileText, Scale, ShieldCheck, Phone } from 'lucide-react';
+import React from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  Scale,
+  ShieldCheck,
+  Phone,
+} from "lucide-react";
 
 // Plain-language consumer explanations for each rule failure
 const RULE_PLAIN_TEXT = {
-  'Rule 6(1)(a)': 'The manufacturer or importer name, address, or PIN code is missing or incomplete.',
-  'Rule 6(1)(b)': 'No common product name (like "Wheat Flour" or "Biscuit") is printed — only a brand name.',
-  'Rule 6(1)(c)': "The quantity is written using an illegal abbreviation like 'gm' instead of 'g', or is missing entirely.",
-  'Rule 6(1)(d)': 'The date of manufacture or packing is missing, in the wrong format, or is a future date — indicating mislabeling.',
-  'Rule 6(1)(e)': "The price (MRP) doesn't say '(incl. of all taxes)' — this is mandatory by law.",
-  'Rule 6(1)(f)': 'The consumer helpline, email, or grievance officer contact is missing or incomplete.',
-  'Rule 6(11)': 'The Unit Sale Price (₹ per g/kg/ml/l) is missing or mathematically incorrect.',
-  'Rule 5/9 (Font / PDP)': 'Printed numerals may be too small to read — font height may violate legal minimum standards.',
-  'Rule 5': 'PDP font height does not meet the minimum requirements for this package size.',
-  'Bilingual Consistency': 'Hindi and English label declarations (quantity or MRP) do not match.',
+  "Rule 6(1)(a)":
+    "The manufacturer or importer name, address, or PIN code is missing or incomplete.",
+  "Rule 6(1)(b)":
+    'No common product name (like "Wheat Flour" or "Biscuit") is printed — only a brand name.',
+  "Rule 6(1)(c)":
+    "The quantity is written using an illegal abbreviation like 'gm' instead of 'g', or is missing entirely.",
+  "Rule 6(1)(d)":
+    "The date of manufacture or packing is missing, in the wrong format, or is a future date — indicating mislabeling.",
+  "Rule 6(1)(e)":
+    "The price (MRP) doesn't say '(incl. of all taxes)' — this is mandatory by law.",
+  "Rule 6(1)(f)":
+    "The consumer helpline, email, or grievance officer contact is missing or incomplete.",
+  "Rule 6(11)":
+    "The Unit Sale Price (₹ per g/kg/ml/l) is missing or mathematically incorrect.",
+  "Rule 5/9 (Font / PDP)":
+    "Printed numerals may be too small to read — font height may violate legal minimum standards.",
+  "Rule 5":
+    "PDP font height does not meet the minimum requirements for this package size.",
+  "Bilingual Consistency":
+    "Hindi and English label declarations (quantity or MRP) do not match.",
 };
 
 export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
   if (!audit) return null;
 
-  const failed = audit.overall_status === 'FAIL';
-  const passedRules = audit.rules.filter((r) => r.status === 'PASS').length;
-  const trustScore = audit.trust_score !== undefined ? audit.trust_score : (failed ? 45 : 100);
+  const failed = audit.overall_status === "FAIL";
+  const passedRules = audit.rules.filter((r) => r.status === "PASS").length;
+  const trustScore =
+    audit.trust_score !== undefined ? audit.trust_score : failed ? 45 : 100;
 
   return (
     <div className="results-panel">
       <div className="panel-head">
         <span>Compliance Result</span>
-        <span className={failed ? 'badge fail' : 'badge pass'}>
-          {failed ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />} {audit.overall_status}
+        <span className={failed ? "badge fail" : "badge pass"}>
+          {failed ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}{" "}
+          {audit.overall_status}
         </span>
       </div>
 
       <div className="result-hero">
         {/* Dynamic score ring — rose border when FAIL, emerald when PASS */}
-        <div className={`score-ring ${failed ? 'fail' : ''}`} style={{ '--score': trustScore }}>
+        <div
+          className={`score-ring ${failed ? "fail" : ""}`}
+          style={{ "--score": trustScore }}
+        >
           <span className="result-number">{trustScore}</span>
           <small>/100 TRUST</small>
         </div>
@@ -41,7 +63,9 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
           <h2>
             {passedRules} of {audit.rules.length} checks passed
           </h2>
-          <p>Evaluated under Legal Metrology (Packaged Commodities) Rules, 2011</p>
+          <p>
+            Evaluated under Legal Metrology (Packaged Commodities) Rules, 2011
+          </p>
         </div>
       </div>
 
@@ -54,16 +78,30 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
           <div className="usp-grid">
             <div>
               <span>Declared USP</span>
-              <b>{audit.usp.declared_value ? `₹ ${audit.usp.declared_value} / ${audit.usp.declared_unit || 'unit'}` : 'Not Declared'}</b>
+              <b>
+                {audit.usp.declared_value
+                  ? `₹ ${audit.usp.declared_value} / ${audit.usp.declared_unit || "unit"}`
+                  : "Not Declared"}
+              </b>
             </div>
             <div>
               <span>Calculated USP</span>
-              <b>{audit.usp.calculated_value ? `₹ ${audit.usp.calculated_value} / base unit` : 'N/A'}</b>
+              <b>
+                {audit.usp.calculated_value
+                  ? `₹ ${audit.usp.calculated_value} / base unit`
+                  : "N/A"}
+              </b>
             </div>
             <div>
               <span>Math Compliance</span>
-              <b className={audit.usp.within_tolerance ? 'text-emerald' : 'text-rose'}>
-                {audit.usp.within_tolerance ? '✓ Matched (±₹0.01)' : '✗ Discrepancy / Missing'}
+              <b
+                className={
+                  audit.usp.within_tolerance ? "text-emerald" : "text-rose"
+                }
+              >
+                {audit.usp.within_tolerance
+                  ? "✓ Matched (±₹0.01)"
+                  : "✗ Discrepancy / Missing"}
               </b>
             </div>
           </div>
@@ -72,35 +110,56 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
 
       <div className="rule-list">
         {audit.rules.map((rule) => {
-          const isPass = rule.status === 'PASS';
+          const isPass = rule.status === "PASS";
           const plainText = !isPass ? RULE_PLAIN_TEXT[rule.rule] : null;
-          const isExpandable = rule.rule === 'Rule 5' || rule.rule === 'Bilingual Consistency';
+          const isExpandable =
+            rule.rule === "Rule 5" || rule.rule === "Bilingual Consistency";
           return (
             <div className="rule" key={rule.rule}>
-              <span className={isPass ? 'rule-icon pass' : 'rule-icon fail'}>
-                {isPass ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+              <span className={isPass ? "rule-icon pass" : "rule-icon fail"}>
+                {isPass ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertTriangle size={16} />
+                )}
               </span>
               <div>
                 <strong>{rule.rule}</strong>
                 <p>{rule.reason}</p>
                 {/* Consumer-friendly plain-language explanation for failures */}
                 {plainText && (
-                  <p className="text-muted" style={{ fontSize: '11px', marginTop: '2px' }}>
+                  <p
+                    className="text-muted"
+                    style={{ fontSize: "11px", marginTop: "2px" }}
+                  >
                     ℹ️ {plainText}
                   </p>
                 )}
                 {rule.evidence && rule.evidence.length > 0 && (
-                  <div className="rule-evidence">Evidence: <code>{rule.evidence.join(', ')}</code></div>
+                  <div className="rule-evidence">
+                    Evidence: <code>{rule.evidence.join(", ")}</code>
+                  </div>
                 )}
                 {/* Expandable calculated_values for Rule 5 and Bilingual checks */}
-                {isExpandable && rule.calculated_values && Object.keys(rule.calculated_values).length > 0 && (
-                  <details className="rule-details" style={{ marginTop: '6px', fontSize: '11px' }}>
-                    <summary style={{ cursor: 'pointer', color: '#71717a' }}>View calculated values</summary>
-                    <pre style={{ margin: '4px 0 0', color: '#a1a1aa' }}>{JSON.stringify(rule.calculated_values, null, 2)}</pre>
-                  </details>
-                )}
+                {isExpandable &&
+                  rule.calculated_values &&
+                  Object.keys(rule.calculated_values).length > 0 && (
+                    <details
+                      className="rule-details"
+                      style={{ marginTop: "6px", fontSize: "11px" }}
+                    >
+                      <summary style={{ cursor: "pointer", color: "#71717a" }}>
+                        View calculated values
+                      </summary>
+                      <pre style={{ margin: "4px 0 0", color: "#a1a1aa" }}>
+                        {JSON.stringify(rule.calculated_values, null, 2)}
+                      </pre>
+                    </details>
+                  )}
               </div>
-              <span className={`rule-status ${isPass ? 'pass' : 'fail'}`}>{rule.status}</span>
+              <span className={`rule-status ${isPass ? "pass" : "fail"}`}>
+                {rule.status}
+              </span>
             </div>
           );
         })}

@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FileScan, Eye, CameraOff } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Upload, FileScan, Eye, CameraOff } from "lucide-react";
 
-export default function CameraScanner({ file, setFile, demoMode, loading, message, onScan }) {
+export default function CameraScanner({
+  file,
+  setFile,
+  demoMode,
+  loading,
+  message,
+  onScan,
+}) {
   const [showOcrInput, setShowOcrInput] = useState(false);
-  const [customOcr, setCustomOcr] = useState('');
+  const [customOcr, setCustomOcr] = useState("");
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   // Haptic feedback on demo fixture switch (from PWA branch)
@@ -40,23 +47,28 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
         {loading && <div className="scanline" aria-hidden="true" />}
 
         {/* Demo fixture active indicator */}
-        {demoMode && (
-          <div className="fixture-label">
-            Demo Fixture Active
-          </div>
-        )}
+        {demoMode && <div className="fixture-label">Demo Fixture Active</div>}
 
         {/* Permission-denied state */}
         {permissionDenied ? (
           <div className="viewport-center">
             <CameraOff size={32} className="text-rose" />
-            <p style={{ color: '#fb7185' }}>Camera access denied</p>
-            <small>Use the fixture selector in the header, or allow camera permissions and retry.</small>
+            <p style={{ color: "#fb7185" }}>Camera access denied</p>
+            <small>
+              Use the fixture selector in the header, or allow camera
+              permissions and retry.
+            </small>
           </div>
         ) : (
           <div className="viewport-center">
             <Upload size={32} />
-            <p>{file ? file.name : demoMode ? 'Demo Fixture Active' : 'Capture or upload a product label'}</p>
+            <p>
+              {file
+                ? file.name
+                : demoMode
+                  ? "Demo Fixture Active"
+                  : "Capture or upload a product label"}
+            </p>
             <small>Supports rear camera capture and image upload</small>
           </div>
         )}
@@ -81,10 +93,10 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             if (navigator.vibrate) navigator.vibrate(50);
             onScan(customOcr);
           }}
-          aria-label={loading ? 'Scan in progress' : 'Run compliance scan'}
+          aria-label={loading ? "Scan in progress" : "Run compliance scan"}
         >
           <FileScan size={18} />
-          {loading ? 'Analyzing label...' : 'Scan for Compliance'}
+          {loading ? "Analyzing label..." : "Scan for Compliance"}
         </button>
 
         <button
@@ -94,7 +106,7 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
           aria-expanded={showOcrInput}
         >
           <Eye size={14} />
-          {showOcrInput ? 'Hide OCR Override' : 'Custom OCR Text Override'}
+          {showOcrInput ? "Hide OCR Override" : "Custom OCR Text Override"}
         </button>
       </div>
 

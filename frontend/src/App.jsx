@@ -1,19 +1,26 @@
-import React, { useState } from 'react';
-import Navbar from './components/Navbar';
-import CameraScanner from './components/CameraScanner';
-import ComplianceSummaryCard from './components/ComplianceSummaryCard';
-import InspectorAnalyticsDashboard from './components/InspectorAnalyticsDashboard';
-import SellerBulkAudit from './components/SellerBulkAudit';
-import NoticePreviewModal from './components/NoticePreviewModal';
-import { executeScanWithCircuitBreaker, loadPrecachedFixture } from './services/api';
+import React, { useState } from "react";
+import Navbar from "./components/Navbar";
+import CameraScanner from "./components/CameraScanner";
+import ComplianceSummaryCard from "./components/ComplianceSummaryCard";
+import InspectorAnalyticsDashboard from "./components/InspectorAnalyticsDashboard";
+import SellerBulkAudit from "./components/SellerBulkAudit";
+import NoticePreviewModal from "./components/NoticePreviewModal";
+import {
+  executeScanWithCircuitBreaker,
+  loadPrecachedFixture,
+} from "./services/api";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('consumer');
+  const [activeTab, setActiveTab] = useState("consumer");
   const [demoMode, setDemoMode] = useState(null);
   const [file, setFile] = useState(null);
-  const [audit, setAudit] = useState(() => loadPrecachedFixture('control_pass'));
+  const [audit, setAudit] = useState(() =>
+    loadPrecachedFixture("control_pass"),
+  );
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('System ready for statutory inspection');
+  const [message, setMessage] = useState(
+    "System ready for statutory inspection",
+  );
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
 
   function handleChooseMode(key) {
@@ -22,17 +29,25 @@ export default function App() {
       setAudit(loadPrecachedFixture(key));
       setMessage(`Reference fixture loaded: ${key}`);
     } else {
-      setMessage('Live camera mode active');
+      setMessage("Live camera mode active");
     }
   }
 
-  async function handleRunScan(customOcrText = '') {
+  async function handleRunScan(customOcrText = "") {
     setLoading(true);
-    setMessage('Tokenizing label evidence & executing statutory rules...');
+    setMessage("Tokenizing label evidence & executing statutory rules...");
     try {
-      const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText);
+      const result = await executeScanWithCircuitBreaker(
+        file,
+        demoMode,
+        customOcrText,
+      );
       setAudit(result);
-      setMessage(demoMode ? 'Reference audit vector loaded' : 'Statutory compliance scan complete');
+      setMessage(
+        demoMode
+          ? "Reference audit vector loaded"
+          : "Statutory compliance scan complete",
+      );
     } catch (error) {
       setMessage(`Notice: ${error.message}`);
     } finally {
@@ -51,22 +66,28 @@ export default function App() {
 
       <section className="intro">
         <div>
-          <p className="eyebrow">DEPARTMENT OF CONSUMER AFFAIRS • GOVERNMENT OF INDIA</p>
+          <p className="eyebrow">
+            DEPARTMENT OF CONSUMER AFFAIRS • GOVERNMENT OF INDIA
+          </p>
           <h1>
-            LabelCheck India<br />
+            LabelCheck India
+            <br />
             <em>Statutory Compliance in Seconds</em>
           </h1>
           <p className="lede">
-            Automated label verification under Legal Metrology (Packaged Commodities) Rules, 2011 — powered by multimodal AI and deterministic statutory validation.
+            Automated label verification under Legal Metrology (Packaged
+            Commodities) Rules, 2011 — powered by multimodal AI and
+            deterministic statutory validation.
           </p>
         </div>
         <div className="audit-stamp">
-          MODE<br />
-          <b>{demoMode ? 'DEMO FIXTURE' : activeTab.toUpperCase()}</b>
+          MODE
+          <br />
+          <b>{demoMode ? "DEMO FIXTURE" : activeTab.toUpperCase()}</b>
         </div>
       </section>
 
-      {activeTab === 'consumer' && (
+      {activeTab === "consumer" && (
         <section className="workspace">
           <CameraScanner
             file={file}
@@ -83,13 +104,9 @@ export default function App() {
         </section>
       )}
 
-      {activeTab === 'officer' && (
-        <InspectorAnalyticsDashboard />
-      )}
+      {activeTab === "officer" && <InspectorAnalyticsDashboard />}
 
-      {activeTab === 'seller' && (
-        <SellerBulkAudit />
-      )}
+      {activeTab === "seller" && <SellerBulkAudit />}
 
       <NoticePreviewModal
         isOpen={isNoticeModalOpen}
