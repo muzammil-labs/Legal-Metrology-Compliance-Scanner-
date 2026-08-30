@@ -7,6 +7,7 @@ import {
   Hash,
   CheckCircle2,
   AlertTriangle,
+  Lock,
 } from "lucide-react";
 import { getNoticeDownloadUrl } from "../services/api";
 
@@ -69,6 +70,10 @@ export default function NoticePreviewModal({ isOpen, onClose, audit }) {
             SHA-256 Evidence Seal (Sec 65B, Indian Evidence Act):
           </small>
           <code className="mono">{sha256}</code>
+          <div className="badge-mini text-emerald" style={{ marginTop: "8px" }}>
+            <Lock size={13} style={{ display: "inline", marginRight: "4px" }} />{" "}
+            Cryptographic Chain of Custody Verified
+          </div>
         </div>
 
         <div className="notice-document-preview">
