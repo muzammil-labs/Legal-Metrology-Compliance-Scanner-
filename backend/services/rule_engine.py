@@ -27,7 +27,7 @@ NET_QTY_RE = re.compile(
 )
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
-    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b",
+    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     re.I,
 )
 MRP_RE = re.compile(
@@ -77,6 +77,18 @@ COMMODITY_HINDI_RE = re.compile(
     re.UNICODE,
 )
 
+ADDRESS_PATTERN_1_RE = re.compile(r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b", re.I | re.UNICODE)
+ADDRESS_PATTERN_2_RE = re.compile(r"\b(?:city|district|nagar|town|शहर|जिला)\b", re.I | re.UNICODE)
+ADDRESS_PATTERN_3_RE = re.compile(r"\b(?:state|pradesh|maharashtra|delhi|karnataka|gujarat|tamil\s*nadu|telangana|west\s*bengal|uttar\s*pradesh|rajasthan|punjab|haryana)\b", re.I | re.UNICODE)
+ADDRESS_PATTERNS = [ADDRESS_PATTERN_1_RE, ADDRESS_PATTERN_2_RE, ADDRESS_PATTERN_3_RE]
+
+IMPORTED_RE_INLINE = re.compile(r"imported\s+by|आयातित", re.I | re.UNICODE)
+COUNTRY_ORIGIN_RE = re.compile(r"(?:country\s+of\s+origin|मूल\s*देश)\s*:", re.I | re.UNICODE)
+
+CARE_DESIGNATION_RE = re.compile(r"consumer\s+care|grievance\s+officer|उपभोक्ता\s*सेवा", re.I | re.UNICODE)
+ADDRESS_REF_RE = re.compile(r"postal|address|पता", re.I | re.UNICODE)
+PIECES_RE = re.compile(r"\b(?:pieces?|pcs|units?)\b", re.I | re.UNICODE)
+
 
 def _has_commodity(text: str) -> bool:
     """Returns True if the text contains a recognized generic commodity name (English or Hindi)."""
@@ -116,7 +128,7 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     applicable = (
         base_quantity > Decimal("1000")
         or (base_unit in {"g", "ml"} and base_quantity > Decimal("1000"))
-        or len(re.findall(r"\b(?:pieces?|pcs|units?)\b", text, re.I)) > 1
+        or len(PIECES_RE.findall(text)) > 1
     )
     declared = USP_RE.search(text)
     if not applicable:
@@ -200,16 +212,9 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # ------------------------------------------------------------------
     has_prefix = ENTITY_PREFIX_RE.search(text)
     has_pin = PIN_RE.search(text)
-    address_parts = sum(
-        bool(re.search(pattern, text, re.I))
-        for pattern in [
-            r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b",
-            r"\b(?:city|district|nagar|town|शहर|जिला)\b",
-            r"\b(?:state|pradesh|maharashtra|delhi|karnataka|gujarat|tamil\s*nadu|telangana|west\s*bengal|uttar\s*pradesh|rajasthan|punjab|haryana)\b",
-        ]
-    )
-    imported = bool(ENTITY_PREFIX_RE.search(text) and re.search(r"imported\s+by|आयातित", text, re.I))
-    has_origin = bool(re.search(r"(?:country\s+of\s+origin|मूल\s*देश)\s*:", text, re.I))
+    address_parts = sum(bool(pattern.search(text)) for pattern in ADDRESS_PATTERNS)
+    imported = bool(ENTITY_PREFIX_RE.search(text) and IMPORTED_RE_INLINE.search(text))
+    has_origin = bool(COUNTRY_ORIGIN_RE.search(text))
     a_ok = bool(has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin))
     rules.append(
         result(
@@ -296,8 +301,8 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # ------------------------------------------------------------------
     # Rule 6(1)(f) — Consumer Grievance Redressal Channels
     # ------------------------------------------------------------------
-    has_care_designation = bool(re.search(r"consumer\s+care|grievance\s+officer|उपभोक्ता\s*सेवा", text, re.I))
-    has_address_ref = bool(has_pin or re.search(r"postal|address|पता", text, re.I))
+    has_care_designation = bool(CARE_DESIGNATION_RE.search(text))
+    has_address_ref = bool(has_pin or ADDRESS_REF_RE.search(text))
     has_phone = bool(PHONE_RE.search(text))
     has_email = bool(EMAIL_RE.search(text))
     care_ok = has_care_designation and has_address_ref and has_phone and has_email
