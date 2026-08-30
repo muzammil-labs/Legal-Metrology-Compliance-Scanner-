@@ -124,7 +124,6 @@ def scan(
     db: Session = Depends(get_db),
 ):
     content = file.file.read(MAX_FILE_SIZE + 1)
-    content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
@@ -371,23 +370,28 @@ def analytics(db: Session = Depends(get_db)):
     )
 
 
-import csv
-from io import StringIO
+from services.executive_reports import generate_executive_pdf_report, generate_excel_export
 
-@app.get("/api/analytics/export-csv")
-def export_csv(db: Session = Depends(get_db)):
-    rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
-    output = StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["inspection_id", "inspected_at", "region", "overall_status", "violation_count"])
-    for row in rows:
-        writer.writerow([row.id, row.inspected_at.isoformat(), row.region, row.overall_status, len(row.violations)])
-
+@app.get("/api/analytics/export-executive-report")
+def export_executive_report(db: Session = Depends(get_db)):
+    summary = analytics(db)
+    pdf_bytes = generate_executive_pdf_report(summary)
     return Response(
-        content=output.getvalue().encode('utf-8'),
-        media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="district_summary.csv"'}
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="executive_report.pdf"'}
     )
+
+@app.get("/api/analytics/export-excel")
+def export_excel(db: Session = Depends(get_db)):
+    rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
+    csv_str = generate_excel_export(rows)
+    return Response(
+        content=csv_str.encode('utf-8'),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="district_audit_export.csv"'}
+    )
+
 
 if __name__ == "__main__":
     import uvicorn

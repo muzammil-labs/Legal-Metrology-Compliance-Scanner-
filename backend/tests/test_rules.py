@@ -311,3 +311,46 @@ def test_audit_usp_missing_quantity_data():
     assert rule_result.status == RuleStatus.WARNING
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
+
+from services.executive_reports import generate_executive_pdf_report, generate_excel_export
+from schemas import AnalyticsSummary, ViolationCount
+from datetime import datetime
+
+def test_executive_pdf_report_generation():
+    summary = AnalyticsSummary(
+        total_inspections=10,
+        compliant_inspections=6,
+        failed_inspections=4,
+        warning_inspections=0,
+        compliance_rate=60.0,
+        active_districts=2,
+        top_violations=[ViolationCount(rule="Rule 5", count=2)],
+        violation_breakdown={"Rule 5": 2},
+        regional_non_compliance={"Delhi": 2, "Mumbai": 2},
+        by_region={"Delhi": 5, "Mumbai": 5},
+        by_rule_infractions={"Rule 5": 2}
+    )
+    pdf_bytes = generate_executive_pdf_report(summary)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b"%PDF")
+    assert len(pdf_bytes) > 500
+
+def test_excel_export_generation():
+    class MockViolation:
+        pass
+    class MockRow:
+        def __init__(self, _id, region, filename, status, v_count, score):
+            self.id = _id
+            self.inspected_at = datetime.utcnow()
+            self.region = region
+            self.source_filename = filename
+            self.overall_status = status
+            self.violations = [MockViolation() for _ in range(v_count)]
+            self.trust_score = score
+
+    rows = [MockRow(1, "Delhi", "test.jpg", "PASS", 0, 100)]
+    csv_str = generate_excel_export(rows)
+    assert isinstance(csv_str, str)
+    assert "inspection_id" in csv_str
+    assert "test.jpg" in csv_str
+    assert "Delhi" in csv_str
