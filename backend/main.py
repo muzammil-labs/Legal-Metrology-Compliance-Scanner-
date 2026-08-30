@@ -8,6 +8,14 @@ import uuid
 from datetime import date, datetime
 from hashlib import sha256
 
+
+from services.auth import Role, RoleChecker, User, create_access_token
+from pydantic import BaseModel
+
+
+from services.auth import Role, RoleChecker, User, create_access_token
+from pydantic import BaseModel
+
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -114,6 +122,36 @@ def root_status():
     }
 
 
+
+class LoginRequest(BaseModel):
+    role: str
+
+@app.post("/api/auth/token")
+def login_for_access_token(req: LoginRequest):
+    # Mock authentication for demo purposes
+    try:
+        user_role = Role(req.role.upper())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    access_token = create_access_token(data={"sub": f"mock_user_{user_role.value}", "role": user_role.value})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+class LoginRequest(BaseModel):
+    role: str
+
+@app.post("/api/auth/token")
+def login_for_access_token(req: LoginRequest):
+    # Mock authentication for demo purposes
+    try:
+        user_role = Role(req.role.upper())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    access_token = create_access_token(data={"sub": f"mock_user_{user_role.value}", "role": user_role.value})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.post("/api/scan", response_model=AuditResponse)
 def scan(
     background_tasks: BackgroundTasks,
@@ -122,8 +160,8 @@ def scan(
     region: str = Form(default="New Delhi - Connaught Place"),
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
+    user: User = Depends(RoleChecker([Role.FIELD_INSPECTOR, Role.CENTRAL_ADMIN]))
 ):
-    content = file.file.read(MAX_FILE_SIZE + 1)
     content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
@@ -214,6 +252,7 @@ def scan(
 def batch_scan(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
+    user: User = Depends(RoleChecker([Role.CENTRAL_ADMIN, Role.DISTRICT_MAGISTRATE]))
 ):
     """Bulk SKU catalogue scanner for E-Commerce Sellers and Marketplaces."""
     items = []
@@ -258,7 +297,8 @@ def batch_scan(
 
 
 @app.get("/api/inspections", response_model=list[InspectionSummary])
-def inspections(limit: int = 50, db: Session = Depends(get_db)):
+def inspections(limit: int = 50, db: Session = Depends(get_db),
+    user: User = Depends(RoleChecker([Role.FIELD_INSPECTOR, Role.DISTRICT_MAGISTRATE, Role.CENTRAL_ADMIN])),):
     rows = db.query(Inspection).options(selectinload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     rows = db.query(Inspection).options(joinedload(Inspection.violations)).order_by(Inspection.inspected_at.desc()).limit(min(max(limit, 1), 100)).all()
     return [
@@ -304,7 +344,8 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
-def analytics(db: Session = Depends(get_db)):
+def analytics(db: Session = Depends(get_db),
+    user: User = Depends(RoleChecker([Role.DISTRICT_MAGISTRATE, Role.CENTRAL_ADMIN])),):
     status_counts = db.query(Inspection.overall_status, func.count(Inspection.id)).group_by(Inspection.overall_status).all()
     total = 0
     compliant = 0
@@ -375,7 +416,8 @@ import csv
 from io import StringIO
 
 @app.get("/api/analytics/export-csv")
-def export_csv(db: Session = Depends(get_db)):
+def export_csv(db: Session = Depends(get_db),
+    user: User = Depends(RoleChecker([Role.DISTRICT_MAGISTRATE, Role.CENTRAL_ADMIN])),):
     rows = db.query(Inspection).options(selectinload(Inspection.violations)).all()
     output = StringIO()
     writer = csv.writer(output)
