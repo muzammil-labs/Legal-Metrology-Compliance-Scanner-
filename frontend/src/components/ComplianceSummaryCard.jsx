@@ -108,6 +108,64 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {audit.fssai_verification && (
+        <div
+          className="usp-audit-card fssai-audit-card"
+          style={{ marginTop: "16px" }}
+        >
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-emerald" />
+            <strong>FSSAI & Food Safety Regulation</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>14-Digit FSSAI License No.</span>
+              <b
+                className={
+                  audit.fssai_verification.is_valid_format
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.fssai_license_number
+                  ? audit.fssai_verification.fssai_license_number
+                  : "Invalid/Missing"}
+              </b>
+            </div>
+            <div>
+              <span>Veg/Non-Veg Symbol</span>
+              <b
+                className={
+                  audit.fssai_verification.veg_nonveg_symbol
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.veg_nonveg_symbol
+                  ? `✓ Detected`
+                  : "✗ Missing"}
+              </b>
+            </div>
+            <div>
+              <span>SI Metric Unit Compliance</span>
+              <b
+                className={
+                  audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                  "PASS"
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                "PASS"
+                  ? "✓ Verified"
+                  : "✗ Non-compliant"}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rule-list">
         {audit.rules.map((rule) => {
           const isPass = rule.status === "PASS";

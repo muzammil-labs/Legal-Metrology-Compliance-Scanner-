@@ -16,7 +16,7 @@ VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune,
 मूल देश: India 50/kg"""
 
 def statuses(text, audit_dt=date(2026, 8, 23), **kwargs):
-    rules, usp, fields, penalty = audit_text(text, audit_dt, **kwargs)
+    rules, usp, fields, penalty, fssai_verification = audit_text(text, audit_dt, **kwargs)
     return {rule.rule: rule.status for rule in rules}, usp, rules
 
 
@@ -157,28 +157,28 @@ def test_trust_score_decremented_per_violation():
 
 def test_rule5_font_height_valid():
     text = "Net Qty 100 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=2.0)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=2.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.PASS
 
 
 def test_rule5_font_height_invalid_small():
     text = "Net Qty 100 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=1.5)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=1.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_medium():
     text = "Net Qty 300 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=3.5)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=3.5)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
 
 def test_rule5_font_height_invalid_large():
     text = "Net Qty 600 g"
-    rules, _, _, _ = audit_text(text, font_height_mm=5.0)
+    rules, _, _, _, _ = audit_text(text, font_height_mm=5.0)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.RULE_5] == RuleStatus.FAIL
 
@@ -186,7 +186,7 @@ def test_rule5_font_height_invalid_large():
 def test_bilingual_match_passes():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 50"
-    rules, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.PASS
 
@@ -194,7 +194,7 @@ def test_bilingual_match_passes():
 def test_bilingual_mismatch_fails():
     text = "Net Qty 100 g MRP Rs. 50"
     hindi_text = "Net Qty 100 g MRP Rs. 60"
-    rules, _, _, _ = audit_text(text, hindi_text=hindi_text)
+    rules, _, _, _, _ = audit_text(text, hindi_text=hindi_text)
     res = {r.rule: r.status for r in rules}
     assert res[StatutoryRule.BILINGUAL] == RuleStatus.FAIL
 
@@ -311,3 +311,40 @@ def test_audit_usp_missing_quantity_data():
     assert rule_result.status == RuleStatus.WARNING
     assert "USP cannot be calculated without both MRP and net quantity" in rule_result.reason
     assert usp_result.applicable is False
+
+def test_fssai_license_regex():
+    # Valid 14 digits
+    text = "FSSAI Lic. No. 10014011000123"
+    rules, _, _, _, fssai_verification = audit_text(text)
+    assert fssai_verification.fssai_license_number == "10014011000123"
+    assert fssai_verification.is_valid_format is True
+
+    # Invalid 12 digits
+    text_invalid = "FSSAI 100140110001"
+    rules, _, _, _, fssai_verification = audit_text(text_invalid)
+    assert fssai_verification.fssai_license_number is None
+    assert fssai_verification.is_valid_format is False
+
+def test_veg_symbol_detection():
+    text = "Contains green circle in square"
+    rules, _, _, _, fssai_verification = audit_text(text)
+    assert fssai_verification.veg_nonveg_symbol is not None
+
+def test_fssai_category_requires_si_units():
+    # Food category triggers strict SI unit checks
+    text_non_strict = VALID.replace("2 kg", "2 gm") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_non_strict)
+    assert "Food Category" in fssai_verification.category_claims
+
+    text_strict_fail = VALID.replace("2 kg", "2 N") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_strict_fail)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.FAIL
+    fail_reason = next(r.reason for r in rules if r.rule == StatutoryRule.RULE_6_1_C)
+    assert "Food category detected, but Net Quantity uses non-strict SI unit: 'n'" in fail_reason
+
+    # Valid strict SI
+    text_strict_pass = VALID.replace("2 kg", "2 kg") + " Food Category"
+    rules, _, _, _, fssai_verification = audit_text(text_strict_pass)
+    res = {r.rule: r.status for r in rules}
+    assert res[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS

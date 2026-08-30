@@ -124,7 +124,6 @@ def scan(
     db: Session = Depends(get_db),
 ):
     content = file.file.read(MAX_FILE_SIZE + 1)
-    content = file.file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
@@ -138,7 +137,7 @@ def scan(
         if gemini_res and "ocr_text" in gemini_res:
             ocr_text = gemini_res["ocr_text"]
 
-    rules, usp, fields, penalty = audit_text(ocr_text, date.today())
+    rules, usp, fields, penalty, fssai_verification = audit_text(ocr_text, date.today())
     overall = status_for(rules)
     trust_score = calculate_trust_score(rules)
 
@@ -206,6 +205,7 @@ def scan(
         trust_score=trust_score,
         usp=usp,
         penalty=penalty,
+        fssai_verification=fssai_verification,
         ocr_text=ocr_text,
     )
 
@@ -224,11 +224,10 @@ def batch_scan(
         if content and len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
 
-        content = f.file.read()
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
-        rules, _, _, _ = audit_text(mock_text, date.today())
+        rules, _, _, _, _ = audit_text(mock_text, date.today())
         status = status_for(rules)
         score = calculate_trust_score(rules)
         v_count = sum(1 for r in rules if r.status != RuleStatus.PASS)

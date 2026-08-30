@@ -3,9 +3,9 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -28,7 +28,6 @@ NET_QTY_RE = re.compile(
 # Reject all non-SI / legacy unit notations
 INVALID_UNIT_RE = re.compile(
     r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
-    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
     re.I,
 )
 MRP_RE = re.compile(
@@ -77,6 +76,10 @@ COMMODITY_HINDI_RE = re.compile(
     r")(?:[\s,।]|$)",
     re.UNICODE,
 )
+
+FSSAI_NO_RE = re.compile(r"\b([0-9]{14})\b")
+VEG_SYMBOL_RE = re.compile(r"(?:green\s+circle(?:\s+in\s+square)?|brown\s+circle(?:\s+in\s+square)?|veg(?:etarian)?\s+symbol|non-veg(?:etarian)?\s+symbol)", re.I | re.UNICODE)
+FSSAI_CATEGORY_RE = re.compile(r"\bfood\s*category\b", re.I | re.UNICODE)
 
 ADDRESS_PART_RES = [
     re.compile(r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b", re.I | re.UNICODE),
@@ -201,13 +204,38 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
             score -= 5
     return max(0, min(100, score))
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FSSAIVerification | None]:
     audit_date = audit_date or date.today()
     penalty = None
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
     mrp = Decimal(mrp_match.group(1)) if mrp_match else None
     rules: list[RuleResult] = []
+
+    # ------------------------------------------------------------------
+    # FSSAI Cross-Validation Logic
+    # ------------------------------------------------------------------
+    fssai_match = FSSAI_NO_RE.search(text)
+    fssai_no = fssai_match.group(1) if fssai_match else None
+
+    veg_match = VEG_SYMBOL_RE.search(text)
+    veg_symbol_str = veg_match.group(0) if veg_match else None
+
+    has_category = bool(FSSAI_CATEGORY_RE.search(text))
+    category_claims = ["Food Category"] if has_category else []
+
+    is_valid = bool(fssai_no)
+    fssai_status = RuleStatus.PASS if is_valid else RuleStatus.FAIL
+    fssai_reason = "14-digit FSSAI license number is correctly declared." if is_valid else "Missing or invalid FSSAI 14-digit license number."
+
+    fssai_verification = FSSAIVerification(
+        fssai_license_number=fssai_no,
+        is_valid_format=is_valid,
+        veg_nonveg_symbol=veg_symbol_str,
+        status=fssai_status,
+        reason=fssai_reason,
+        category_claims=category_claims
+    )
 
     # ------------------------------------------------------------------
     # Rule 6(1)(a) — Entity, Address, PIN, Country of Origin
@@ -249,15 +277,23 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Rule 6(1)(c) — Net Quantity & Strict SI Units
     # ------------------------------------------------------------------
     invalid = INVALID_UNIT_RE.search(text)
+    strict_si_fail = False
+    si_fail_reason = ""
+    if has_category and quantity_data and quantity_data[1].lower() not in ["g", "kg", "ml", "l"]:
+        strict_si_fail = True
+        si_fail_reason = f"Food category detected, but Net Quantity uses non-strict SI unit: '{quantity_data[1]}'."
+
     rules.append(
         result(
             StatutoryRule.RULE_6_1_C,
-            RuleStatus.FAIL if invalid or not quantity_data else RuleStatus.PASS,
-            f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
-            if invalid
-            else "Net quantity uses a recognized SI unit."
-            if quantity_data
-            else "Net quantity declaration is missing.",
+            RuleStatus.FAIL if invalid or not quantity_data or strict_si_fail else RuleStatus.PASS,
+            si_fail_reason if strict_si_fail else (
+                f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
+                if invalid
+                else "Net quantity uses a recognized SI unit."
+                if quantity_data
+                else "Net quantity declaration is missing."
+            ),
             evidence=[invalid.group(0)] if invalid else [],
         )
     )
@@ -417,4 +453,4 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
 
         penalty = PenaltyEstimate(sections_violated=sections_list, estimated_fine_range=fine_range)
 
-    return rules, usp, fields, penalty
+    return rules, usp, fields, penalty, fssai_verification

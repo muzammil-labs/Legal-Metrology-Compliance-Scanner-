@@ -87,6 +87,15 @@ class PenaltyEstimate(BaseModel):
     sections_violated: list[str]
     estimated_fine_range: str
 
+class FSSAIVerification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    fssai_license_number: str | None = None
+    is_valid_format: bool = False
+    veg_nonveg_symbol: str | None = None
+    status: RuleStatus = RuleStatus.FAIL
+    reason: str = ""
+    category_claims: list[str] = Field(default_factory=list)
+
 class AuditResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     metadata: InspectionMetadata
@@ -96,6 +105,7 @@ class AuditResponse(BaseModel):
     trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
     penalty: PenaltyEstimate | None = None
+    fssai_verification: FSSAIVerification | None = None
     ocr_text: str
 
 
