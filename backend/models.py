@@ -19,6 +19,8 @@ class Inspection(Base):
     source_filename: Mapped[str] = mapped_column(String(255))
     sha256: Mapped[str] = mapped_column(String(64), index=True)
     region: Mapped[str] = mapped_column(String(120), default="Unknown")
+    gps_location: Mapped[str] = mapped_column(String(120), default="28.6139° N, 77.2090° E")
+    trust_score: Mapped[int] = mapped_column(Integer, default=100)
     overall_status: Mapped[str] = mapped_column(String(20))
     ocr_text: Mapped[str] = mapped_column(Text, default="")
     violations: Mapped[list["Violation"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")
@@ -41,6 +43,7 @@ class AuditCertificate(Base):
     inspection_id: Mapped[int] = mapped_column(ForeignKey("inspections.id"), unique=True)
     certificate_number: Mapped[str] = mapped_column(String(80), unique=True)
     issued_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sha256_seal: Mapped[str] = mapped_column(String(64), default="")
     inspection: Mapped[Inspection] = relationship(back_populates="certificate")
 
 

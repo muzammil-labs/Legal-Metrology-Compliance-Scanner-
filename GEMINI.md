@@ -7,9 +7,9 @@
 - Multimodal Vision Runtime: Google GenAI SDK (`gemini-2.5-flash`) via structured JSON schema.
 
 ## Tri-Engine Territorial Division (Strict Multi-Agent Governance)
-1. Backend Realm (`/backend`): Exclusively managed via Claude Code CLI in the central terminal.
+1. Backend Realm (`/backend`): Exclusively managed via Antigravity CLI in the central terminal.
 2. Frontend Realm (`/frontend`): Exclusively built & styled via Google Antigravity in local editors.
-3. Architecture & Pitch: Generated via Claude Opus (Web with Extended Thinking).
+3. Architecture & Pitch: Generated via Antigravity (Web with Extended Thinking).
 4. Zero External Stitch: Build natively inside the Vite dev server with instant HMR feedback.
 
 ## Core Non-Negotiables & Demo Resilience

@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 
-from services.rule_engine import audit_text
+from services.rule_engine import audit_text, calculate_trust_score
+from services.pdf_generator import generate_section_36_notice
 from schemas import RuleStatus, StatutoryRule
 
 VALID = """Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001
@@ -8,28 +9,140 @@ Wheat Flour Net Qty 2 kg MRP Rs. 100 (incl. of all taxes) 01/2026
 Consumer Care Cell, Plot 4 Industrial Road, Pune, Maharashtra 411001 9876543210 care@acme.example
 Country of Origin: India 50/kg"""
 
+VALID_HINDI = """निर्मित Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001
+गेहूं आटा शुद्ध मात्रा 2 kg अधिकतम खुदरा मूल्य ₹ 100 (सभी कर सहित) 01/2026
+उपभोक्ता सेवा, Plot 4 Industrial Road, Pune, Maharashtra 411001 9876543210 care@acme.example
+मूल देश: India 50/kg"""
 
-def statuses(text):
-    rules, usp, _ = audit_text(text, date(2026, 8, 23))
-    return {rule.rule: rule.status for rule in rules}, usp
+
+def statuses(text, audit_dt=date(2026, 8, 23)):
+    rules, usp, _ = audit_text(text, audit_dt)
+    return {rule.rule: rule.status for rule in rules}, usp, rules
 
 
 def test_valid_baseline():
-    results, usp = statuses(VALID)
+    results, usp, rules = statuses(VALID)
     assert all(results[rule] == RuleStatus.PASS for rule in StatutoryRule)
     assert usp.within_tolerance is True
+    assert calculate_trust_score(rules) == 100
+
+
+def test_valid_hindi_baseline():
+    results, usp, rules = statuses(VALID_HINDI)
+    assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.PASS
+    assert results[StatutoryRule.RULE_6_1_B] == RuleStatus.PASS
+    assert results[StatutoryRule.RULE_6_1_C] == RuleStatus.PASS
+    assert results[StatutoryRule.RULE_6_1_E] == RuleStatus.PASS
+    assert calculate_trust_score(rules) == 100
 
 
 def test_tax_clause_required():
-    results, _ = statuses(VALID.replace(" (incl. of all taxes)", ""))
+    results, _, rules = statuses(VALID.replace(" (incl. of all taxes)", ""))
     assert results[StatutoryRule.RULE_6_1_E] == RuleStatus.FAIL
+    assert calculate_trust_score(rules) <= 75
 
 
 def test_legacy_unit_rejected():
-    results, _ = statuses(VALID.replace("2 kg", "500 gm"))
+    results, _, rules = statuses(VALID.replace("2 kg", "500 gm"))
     assert results[StatutoryRule.RULE_6_1_C] == RuleStatus.FAIL
 
 
 def test_usp_mismatch_rejected():
-    results, _ = statuses(VALID.replace("50/kg", "0.40/kg"))
+    results, _, rules = statuses(VALID.replace("50/kg", "0.40/kg"))
     assert results[StatutoryRule.RULE_6_11] == RuleStatus.FAIL
+
+
+def test_missing_pin_code_fails_rule_6_1_a():
+    results, _, _ = statuses(VALID.replace("411001", ""))
+    assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
+
+
+def test_future_date_rejected():
+    results, _, _ = statuses(VALID.replace("01/2026", "01/2030"), audit_dt=date(2026, 8, 23))
+    assert results[StatutoryRule.RULE_6_1_D] == RuleStatus.FAIL
+
+
+def test_missing_consumer_care_fails_rule_6_1_f():
+    results, _, _ = statuses(VALID.replace("care@acme.example", ""))
+    assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
+
+
+def test_pdf_notice_generation():
+    pdf_bytes = generate_section_36_notice(
+        inspection_id=42,
+        source_filename="test_packet.jpg",
+        sha256_digest="a" * 64,
+        region="North Delhi",
+        gps_location="28.7180° N, 77.1750° E",
+        inspected_at=datetime(2026, 8, 29, 10, 0, 0),
+        overall_status="FAIL",
+        violations=[
+            type("ViolationObj", (), {"rule": "Rule 6(1)(e)", "status": "FAIL", "reason": "Missing tax inclusion"})()
+        ],
+        ocr_text=VALID,
+    )
+    assert isinstance(pdf_bytes, bytes)
+    assert len(pdf_bytes) > 1000
+    assert pdf_bytes.startswith(b"%PDF")
+
+
+# ------------------------------------------------------------------
+# Additional edge-case tests mandated by master briefing spec
+# ------------------------------------------------------------------
+
+def test_imported_goods_without_country_of_origin_fails_rule_6_1_a():
+    """Imported by prefix without Country of Origin must fail Rule 6(1)(a)."""
+    imported_no_origin = (
+        "Imported by Global Foods Pvt Ltd, Plot 5 Export Road, Mumbai, Maharashtra 400001\n"
+        "Wheat Flour Net Qty 2 kg MRP Rs. 120 (incl. of all taxes) 03/2026\n"
+        "Consumer Care Cell, 400001 9898989898 care@globalfoods.example\n"
+        # No 'Country of Origin:' line
+    )
+    results, _, _ = statuses(imported_no_origin)
+    assert results[StatutoryRule.RULE_6_1_A] == RuleStatus.FAIL
+
+
+def test_future_month_same_year_rejected():
+    """A manufacture month in the future within the same audit year must fail Rule 6(1)(d)."""
+    # Audit date is August 2026; manufacture date December 2026 is future
+    results, _, _ = statuses(VALID.replace("01/2026", "12/2026"), audit_dt=date(2026, 8, 23))
+    assert results[StatutoryRule.RULE_6_1_D] == RuleStatus.FAIL
+
+
+def test_brand_only_commodity_name_fails_rule_6_1_b():
+    """A label with only a brand name (no generic commodity) must fail Rule 6(1)(b)."""
+    brand_only = (
+        "Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001\n"
+        "BRANDO CLASSIC Net Qty 200 g MRP Rs. 50 (incl. of all taxes) 06/2026\n"
+        "Consumer Care Cell, 411001 9876543210 care@acme.example"
+    )
+    results, _, _ = statuses(brand_only)
+    assert results[StatutoryRule.RULE_6_1_B] == RuleStatus.FAIL
+
+
+def test_missing_phone_fails_rule_6_1_f():
+    """Consumer care without a valid phone number must fail Rule 6(1)(f)."""
+    no_phone = VALID.replace("9876543210", "")
+    results, _, _ = statuses(no_phone)
+    assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
+
+
+def test_missing_email_fails_rule_6_1_f():
+    """Consumer care without an email address must fail Rule 6(1)(f)."""
+    no_email = VALID.replace("care@acme.example", "")
+    results, _, _ = statuses(no_email)
+    assert results[StatutoryRule.RULE_6_1_F] == RuleStatus.FAIL
+
+
+def test_trust_score_decremented_per_violation():
+    """Critical rule failures reduce trust score by 25; major infractions by 15."""
+    tax_fail_text = VALID.replace(" (incl. of all taxes)", "")
+    _, _, rules = statuses(tax_fail_text)
+    score = calculate_trust_score(rules)
+    assert score <= 75
+
+    unit_fail_text = VALID.replace("2 kg", "500 gm")
+    _, _, rules2 = statuses(unit_fail_text)
+    score2 = calculate_trust_score(rules2)
+    assert score2 <= 75
+

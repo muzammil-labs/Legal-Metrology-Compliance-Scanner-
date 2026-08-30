@@ -1,22 +1,87 @@
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import re
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
     from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult
 
-ENTITY_PREFIX_RE = re.compile(r"^\s*(?:mfg\.?\s+by|manufactured\s+by|packed\s+by|pkd\.?\s+by|imported\s+by|marketed\s+by)\b", re.I)
+# ---------------------------------------------------------------------------
+# Multilingual English & Hindi statutory keyword patterns
+# NOTE: ENTITY_PREFIX_RE intentionally omits ^ anchor — allows mid-label blocks
+# ---------------------------------------------------------------------------
+ENTITY_PREFIX_RE = re.compile(
+    r"(?:mfg\.?\s+by|manufactured\s+by|packed\s+by|pkd\.?\s+by|imported\s+by|"
+    r"marketed\s+by|निर्मित|पैक्ड|आयातित)",
+    re.I | re.UNICODE,
+)
 PIN_RE = re.compile(r"\b[1-9][0-9]{5}\b")
 PHONE_RE = re.compile(r"\b(?:\+91[ -]?)?[6-9][0-9]{9}\b|\b1800[ -]?[0-9]{3}[ -]?[0-9]{4}\b")
 EMAIL_RE = re.compile(r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b")
-NET_QTY_RE = re.compile(r"\b([0-9]+(?:\.[0-9]+)?)\s*(g|kg|ml|mL|l|L|N|U)\b")
-INVALID_UNIT_RE = re.compile(r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b", re.I)
-MRP_RE = re.compile(r"\bMRP\s*(?:RS\.?|INR|₹)?\s*([0-9]+(?:\.[0-9]{1,2})?)\b", re.I)
-TAX_RE = re.compile(r"\(\s*(?:incl\.?\s+of\s+all\s+taxes|inclusive\s+of\s+all\s+taxes)\s*\)", re.I)
-USP_RE = re.compile(r"(?:₹|Rs\.?|INR)?\s*([0-9]+(?:\.[0-9]{1,4})?)\s*/\s*(g|kg|ml|l)\b", re.I)
+
+# Net quantity: accepts g, kg, ml, mL, l, L, N, U, m, cm, mm — per PCR 2011 & skill spec
+NET_QTY_RE = re.compile(
+    r"\b([0-9]+(?:\.[0-9]+)?)\s*(g|kg|ml|mL|l|L|N|U|m|cm|mm|ग्राम|किग्रा|मिली|लीटर)\b",
+    re.UNICODE,
+)
+# Reject all non-SI / legacy unit notations
+INVALID_UNIT_RE = re.compile(
+    r"\b(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)\b",
+    re.I,
+)
+MRP_RE = re.compile(
+    r"\b(?:MRP|M\.R\.P\.|MAX\.?\s*RETAIL|अधिकतम\s*खुदरा\s*मूल्य)\s*(?:RS\.?|INR|₹)?\s*([0-9]+(?:\.[0-9]{1,2})?)\b",
+    re.I | re.UNICODE,
+)
+TAX_RE = re.compile(
+    r"\(\s*(?:incl\.?\s+of\s+all\s+taxes|inclusive\s+of\s+all\s+taxes|सभी\s*कर\s*सहित)\s*\)",
+    re.I | re.UNICODE,
+)
+USP_RE = re.compile(
+    r"(?:₹|Rs\.?|INR)?\s*([0-9]+(?:\.[0-9]{1,4})?)\s*/\s*(g|kg|ml|l|ग्राम|किग्रा|लीटर)\b",
+    re.I | re.UNICODE,
+)
 DATE_RE = re.compile(r"\b(0[1-9]|1[0-2])\s*/\s*(20[0-9]{2}|[0-9]{2})\b")
+
+# ASCII commodity names — \b word boundaries work for ASCII
+COMMODITY_ASCII_RE = re.compile(
+    r"\b(?:"
+    # Grains, flours, cereals
+    r"flour|atta|wheat|rice|dal|lentil|lentils|oats|semolina|maida|ragi|jowar|bajra|cornflour|suji|"
+    # Oils & fats
+    r"oil|ghee|butter|margarine|vanaspati|"
+    # Spices, condiments, salt
+    r"spice|spices|masala|salt|pepper|turmeric|chilli|coriander|cumin|mustard|"
+    # Sweeteners
+    r"sugar|jaggery|honey|syrup|"
+    # Beverages
+    r"tea|coffee|milk|juice|water|beverage|drink|"
+    # Snacks & processed
+    r"biscuit|biscuits|noodles|pasta|bread|cake|chips|snack|snacks|namkeen|"
+    # Dairy
+    r"paneer|curd|yogurt|cheese|cream|"
+    # Legumes & pulses
+    r"pulse|pulses|chickpea|rajma|moong|chana|"
+    # Personal care & cleaning
+    r"soap|detergent|shampoo|toothpaste|toothbrush"
+    r")\b",
+    re.I,
+)
+# Devanagari commodity names — \b does NOT match Unicode boundaries; use lookaround instead
+COMMODITY_HINDI_RE = re.compile(
+    r"(?:^|[\s,।])(?:"
+    r"चावल|आटा|दाल|तेल|चाय|गेहूं|नमक|चीनी|मसाला|बिस्किट|नूडल्स|मैदा|रवा|सूजी|"
+    r"राजमा|मूंग|चना|उड़द|बेसन|नारियल|सरसों|मूंगफली|तिल|जीरा|हल्दी|धनिया"
+    r")(?:[\s,।]|$)",
+    re.UNICODE,
+)
+
+
+def _has_commodity(text: str) -> bool:
+    """Returns True if the text contains a recognized generic commodity name (English or Hindi)."""
+    return bool(COMMODITY_ASCII_RE.search(text) or COMMODITY_HINDI_RE.search(text))
+
 
 
 def result(rule: StatutoryRule, status: RuleStatus, reason: str, evidence=None, values=None) -> RuleResult:
@@ -27,7 +92,11 @@ def _quantity(text: str):
     match = NET_QTY_RE.search(text)
     if not match:
         return None
-    return Decimal(match.group(1)), match.group(2)
+    raw_val = match.group(1)
+    raw_unit = match.group(2).lower()
+    unit_map = {"ग्राम": "g", "किग्रा": "kg", "मिली": "ml", "लीटर": "l"}
+    normalized_unit = unit_map.get(raw_unit, raw_unit)
+    return Decimal(raw_val), normalized_unit
 
 
 def _base_quantity(quantity: Decimal, unit: str):
@@ -44,7 +113,11 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
         return result(StatutoryRule.RULE_6_11, RuleStatus.WARNING, "USP cannot be calculated without both MRP and net quantity."), usp
     quantity, unit = quantity_data
     base_quantity, base_unit = _base_quantity(quantity, unit)
-    applicable = base_quantity > Decimal("1000") or (base_unit in {"g", "ml"} and base_quantity > Decimal("1000")) or len(re.findall(r"\b(?:pieces?|pcs|units?)\b", text, re.I)) > 1
+    applicable = (
+        base_quantity > Decimal("1000")
+        or (base_unit in {"g", "ml"} and base_quantity > Decimal("1000"))
+        or len(re.findall(r"\b(?:pieces?|pcs|units?)\b", text, re.I)) > 1
+    )
     declared = USP_RE.search(text)
     if not applicable:
         usp = USPResult(applicable=False, quantity_in_base_unit=base_quantity)
@@ -59,12 +132,58 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
         declared_value = Decimal(declared.group(1))
     except InvalidOperation:
         declared_value = None
-    declared_unit = declared.group(2).lower()
+    raw_decl_unit = declared.group(2).lower()
+    unit_map = {"ग्राम": "g", "किग्रा": "kg", "लीटर": "l"}
+    declared_unit = unit_map.get(raw_decl_unit, raw_decl_unit)
     within = declared_value is not None and declared_unit == expected_unit and abs(declared_value - calculated) <= Decimal("0.01")
-    usp = USPResult(applicable=True, declared_value=declared_value, declared_unit=Unit(declared_unit) if declared_unit in {u.value for u in Unit} else None, calculated_value=calculated, quantity_in_base_unit=base_quantity, ratio=calculated, within_tolerance=within)
+    usp = USPResult(
+        applicable=True,
+        declared_value=declared_value,
+        declared_unit=Unit(declared_unit) if declared_unit in {u.value for u in Unit} else None,
+        calculated_value=calculated,
+        quantity_in_base_unit=base_quantity,
+        ratio=calculated,
+        within_tolerance=within,
+    )
     status = RuleStatus.PASS if within else RuleStatus.FAIL
     reason = "Declared USP matches the deterministic calculation." if within else "Declared USP has the wrong unit or differs from the calculated value by more than INR 0.01."
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
+
+
+def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
+    """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
+    if pdp_area_cm2 <= 50:
+        required_mm = 1.0
+    elif pdp_area_cm2 <= 100:
+        required_mm = 1.5
+    elif pdp_area_cm2 <= 500:
+        required_mm = 2.5
+    else:
+        required_mm = 4.0
+
+    is_compliant = char_height_mm >= required_mm
+    return result(
+        StatutoryRule.RULE_5_PDP,
+        RuleStatus.PASS if is_compliant else RuleStatus.FAIL,
+        f"Numeral height ({char_height_mm:.1f}mm) satisfies statutory minimum ({required_mm:.1f}mm) for PDP area {pdp_area_cm2:.0f}cm²."
+        if is_compliant
+        else f"Micro-font detected: numeral height {char_height_mm:.1f}mm is below required {required_mm:.1f}mm for PDP area {pdp_area_cm2:.0f}cm².",
+        values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm},
+    )
+
+
+def calculate_trust_score(rules: list[RuleResult]) -> int:
+    """Calculates an explainable 0–100 Consumer Trust Score based on statutory infractions."""
+    score = 100
+    for r in rules:
+        if r.status == RuleStatus.FAIL:
+            if r.rule in {StatutoryRule.RULE_6_1_C, StatutoryRule.RULE_6_1_E, StatutoryRule.RULE_6_11}:
+                score -= 25  # Critical statutory breach
+            else:
+                score -= 15  # Major statutory breach
+        elif r.status == RuleStatus.WARNING:
+            score -= 5
+    return max(0, min(100, score))
 
 
 def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField]]:
@@ -73,32 +192,145 @@ def audit_text(text: str, audit_date: date | None = None) -> tuple[list[RuleResu
     mrp_match = MRP_RE.search(text)
     mrp = Decimal(mrp_match.group(1)) if mrp_match else None
     rules: list[RuleResult] = []
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(a) — Entity, Address, PIN, Country of Origin
+    # ------------------------------------------------------------------
     has_prefix = ENTITY_PREFIX_RE.search(text)
     has_pin = PIN_RE.search(text)
-    address_parts = sum(bool(re.search(pattern, text, re.I)) for pattern in [r"\b(?:road|street|plot|industrial|estate|premises)\b", r"\b(?:city|district|nagar|town)\b", r"\b(?:state|pradesh|maharashtra|delhi|karnataka|gujarat)\b"])
-    imported = bool(re.search(r"^\s*imported\s+by\b", text, re.I))
-    has_origin = bool(re.search(r"country\s+of\s+origin\s*:", text, re.I))
-    rules.append(result(StatutoryRule.RULE_6_1_A, RuleStatus.PASS if has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin) else RuleStatus.FAIL, "Entity prefix, address, PIN, and import origin declaration are present." if has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin) else "Manufacturer/packer/importer prefix, complete address, PIN, or country of origin is missing."))
-    generic = bool(re.search(r"\b(?:flour|noodles|oil|biscuit|biscuits|rice|sugar|soap|detergent|tea|wheat|milk)\b", text, re.I))
-    rules.append(result(StatutoryRule.RULE_6_1_B, RuleStatus.PASS if generic else RuleStatus.FAIL, "Generic commodity name is present." if generic else "A generic or common commodity name is missing."))
+    address_parts = sum(
+        bool(re.search(pattern, text, re.I))
+        for pattern in [
+            r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b",
+            r"\b(?:city|district|nagar|town|शहर|जिला)\b",
+            r"\b(?:state|pradesh|maharashtra|delhi|karnataka|gujarat|tamil\s*nadu|telangana|west\s*bengal|uttar\s*pradesh|rajasthan|punjab|haryana)\b",
+        ]
+    )
+    imported = bool(ENTITY_PREFIX_RE.search(text) and re.search(r"imported\s+by|आयातित", text, re.I))
+    has_origin = bool(re.search(r"(?:country\s+of\s+origin|मूल\s*देश)\s*:", text, re.I))
+    a_ok = bool(has_prefix and has_pin and address_parts >= 2 and (not imported or has_origin))
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_A,
+            RuleStatus.PASS if a_ok else RuleStatus.FAIL,
+            "Entity prefix, address, PIN, and import origin declaration are present."
+            if a_ok
+            else "Manufacturer/packer/importer prefix, complete address, PIN, or country of origin is missing.",
+        )
+    )
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(b) — Generic / Common Commodity Name
+    # ------------------------------------------------------------------
+    has_generic = _has_commodity(text)
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_B,
+            RuleStatus.PASS if has_generic else RuleStatus.FAIL,
+            "Generic commodity name is present."
+            if has_generic
+            else "A generic or common commodity name is missing. Brand names alone do not satisfy Rule 6(1)(b).",
+        )
+    )
+
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(c) — Net Quantity & Strict SI Units
+    # ------------------------------------------------------------------
     invalid = INVALID_UNIT_RE.search(text)
-    rules.append(result(StatutoryRule.RULE_6_1_C, RuleStatus.FAIL if invalid or not quantity_data else RuleStatus.PASS, f"Invalid unit notation detected: {invalid.group(0)}." if invalid else "Net quantity uses a recognized unit." if quantity_data else "Net quantity declaration is missing.", evidence=[invalid.group(0)] if invalid else []))
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_C,
+            RuleStatus.FAIL if invalid or not quantity_data else RuleStatus.PASS,
+            f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
+            if invalid
+            else "Net quantity uses a recognized SI unit."
+            if quantity_data
+            else "Net quantity declaration is missing.",
+            evidence=[invalid.group(0)] if invalid else [],
+        )
+    )
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(d) — Date of Manufacture / Packing / Import
+    # ------------------------------------------------------------------
     date_match = DATE_RE.search(text)
-    valid_date = bool(date_match)
+    valid_date = False
     if date_match:
+        mon = int(date_match.group(1))
         year = int(date_match.group(2))
         year += 2000 if year < 100 else 0
-        valid_date = year <= audit_date.year
-    rules.append(result(StatutoryRule.RULE_6_1_D, RuleStatus.PASS if valid_date else RuleStatus.FAIL, "Manufacture/import date is present and not in the future." if valid_date else "A valid MM/YYYY or MM/YY date is missing or is in the future."))
+        # Reject dates strictly in the future (year future, or same year but future month)
+        if year < audit_date.year:
+            valid_date = True
+        elif year == audit_date.year and mon <= audit_date.month:
+            valid_date = True
+        else:
+            valid_date = False  # future month in same year or future year
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_D,
+            RuleStatus.PASS if valid_date else RuleStatus.FAIL,
+            "Manufacture/import date is present and not in the future."
+            if valid_date
+            else "A valid MM/YYYY or MM/YY date is missing or is in the future. Future manufacture dates indicate mislabeling.",
+        )
+    )
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(e) — MRP & Tax Inclusion Phrasing
+    # ------------------------------------------------------------------
     tax_ok = bool(mrp_match and TAX_RE.search(text))
-    rules.append(result(StatutoryRule.RULE_6_1_E, RuleStatus.PASS if tax_ok else RuleStatus.FAIL, "MRP includes the required tax-inclusion declaration." if tax_ok else "MRP is missing or does not include the exact tax-inclusion declaration."))
-    care_ok = bool(re.search(r"consumer\s+care|grievance\s+officer", text, re.I) and (has_pin or re.search(r"postal|address", text, re.I)) and PHONE_RE.search(text) and EMAIL_RE.search(text))
-    rules.append(result(StatutoryRule.RULE_6_1_F, RuleStatus.PASS if care_ok else RuleStatus.FAIL, "Consumer grievance designation, address, phone, and email are present." if care_ok else "Complete consumer grievance contact channels are missing."))
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_E,
+            RuleStatus.PASS if tax_ok else RuleStatus.FAIL,
+            "MRP includes the required statutory tax-inclusion declaration."
+            if tax_ok
+            else "MRP is missing or does not include the exact tax-inclusion declaration '(incl. of all taxes)'.",
+        )
+    )
+
+    # ------------------------------------------------------------------
+    # Rule 6(1)(f) — Consumer Grievance Redressal Channels
+    # ------------------------------------------------------------------
+    has_care_designation = bool(re.search(r"consumer\s+care|grievance\s+officer|उपभोक्ता\s*सेवा", text, re.I))
+    has_address_ref = bool(has_pin or re.search(r"postal|address|पता", text, re.I))
+    has_phone = bool(PHONE_RE.search(text))
+    has_email = bool(EMAIL_RE.search(text))
+    care_ok = has_care_designation and has_address_ref and has_phone and has_email
+    care_missing = []
+    if not has_care_designation:
+        care_missing.append("designation (Consumer Care Cell / Grievance Officer)")
+    if not has_phone:
+        care_missing.append("phone helpline")
+    if not has_email:
+        care_missing.append("email address")
+    rules.append(
+        result(
+            StatutoryRule.RULE_6_1_F,
+            RuleStatus.PASS if care_ok else RuleStatus.FAIL,
+            "Consumer grievance designation, address, phone, and email are all present."
+            if care_ok
+            else f"Consumer grievance contact incomplete. Missing: {', '.join(care_missing) if care_missing else 'complete address or designation'}.",
+        )
+    )
+
+    # ------------------------------------------------------------------
+    # Rule 6(11) — Unit Sale Price Mathematical Auditor
+    # ------------------------------------------------------------------
     usp_rule, usp = audit_usp(text, mrp, quantity_data)
     rules.append(usp_rule)
+
+    # ------------------------------------------------------------------
+    # Rule 5 / 9 — Font Height & PDP Area Check
+    # ------------------------------------------------------------------
+    rules.append(audit_font_and_pdp(text))
+
     fields = [ExtractedField(name="ocr_text", value=text)]
     if quantity_data:
         fields.append(ExtractedField(name="net_quantity", value=f"{quantity_data[0]} {quantity_data[1]}"))
     if mrp is not None:
         fields.append(ExtractedField(name="mrp", value=str(mrp)))
+
     return rules, usp, fields

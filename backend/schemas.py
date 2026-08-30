@@ -29,6 +29,7 @@ class StatutoryRule(str, Enum):
     RULE_6_1_E = "Rule 6(1)(e)"
     RULE_6_1_F = "Rule 6(1)(f)"
     RULE_6_11 = "Rule 6(11)"
+    RULE_5_PDP = "Rule 5/9 (Font / PDP)"
 
 
 class BoundingBox(BaseModel):
@@ -55,6 +56,7 @@ class InspectionMetadata(BaseModel):
     source_filename: str
     sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     region: str = "Unknown"
+    gps_location: str | None = None
     source: str = "image-upload"
 
 
@@ -84,6 +86,7 @@ class AuditResponse(BaseModel):
     extracted_fields: list[ExtractedField] = Field(default_factory=list)
     rules: list[RuleResult]
     overall_status: RuleStatus
+    trust_score: int = Field(default=100, ge=0, le=100)
     usp: USPResult
     ocr_text: str
 
@@ -94,6 +97,8 @@ class InspectionSummary(BaseModel):
     source_filename: str
     sha256: str
     region: str
+    gps_location: str | None = None
+    trust_score: int = 100
     overall_status: RuleStatus
     violation_count: int
 
@@ -103,7 +108,9 @@ class AnalyticsSummary(BaseModel):
     compliant_inspections: int
     failed_inspections: int
     warning_inspections: int
+    compliance_rate: float = 0.0
     by_region: dict[str, int]
+    by_rule_infractions: dict[str, int] = Field(default_factory=dict)
 
 
 class NoticeResponse(BaseModel):
@@ -111,3 +118,21 @@ class NoticeResponse(BaseModel):
     notice_type: str
     generated_at: datetime
     filename: str
+
+
+class BatchAuditItem(BaseModel):
+    sku_id: str
+    filename: str
+    overall_status: RuleStatus
+    trust_score: int
+    violation_count: int
+    rule_results: list[RuleResult]
+
+
+class BatchAuditResponse(BaseModel):
+    batch_id: str
+    total_skus: int
+    passed_skus: int
+    failed_skus: int
+    compliance_badge_eligible: bool
+    items: list[BatchAuditItem]
