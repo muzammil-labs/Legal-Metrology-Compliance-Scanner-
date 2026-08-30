@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, FileDown, MapPin, BarChart3, RefreshCw } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, FileDown, MapPin, BarChart3, RefreshCw, Activity, ShieldAlert, Search, ListFilter, FileWarning } from 'lucide-react';
 import { fetchAnalyticsSummary, fetchInspections, getNoticeDownloadUrl } from '../services/api';
 
 export default function InspectorAnalyticsDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
 
   async function loadData() {
     setLoading(true);
+    setError(null);
     try {
       const [summary, list] = await Promise.all([
         fetchAnalyticsSummary(),
@@ -18,6 +21,7 @@ export default function InspectorAnalyticsDashboard() {
       setInspections(list);
     } catch (e) {
       console.error(e);
+      setError('Failed to load analytics data.');
     } finally {
       setLoading(false);
     }
@@ -36,8 +40,23 @@ export default function InspectorAnalyticsDashboard() {
     );
   }
 
+  if (error && !analytics) {
+    return (
+      <div className="workspace">
+        <div className="capture-panel" style={{ width: '100%' }}>
+          <div className="panel-head">
+            <span>ERROR</span>
+            <span className="badge fail"><AlertTriangle size={15} /> FAILED</span>
+          </div>
+          <p style={{ color: '#fb7185' }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   const regions = analytics?.by_region || {};
   const infractions = analytics?.by_rule_infractions || {};
+  const districts = ['All', ...Object.keys(regions)];
 
   return (
     <section className="dashboard-view">
@@ -46,9 +65,33 @@ export default function InspectorAnalyticsDashboard() {
           <h2>Enforcement Analytics</h2>
           <p className="mono">All India Retail Zones — Statutory Audit Trail</p>
         </div>
-        <button className="refresh-btn" onClick={loadData} disabled={loading}>
-          <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* District filter from feature branch */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ListFilter size={14} color="#71717a" />
+            <select
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              style={{
+                background: '#18181b',
+                color: '#f4f4f5',
+                border: '1px solid #27272a',
+                padding: '4px 10px',
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {districts.map(d => (
+                <option key={d} value={d}>{d.toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
+          <button className="refresh-btn" onClick={loadData} disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* KPI Metric Cards */}
@@ -83,7 +126,9 @@ export default function InspectorAnalyticsDashboard() {
             <span className="mono">Active Audit Hubs</span>
           </div>
           <div className="region-list">
-            {Object.entries(regions).map(([name, count]) => (
+            {Object.entries(regions)
+              .filter(([name]) => selectedDistrict === 'All' || name === selectedDistrict)
+              .map(([name, count]) => (
               <div className="region-item" key={name}>
                 <div className="region-name">
                   <b>{name}</b>

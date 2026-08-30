@@ -105,13 +105,21 @@ class InspectionSummary(BaseModel):
     violation_count: int
 
 
+class ViolationCount(BaseModel):
+    rule: str
+    count: int
+
 class AnalyticsSummary(BaseModel):
     total_inspections: int
     compliant_inspections: int
     failed_inspections: int
     warning_inspections: int
     compliance_rate: float = 0.0
-    by_region: dict[str, int]
+    active_districts: int = 0
+    top_violations: list[ViolationCount] = Field(default_factory=list)
+    violation_breakdown: dict[str, int] = Field(default_factory=dict)
+    regional_non_compliance: dict[str, int] = Field(default_factory=dict)
+    by_region: dict[str, int] = Field(default_factory=dict)
     by_rule_infractions: dict[str, int] = Field(default_factory=dict)
 
 

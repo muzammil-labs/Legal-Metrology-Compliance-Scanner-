@@ -279,29 +279,40 @@ def export_notice(inspection_id: int, db: Session = Depends(get_db)):
 def analytics(db: Session = Depends(get_db)):
     rows = db.query(Inspection).all()
     total = len(rows)
-    compliant = sum(1 for r in rows if r.overall_status == "PASS")
-    failed = sum(1 for r in rows if r.overall_status == "FAIL")
-    warning = sum(1 for r in rows if r.overall_status == "WARNING")
-    rate = round((compliant / total * 100), 1) if total > 0 else 0.0
+    compliant = sum(1 for row in rows if row.overall_status == "PASS")
+    failed = sum(1 for row in rows if row.overall_status == "FAIL")
+    warning = sum(1 for row in rows if row.overall_status == "WARNING")
+    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0.0
 
     by_region: dict[str, int] = {}
-    for r in rows:
-        by_region[r.region] = by_region.get(r.region, 0) + 1
+    regional_non_compliance: dict[str, int] = {}
+    for row in rows:
+        by_region[row.region] = by_region.get(row.region, 0) + 1
+        if row.overall_status != "PASS":
+            regional_non_compliance[row.region] = regional_non_compliance.get(row.region, 0) + 1
 
-    # Aggregate rule infraction counts
-    by_rule: dict[str, int] = {}
-    violations = db.query(Violation).all()
-    for v in violations:
-        by_rule[v.rule] = by_rule.get(v.rule, 0) + 1
+    active_districts = len(by_region)
+
+    violations_query = db.query(Violation).all()
+    violation_breakdown: dict[str, int] = {}
+    for v in violations_query:
+        violation_breakdown[v.rule] = violation_breakdown.get(v.rule, 0) + 1
+
+    top_violations = [{"rule": k, "count": v} for k, v in sorted(violation_breakdown.items(), key=lambda item: item[1], reverse=True)[:5]]
 
     return AnalyticsSummary(
         total_inspections=total,
         compliant_inspections=compliant,
         failed_inspections=failed,
         warning_inspections=warning,
-        compliance_rate=rate,
+        compliance_rate=compliance_rate,
+        active_districts=active_districts,
+        top_violations=top_violations,
+        violation_breakdown=violation_breakdown,
+        regional_non_compliance=regional_non_compliance,
         by_region=by_region,
-        by_rule_infractions=by_rule,
+        by_rule_infractions=violation_breakdown
+
     )
 
 
