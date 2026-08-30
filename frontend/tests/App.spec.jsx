@@ -13,11 +13,11 @@ test.describe('App Component Tests', () => {
 
   test('should switch tabs between consumer, officer, and seller', async ({ page }) => {
     // Initially on consumer tab
-    await expect(page.locator('.tab-btn.active')).toContainText('Consumer Scanner');
+    await expect(page.locator('.tab-group .tab-btn.active')).toContainText('Consumer Scanner');
 
     // Click Officer tab
     await page.click('button:has-text("Officer Heatmap")');
-    await expect(page.locator('.tab-btn.active')).toContainText('Officer Heatmap');
+    await expect(page.locator('.tab-group .tab-btn.active')).toContainText('Officer Heatmap');
 
     // Click Seller tab
     await page.click('button:has-text("Seller Batch")');
