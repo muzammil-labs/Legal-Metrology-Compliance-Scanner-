@@ -1,13 +1,14 @@
 from datetime import date
 import re
-from services.bilingual_auditor import audit_bilingual_consistency
+from services.bilingual_auditor import audit_bilingual_text
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 try:
-    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, BilingualVerification
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 except ModuleNotFoundError:
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, BilingualVerification
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
     from services.fine_calculator import calculate_penalty
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -398,15 +399,13 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Bilingual Consistency — Hindi vs English label cross-check
     # ------------------------------------------------------------------
     if hindi_text is not None:
-        is_compliant, reason, details = audit_bilingual_consistency(
-            text, hindi_text, mrp, quantity_data
-        )
-        bilingual_status = RuleStatus.PASS if is_compliant else RuleStatus.FAIL
+        bilingual_result = audit_bilingual_text(text + " " + hindi_text)
+        bilingual_status = RuleStatus.PASS if bilingual_result["status"] == "PASS" else RuleStatus.FAIL
         rules.append(result(
             StatutoryRule.BILINGUAL,
             bilingual_status,
-            reason,
-            values=details
+            bilingual_result["discrepancy_reason"] or "Hindi and English labels are consistent.",
+            values=bilingual_result
         ))
 
     fields = [ExtractedField(name="ocr_text", value=text)]

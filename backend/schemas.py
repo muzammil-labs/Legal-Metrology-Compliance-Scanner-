@@ -100,6 +100,13 @@ class BilingualVerification(BaseModel):
     hindi_taxes_included: bool | None = None
     mrp_match: bool | None = None
     qty_match: bool | None = None
+class BilingualVerification(BaseModel):
+    is_bilingual: bool = False
+    english_declared_price: float | None = None
+    hindi_declared_price: float | None = None
+    price_match: bool = True
+    status: RuleStatus = RuleStatus.PASS
+    discrepancy_reason: str | None = None
 
 class OffenceType(str, Enum):
     PROCEDURAL_FIRST_TIME = "PROCEDURAL_FIRST_TIME"
@@ -124,6 +131,7 @@ class PreAuditResponse(BaseModel):
     fine_risk: FineEstimation | None = None
     analysis: list[RuleResult]
     mandatory_fixes: list[str] = Field(default_factory=list)
+    bilingual_verification: BilingualVerification | None = None
 
 
 class AuditResponse(BaseModel):
@@ -137,6 +145,7 @@ class AuditResponse(BaseModel):
     bilingual_verification: BilingualVerification | None = None
     penalty: PenaltyEstimate | None = None
     ocr_text: str
+    bilingual_verification: BilingualVerification | None = None
 
 
 class InspectionSummary(BaseModel):
@@ -183,6 +192,7 @@ class BatchAuditItem(BaseModel):
     trust_score: int
     violation_count: int
     rule_results: list[RuleResult]
+    bilingual_verification: BilingualVerification | None = None
 
 
 class BatchAuditResponse(BaseModel):
