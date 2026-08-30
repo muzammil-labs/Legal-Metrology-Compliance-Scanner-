@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Legal Metrology Scanner',
-        short_name: 'LegalMetrology',
-        description: 'Legal Metrology Compliance Scanner',
+        name: 'PakkaLabel India',
+        short_name: 'PakkaLabel',
+        description: 'PakkaLabel — Legal Metrology Compliance Scanner',
         theme_color: '#09090b',
         background_color: '#09090b',
         display: 'standalone',

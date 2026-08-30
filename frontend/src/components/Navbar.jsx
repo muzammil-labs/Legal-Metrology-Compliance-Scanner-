@@ -74,7 +74,7 @@ export default function Navbar({
           </svg>
         </span>
         <div>
-          <strong>LabelCheck India</strong>
+          <strong>PakkaLabel India</strong>
           <span>Department of Consumer Affairs • Legal Metrology Division</span>
         </div>
       </div>

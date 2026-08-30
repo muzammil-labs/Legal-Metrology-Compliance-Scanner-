@@ -239,7 +239,7 @@ def generate_section_36_notice(
 
     # 6. Verification QR Code
     elements.append(Spacer(1, 12))
-    qr_url = f"https://labelcheck.india.gov.in/verify/{cert_no}"
+    qr_url = f"https://pakkalabel.india.gov.in/verify/{cert_no}"
     try:
         qr_img = _generate_qr_code(qr_url)
         qr_table_data = [

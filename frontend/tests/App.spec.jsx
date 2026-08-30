@@ -6,9 +6,9 @@ test.describe('App Component Tests', () => {
   });
 
   test('should render the header and intro sections', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('LabelCheck India');
+    await expect(page.locator('h1')).toContainText('PakkaLabel India');
     await expect(page.locator('.eyebrow')).toContainText('DEPARTMENT OF CONSUMER AFFAIRS');
-    await expect(page.locator('.brand strong')).toHaveText('LabelCheck India');
+    await expect(page.locator('.brand strong')).toHaveText('PakkaLabel India');
   });
 
   test('should switch tabs between consumer, officer, and seller', async ({ page }) => {

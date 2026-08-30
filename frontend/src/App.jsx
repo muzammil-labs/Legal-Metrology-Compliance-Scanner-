@@ -70,7 +70,7 @@ export default function App() {
             DEPARTMENT OF CONSUMER AFFAIRS • GOVERNMENT OF INDIA
           </p>
           <h1>
-            LabelCheck India
+            PakkaLabel India
             <br />
             <em>Statutory Compliance in Seconds</em>
           </h1>
