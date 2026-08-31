@@ -1,225 +1,82 @@
-from datetime import date, datetime
-from decimal import Decimal
 from enum import Enum
-from typing import Any
-
-from pydantic import BaseModel, ConfigDict, Field
-
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 class RuleStatus(str, Enum):
     PASS = "PASS"
     FAIL = "FAIL"
     WARNING = "WARNING"
 
-
-class Unit(str, Enum):
-    G = "g"
-    KG = "kg"
-    ML = "ml"
-    L = "l"
-    N = "N"
-    U = "U"
-
-
 class StatutoryRule(str, Enum):
-    RULE_5 = "Rule 5"
-    RULE_6_1_A = "Rule 6(1)(a)"
-    RULE_6_1_B = "Rule 6(1)(b)"
-    RULE_6_1_C = "Rule 6(1)(c)"
-    RULE_6_1_D = "Rule 6(1)(d)"
-    RULE_6_1_E = "Rule 6(1)(e)"
-    RULE_6_1_F = "Rule 6(1)(f)"
-    RULE_6_11 = "Rule 6(11)"
-    RULE_5_PDP = "Rule 5/9 (Font / PDP)"
-    BILINGUAL = "Bilingual Consistency"
-
-
-class BoundingBox(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    x_min: float = Field(ge=0)
-    y_min: float = Field(ge=0)
-    x_max: float = Field(ge=0)
-    y_max: float = Field(ge=0)
-
-
-class ExtractedField(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    name: str = Field(min_length=1)
-    value: str
-    bounding_box: BoundingBox | None = None
-    confidence: float | None = Field(default=None, ge=0, le=1)
-
-
-class InspectionMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    inspection_id: int | None = None
-    inspected_at: datetime
-    audit_date: date
-    source_filename: str
-    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    region: str = "Unknown"
-    gps_location: str | None = None
-    source: str = "image-upload"
-
+    RULE_6_1_A = "Rule 6(1)(a) - Manufacturer / Packer Details"
+    RULE_6_1_B = "Rule 6(1)(b) - Country of Origin"
+    RULE_6_1_C = "Rule 6(1)(c) - Net Quantity"
+    RULE_6_1_D = "Rule 6(1)(d) - Date of Manufacture / Packing"
+    RULE_6_1_E = "Rule 6(1)(e) - Maximum Retail Price (MRP)"
+    RULE_6_1_F = "Rule 6(1)(f) - Consumer Care Details"
+    RULE_6_11_USP = "Rule 6(11) - Unit Sale Price (USP)"
 
 class RuleResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
     rule: StatutoryRule
     status: RuleStatus
-    evidence: list[str] = Field(default_factory=list)
     reason: str
-    calculated_values: dict[str, Any] = Field(default_factory=dict)
+    statutory_clause: Optional[str] = None
+    remedy: Optional[str] = None
 
+class DistrictMetricSummary(BaseModel):
+    district_name: str
+    total_inspections: int
+    compliance_rate: float
+    total_penalties_levied_inr: int
+    top_statutory_violation: str
+    repeat_offender_brands: List[str] = []
 
-class USPResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    applicable: bool
-    declared_value: Decimal | None = None
-    declared_unit: Unit | None = None
-    calculated_value: Decimal | None = None
-    quantity_in_base_unit: Decimal | None = None
-    ratio: Decimal | None = None
-    within_tolerance: bool | None = None
-
-
-class PenaltyEstimate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    sections_violated: list[str]
-    estimated_fine_range: str
-    jan_vishwas_eligible: bool = False
-    grace_period_days: str | None = None
-    director_liability: bool = False
-
-
+class ExecutiveAnalyticsResponse(BaseModel):
+    generated_at: str
+    reporting_month: str
+    state_aggregate_compliance_rate: float
+    total_inspections_statewide: int
+    districts: List[DistrictMetricSummary]
 
 class FSSAIVerification(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    license_number: str | None = None
-    is_valid_format: bool = False
-    veg_nonveg_symbol: str | None = None
-    category_claims: str | None = None
-    status: RuleStatus = RuleStatus.FAIL
-    reason: str = ""
-
-class BilingualVerification(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    english_mrp: float | None = None
-    hindi_mrp: float | None = None
-    english_qty: str | None = None
-    hindi_qty: str | None = None
-    hindi_taxes_included: bool | None = None
-    mrp_match: bool | None = None
-    qty_match: bool | None = None
-class BilingualVerification(BaseModel):
-    is_bilingual: bool = False
-    english_declared_price: float | None = None
-    hindi_declared_price: float | None = None
-    price_match: bool = True
+    is_food_product: bool = False
+    license_number: Optional[str] = None
+    is_license_valid_format: bool = False
+    has_veg_nonveg_symbol: bool = False
+    dietary_type: Optional[str] = None
+    fortified_symbol_present: bool = False
     status: RuleStatus = RuleStatus.PASS
-    discrepancy_reason: str | None = None
-
-class OffenceType(str, Enum):
-    PROCEDURAL_FIRST_TIME = "PROCEDURAL_FIRST_TIME"
-    REPEAT_METRIC_FRAUD = "REPEAT_METRIC_FRAUD"
-
-
-class FineEstimation(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    min_penalty_inr: int
-    max_penalty_inr: int
-    legal_section: str
-    offence_type: OffenceType
-
+    violations: List[str] = []
 
 class PreAuditRequest(BaseModel):
-    text: str | None = None
-    json_artwork: dict | None = None
-
+    artwork_text: str
+    brand_name: Optional[str] = None
 
 class PreAuditResponse(BaseModel):
-    compliant: bool
-    fine_risk: FineEstimation | None = None
-    analysis: list[RuleResult]
-    mandatory_fixes: list[str] = Field(default_factory=list)
-    bilingual_verification: BilingualVerification | None = None
-
-
-class FSSAIVerification(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    fssai_license_number: str | None = None
-    is_valid_format: bool = False
-    veg_nonveg_symbol: str | None = None
-    status: RuleStatus = RuleStatus.FAIL
-    reason: str = ""
-    category_claims: list[str] = Field(default_factory=list)
+    overall_status: RuleStatus
+    rules: List[RuleResult]
+    estimated_fine_inr: int
 
 class AuditResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    metadata: InspectionMetadata
-    extracted_fields: list[ExtractedField] = Field(default_factory=list)
-    rules: list[RuleResult]
+    inspection_id: str
+    sha256_hash: str
     overall_status: RuleStatus
-    trust_score: int = Field(default=100, ge=0, le=100)
-    usp: USPResult
-    bilingual_verification: BilingualVerification | None = None
-    fssai_verification: FSSAIVerification | None = None
-    penalty: PenaltyEstimate | None = None
-    fssai_verification: FSSAIVerification | None = None
-    ocr_text: str
-    bilingual_verification: BilingualVerification | None = None
-
-
-class InspectionSummary(BaseModel):
-    inspection_id: int
-    inspected_at: datetime
-    source_filename: str
-    sha256: str
-    region: str
-    gps_location: str | None = None
-    trust_score: int = 100
-    overall_status: RuleStatus
-    violation_count: int
-
-
-class ViolationCount(BaseModel):
-    rule: str
-    count: int
-
-class AnalyticsSummary(BaseModel):
-    total_inspections: int
-    compliant_inspections: int
-    failed_inspections: int
-    warning_inspections: int
-    compliance_rate: float = 0.0
-    active_districts: int = 0
-    top_violations: list[ViolationCount] = Field(default_factory=list)
-    violation_breakdown: dict[str, int] = Field(default_factory=dict)
-    regional_non_compliance: dict[str, int] = Field(default_factory=dict)
-    by_region: dict[str, int] = Field(default_factory=dict)
-    by_rule_infractions: dict[str, int] = Field(default_factory=dict)
-
-
-class NoticeResponse(BaseModel):
-    inspection_id: int
-    notice_type: str
-    generated_at: datetime
-    filename: str
-
+    rules: List[RuleResult]
+    timestamp: str
+    penalty: Optional[Dict[str, Any]] = None
 
 class BatchAuditItem(BaseModel):
-    sku_id: str
+    item_id: str
     filename: str
-    overall_status: RuleStatus
-    trust_score: int
-    violation_count: int
-    rule_results: list[RuleResult]
-    bilingual_verification: BilingualVerification | None = None
-
+    overall_status: str
+    violations_count: int
+    estimated_fine_inr: int
 
 class BatchAuditResponse(BaseModel):
     batch_id: str
-    total_skus: int
-    passed_skus: int
-    failed_skus: int
-    compliance_badge_eligible: bool
-    items: list[BatchAuditItem]
+    total_scanned: int
+    passed_count: int
+    failed_count: int
+    total_compounding_exposure_inr: int
+    items: List[BatchAuditItem]
+    processed_at: str
