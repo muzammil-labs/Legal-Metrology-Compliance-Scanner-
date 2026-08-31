@@ -94,7 +94,7 @@
   ],
   "overall_status": "FAIL",
   "trust_score": 50,
-  "penalty": {"sections_violated": ["Section 36"], "estimated_fine_range": "₹25,000 - ₹50,000"},
+  "penalty": null,
   "usp": {
     "applicable": true,
     "declared_value": null,
@@ -105,6 +105,5 @@
     "within_tolerance": false
   },
   "ocr_text": "Packed by Grain Mill Ltd, Plot 9 Industrial Area, Delhi 110092. Basmati Rice Net Wt 1000 gm MRP Rs. 120 (incl. of all taxes) 05/2026. Consumer Care 9876543210 care@grainmill.example",
-  "bilingual_verification": null,
-  "penalty": null
+  "bilingual_verification": null
 }
