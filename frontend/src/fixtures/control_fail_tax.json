@@ -5,33 +5,95 @@
     "audit_date": "2026-08-29",
     "source_filename": "snack-50g-tax-violation.jpg",
     "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-    "region": "South Delhi — Sarojini Nagar Market",
-    "gps_location": "28.5734° N, 77.1907° E",
+    "region": "South Delhi \u2014 Sarojini Nagar Market",
+    "gps_location": "28.5734\u00b0 N, 77.1907\u00b0 E",
     "source": "fixture"
   },
   "extracted_fields": [
-    { "name": "product", "value": "Masala Chips 50 g", "bounding_box": null, "confidence": 1 },
-    { "name": "mrp", "value": "50.00", "bounding_box": null, "confidence": 1 },
-    { "name": "net_quantity", "value": "50 g", "bounding_box": null, "confidence": 1 }
+    {
+      "name": "product",
+      "value": "Masala Chips 50 g",
+      "bounding_box": null,
+      "confidence": 1
+    },
+    {
+      "name": "mrp",
+      "value": "50.00",
+      "bounding_box": null,
+      "confidence": 1
+    },
+    {
+      "name": "net_quantity",
+      "value": "50 g",
+      "bounding_box": null,
+      "confidence": 1
+    }
   ],
   "rules": [
-    { "rule": "Rule 6(1)(a)", "status": "PASS", "evidence": [], "reason": "Entity prefix, address, PIN, and import origin declaration are present.", "calculated_values": {} },
-    { "rule": "Rule 6(1)(b)", "status": "PASS", "evidence": [], "reason": "Generic commodity name is present.", "calculated_values": {} },
-    { "rule": "Rule 6(1)(c)", "status": "PASS", "evidence": [], "reason": "Net quantity uses a recognized SI unit.", "calculated_values": {} },
-    { "rule": "Rule 6(1)(d)", "status": "PASS", "evidence": [], "reason": "Manufacture/import date is present and not in the future.", "calculated_values": {} },
+    {
+      "rule": "Rule 6(1)(a)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Entity prefix, address, PIN, and import origin declaration are present.",
+      "calculated_values": {}
+    },
+    {
+      "rule": "Rule 6(1)(b)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Generic commodity name is present.",
+      "calculated_values": {}
+    },
+    {
+      "rule": "Rule 6(1)(c)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Net quantity uses a recognized SI unit.",
+      "calculated_values": {}
+    },
+    {
+      "rule": "Rule 6(1)(d)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Manufacture/import date is present and not in the future.",
+      "calculated_values": {}
+    },
     {
       "rule": "Rule 6(1)(e)",
       "status": "FAIL",
-      "evidence": ["MRP Rs. 50/-"],
+      "evidence": [
+        "MRP Rs. 50/-"
+      ],
       "reason": "MRP is missing or does not include the exact tax-inclusion declaration '(incl. of all taxes)'.",
       "calculated_values": {}
     },
-    { "rule": "Rule 6(1)(f)", "status": "PASS", "evidence": [], "reason": "Consumer grievance designation, address, phone, and email are all present.", "calculated_values": {} },
-    { "rule": "Rule 6(11)", "status": "PASS", "evidence": [], "reason": "USP is not mandatory for this pack size.", "calculated_values": { "base_unit": "g" } },
-    { "rule": "Rule 5/9 (Font / PDP)", "status": "PASS", "evidence": [], "reason": "Numeral height (2.5mm) satisfies statutory minimum (2.5mm) for PDP area 120cm².", "calculated_values": {} }
+    {
+      "rule": "Rule 6(1)(f)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Consumer grievance designation, address, phone, and email are all present.",
+      "calculated_values": {}
+    },
+    {
+      "rule": "Rule 6(11)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "USP is not mandatory for this pack size.",
+      "calculated_values": {
+        "base_unit": "g"
+      }
+    },
+    {
+      "rule": "Rule 5/9 (Font / PDP)",
+      "status": "PASS",
+      "evidence": [],
+      "reason": "Numeral height (2.5mm) satisfies statutory minimum (2.5mm) for PDP area 120cm\u00b2.",
+      "calculated_values": {}
+    }
   ],
   "overall_status": "FAIL",
   "trust_score": 75,
+  "penalty": {"sections_violated": ["Section 36"], "estimated_fine_range": "₹25,000 - ₹50,000"},
   "usp": {
     "applicable": false,
     "declared_value": null,
@@ -41,5 +103,7 @@
     "ratio": null,
     "within_tolerance": null
   },
-  "ocr_text": "Packed by Masala Snacks Pvt Ltd, Plot 12 Industrial Road, Delhi 110020. Masala Chips Net Qty 50 g MRP Rs. 50/- 07/2026. Consumer Care 9876543210 care@masalasnacks.example"
+  "ocr_text": "Packed by Masala Snacks Pvt Ltd, Plot 12 Industrial Road, Delhi 110020. Masala Chips Net Qty 50 g MRP Rs. 50/- 07/2026. Consumer Care 9876543210 care@masalasnacks.example",
+  "bilingual_verification": null,
+  "penalty": null
 }

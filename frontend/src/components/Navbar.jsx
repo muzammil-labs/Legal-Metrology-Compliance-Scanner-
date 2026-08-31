@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Code,
   FileScan,
   ShieldAlert,
   Store,
@@ -7,6 +8,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Zap,
+  User,
 } from "lucide-react";
 
 export default function Navbar({
@@ -14,6 +16,8 @@ export default function Navbar({
   setActiveTab,
   demoMode,
   setDemoMode,
+  role,
+  setRole,
 }) {
   const fixtureOptions = [
     {
@@ -104,9 +108,31 @@ export default function Navbar({
         >
           <Store size={15} /> Seller Batch Audit
         </button>
+        <button
+          className={`tab-btn ${activeTab === "developer" ? "active" : ""}`}
+          onClick={() => setActiveTab("developer")}
+          role="tab"
+          aria-selected={activeTab === "developer"}
+        >
+          <Code size={15} /> Developer Portal
+        </button>
       </div>
 
       <div className="nav-right">
+
+        <div className="role-switcher" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px', background: '#1E3A5F', padding: '4px 8px', borderRadius: '16px', color: 'white', fontSize: '12px' }}>
+          <User size={14} />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            style={{ background: 'transparent', color: 'white', border: 'none', outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="FIELD_INSPECTOR">Inspector</option>
+            <option value="DISTRICT_MAGISTRATE">Magistrate</option>
+            <option value="CENTRAL_ADMIN">Admin</option>
+          </select>
+        </div>
+
         {/* Segmented control per demo-failsafe-verifier skill spec — replaces <select> */}
         <div
           className="fixture-segment-group"

@@ -1,15 +1,22 @@
+from services.pdp_geometry import estimate_pdp_area
 from datetime import date
 import re
-from services.bilingual_auditor import audit_bilingual_consistency
+from services.bilingual_auditor import audit_bilingual_text
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from services.fine_calculator import calculate_penalty
 
 try:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, FSSAIVerification
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
+except ModuleNotFoundError:
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
+    from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
 except ModuleNotFoundError:
     from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate
     from services.fine_calculator import calculate_penalty
-    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, FSSAIVerification
 
 # ---------------------------------------------------------------------------
 # Multilingual English & Hindi statutory keyword patterns
@@ -30,9 +37,10 @@ NET_QTY_RE = re.compile(
     re.UNICODE,
 )
 # Reject all non-SI / legacy unit notations
+INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(\d+(?:\.\d+)?)\s*(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)", re.I)
 INVALID_UNIT_RE = re.compile(r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)", re.I)
 INVALID_UNIT_RE = re.compile(
-    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?:\b|\s|$)",
+    r"(?:\b|\s)(?:gm|gms|gm\.|g\.|ml\.|ML|m\.l\.|ltr|litres|lit\.|kg\.|kgs|k\.g\.)(?!\w)",
     re.I,
 )
 MRP_RE = re.compile(
@@ -81,6 +89,10 @@ COMMODITY_HINDI_RE = re.compile(
     r")(?:[\s,।]|$)",
     re.UNICODE,
 )
+
+FSSAI_NO_RE = re.compile(r"\b([0-9]{14})\b")
+VEG_SYMBOL_RE = re.compile(r"(?:green\s+circle(?:\s+in\s+square)?|brown\s+circle(?:\s+in\s+square)?|veg(?:etarian)?\s+symbol|non-veg(?:etarian)?\s+symbol)", re.I | re.UNICODE)
+FSSAI_CATEGORY_RE = re.compile(r"\bfood\s*category\b", re.I | re.UNICODE)
 
 ADDRESS_PART_RES = [
     re.compile(r"\b(?:road|street|plot|industrial|estate|premises|मार्ग|रोड|नगर)\b", re.I | re.UNICODE),
@@ -171,16 +183,18 @@ def audit_usp(text: str, mrp: Decimal | None, quantity_data) -> tuple[RuleResult
     reason = "Declared USP matches the deterministic calculation." if within else "Declared USP has the wrong unit or differs from the calculated value by more than INR 0.01."
     return result(StatutoryRule.RULE_6_11, status, reason, evidence=[declared.group(0)], values={"expected": str(calculated), "unit": expected_unit}), usp
 
-def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: float = 2.5) -> RuleResult:
+def audit_font_and_pdp(text: str, pdp_width_cm: float = 12.0, pdp_height_cm: float = 10.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> RuleResult:
     """Evaluates Rule 5 and Rule 9 Table I numeral height requirements per PCR 2011 Second Schedule."""
+    pdp_area_cm2 = estimate_pdp_area(pdp_width_cm, pdp_height_cm)
+
     if pdp_area_cm2 <= 50:
         required_mm = 1.0
     elif pdp_area_cm2 <= 100:
         required_mm = 1.5
     elif pdp_area_cm2 <= 500:
-        required_mm = 2.5
+        required_mm = 2.0
     else:
-        required_mm = 4.0
+        required_mm = 6.0 if is_net_qty else 4.0
 
     is_compliant = char_height_mm >= required_mm
     return result(
@@ -189,7 +203,7 @@ def audit_font_and_pdp(text: str, pdp_area_cm2: float = 120.0, char_height_mm: f
         f"Numeral height ({char_height_mm:.1f}mm) satisfies statutory minimum ({required_mm:.1f}mm) for PDP area {pdp_area_cm2:.0f}cm²."
         if is_compliant
         else f"Micro-font detected: numeral height {char_height_mm:.1f}mm is below required {required_mm:.1f}mm for PDP area {pdp_area_cm2:.0f}cm².",
-        values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm},
+        values={"pdp_area_cm2": pdp_area_cm2, "char_height_mm": char_height_mm, "required_mm": required_mm, "pdp_width_cm": pdp_width_cm, "pdp_height_cm": pdp_height_cm},
     )
 
 def calculate_trust_score(rules: list[RuleResult]) -> int:
@@ -205,6 +219,7 @@ def calculate_trust_score(rules: list[RuleResult]) -> int:
             score -= 5
     return max(0, min(100, score))
 
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FSSAIVerification | None]:
 
 def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation | None:
     if not violations:
@@ -233,13 +248,72 @@ def calculate_compounding_fine(violations: list[RuleResult]) -> FineEstimation |
             offence_type=offence_type
         )
 
-def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, json_artwork: dict | None = None) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None, FSSAIVerification | None]:
+def audit_text(text: str, audit_date: date | None = None, font_height_mm: float | None = None, hindi_text: str | None = None, pdp_width_cm: float = 12.0, pdp_height_cm: float = 10.0, char_height_mm: float = 2.5, is_net_qty: bool = False) -> tuple[list[RuleResult], USPResult, list[ExtractedField], PenaltyEstimate | None, FineEstimation | None]:
     audit_date = audit_date or date.today()
+    fssai_match = re.search(r"\b[0-9]{14}\b", text)
+    fssai_verification = None
+
+    veg_sym = None
+    lower_text = text.lower()
+    if "green circle" in lower_text or "veg" in lower_text:
+        veg_sym = "green circle (Veg)"
+    elif "brown circle" in lower_text or "non veg" in lower_text:
+        veg_sym = "brown circle (Non-Veg)"
+
+    if json_artwork and json_artwork.get("bounding_boxes"):
+        for box in json_artwork.get("bounding_boxes", []):
+            box_text = box.get("text", "").lower()
+            box_label = box.get("label", "").lower()
+            if "green circle" in box_text or "veg" in box_text or "green circle" in box_label or "veg" in box_label:
+                veg_sym = "green circle (Veg)"
+            elif "brown circle" in box_text or "non veg" in box_text or "brown circle" in box_label or "non veg" in box_label:
+                veg_sym = "brown circle (Non-Veg)"
+
+    if fssai_match or veg_sym:
+        fssai_verification = FSSAIVerification()
+        if fssai_match:
+            fssai_verification.license_number = fssai_match.group(0)
+            fssai_verification.is_valid_format = True
+            fssai_verification.status = RuleStatus.PASS
+            fssai_verification.reason = "Valid FSSAI license format detected."
+        else:
+            fssai_verification.status = RuleStatus.FAIL
+            fssai_verification.reason = "Missing 14-digit FSSAI license number."
+
+        fssai_verification.veg_nonveg_symbol = veg_sym
+
+
     penalty = None
     quantity_data = _quantity(text)
     mrp_match = MRP_RE.search(text)
     mrp = Decimal(mrp_match.group(1)) if mrp_match else None
     rules: list[RuleResult] = []
+
+    # ------------------------------------------------------------------
+    # FSSAI Cross-Validation Logic
+    # ------------------------------------------------------------------
+    fssai_match = FSSAI_NO_RE.search(text)
+    fssai_no = fssai_match.group(1) if fssai_match else None
+
+    veg_match = VEG_SYMBOL_RE.search(text)
+    veg_symbol_str = veg_match.group(0) if veg_match else None
+
+    has_category = bool(FSSAI_CATEGORY_RE.search(text))
+    category_claims = ["Food Category"] if has_category else []
+
+    is_valid = bool(fssai_no)
+    fssai_status = RuleStatus.PASS if is_valid else RuleStatus.FAIL
+    fssai_reason = "14-digit FSSAI license number is correctly declared." if is_valid else "Missing or invalid FSSAI 14-digit license number."
+
+    fssai_verification = FSSAIVerification(
+        fssai_license_number=fssai_no,
+        is_valid_format=is_valid,
+        veg_nonveg_symbol=veg_symbol_str,
+        status=fssai_status,
+        reason=fssai_reason,
+        category_claims=category_claims
+    )
 
     # ------------------------------------------------------------------
     # Rule 6(1)(a) — Entity, Address, PIN, Country of Origin
@@ -281,15 +355,51 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Rule 6(1)(c) — Net Quantity & Strict SI Units
     # ------------------------------------------------------------------
     invalid = INVALID_UNIT_RE.search(text)
+    c_status = RuleStatus.PASS
+    c_reason = "Net quantity uses a recognized SI unit."
+    c_evidence = []
+
+    if fssai_verification and fssai_verification.is_valid_format and (invalid or quantity_data):
+        # Cross-validation: strict SI units for food products
+        unit = quantity_data[1] if quantity_data else (invalid.group(0).strip() if invalid else "")
+        if unit not in {"g", "kg", "ml", "l"}:
+            c_status = RuleStatus.FAIL
+            c_reason = f"Food safety regulations mandate strict SI units (g, kg, ml, l) for Net Quantity. Found '{unit}'."
+            c_evidence = [unit]
+    elif invalid:
+        c_status = RuleStatus.FAIL
+        c_reason = f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
+        c_evidence = [invalid.group(0)]
+    elif not quantity_data:
+        c_status = RuleStatus.FAIL
+        c_reason = "Net quantity declaration is missing."
+    elif fssai_verification and fssai_verification.is_valid_format and quantity_data:
+        # Cross-validation: strict SI units for food products
+        unit = quantity_data[1]
+        if unit not in {"g", "kg", "ml", "l"}:
+            c_status = RuleStatus.FAIL
+            c_reason = f"Food safety regulations mandate strict SI units (g, kg, ml, l) for Net Quantity. Found '{unit}'."
+            c_evidence = [unit]
+    strict_si_fail = False
+    si_fail_reason = ""
+    if has_category and quantity_data and quantity_data[1].lower() not in ["g", "kg", "ml", "l"]:
+        strict_si_fail = True
+        si_fail_reason = f"Food category detected, but Net Quantity uses non-strict SI unit: '{quantity_data[1]}'."
+
     rules.append(
         result(
             StatutoryRule.RULE_6_1_C,
-            RuleStatus.FAIL if invalid or not quantity_data else RuleStatus.PASS,
-            f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
-            if invalid
-            else "Net quantity uses a recognized SI unit."
-            if quantity_data
-            else "Net quantity declaration is missing.",
+            c_status,
+            c_reason,
+            evidence=c_evidence,
+            RuleStatus.FAIL if invalid or not quantity_data or strict_si_fail else RuleStatus.PASS,
+            si_fail_reason if strict_si_fail else (
+                f"Invalid non-SI unit notation detected: '{invalid.group(0)}'. Use 'g' not 'gm', 'ml' not 'ml.'."
+                if invalid
+                else "Net quantity uses a recognized SI unit."
+                if quantity_data
+                else "Net quantity declaration is missing."
+            ),
             evidence=[invalid.group(0)] if invalid else [],
         )
     )
@@ -368,7 +478,7 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # ------------------------------------------------------------------
     # Rule 5 / 9 — Font Height & PDP Area Check (HEAD's default PDP auditor)
     # ------------------------------------------------------------------
-    rules.append(audit_font_and_pdp(text))
+    rules.append(audit_font_and_pdp(text, pdp_width_cm, pdp_height_cm, char_height_mm, is_net_qty))
 
     # ------------------------------------------------------------------
     # Rule 5 — Package-size-based font height (feature branch's granular check)
@@ -400,15 +510,13 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     # Bilingual Consistency — Hindi vs English label cross-check
     # ------------------------------------------------------------------
     if hindi_text is not None:
-        is_compliant, reason, details = audit_bilingual_consistency(
-            text, hindi_text, mrp, quantity_data
-        )
-        bilingual_status = RuleStatus.PASS if is_compliant else RuleStatus.FAIL
+        bilingual_result = audit_bilingual_text(text + " " + hindi_text)
+        bilingual_status = RuleStatus.PASS if bilingual_result["status"] == "PASS" else RuleStatus.FAIL
         rules.append(result(
             StatutoryRule.BILINGUAL,
             bilingual_status,
-            reason,
-            values=details
+            bilingual_result["discrepancy_reason"] or "Hindi and English labels are consistent.",
+            values=bilingual_result
         ))
 
     fields = [ExtractedField(name="ocr_text", value=text)]
@@ -419,5 +527,6 @@ def audit_text(text: str, audit_date: date | None = None, font_height_mm: float 
     failed_rules = [r for r in rules if r.status == RuleStatus.FAIL]
     penalty = calculate_penalty([r.rule for r in failed_rules])
 
+    return rules, usp, fields, penalty, fssai_verification
     fine_estimation = calculate_compounding_fine([r for r in rules if r.status == RuleStatus.FAIL])
-    return rules, usp, fields, penalty, fine_estimation
+    return rules, usp, fields, penalty, fine_estimation, fssai_verification

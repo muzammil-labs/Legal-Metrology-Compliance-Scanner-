@@ -70,6 +70,38 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       </div>
 
+
+
+      {(() => {
+        const rule5 = audit.rules.find(r => r.rule === "Rule 5 PDP Font Height & Area Ratio" || r.rule === "Rule 5 PDP" || r.rule.includes("Rule 5"));
+        if (!rule5 || !rule5.calculated_values || rule5.calculated_values.pdp_area_cm2 === undefined) return null;
+        const vals = rule5.calculated_values;
+        return (
+          <div className="usp-audit-card" style={{ marginTop: '16px' }}>
+            <div className="usp-header">
+              <Scale size={16} className="text-cyan" />
+              <strong>Rule 5 PDP Font Height & Area Ratio</strong>
+            </div>
+            <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <div>
+                <span>PDP Area</span>
+                <b>{vals.pdp_area_cm2.toFixed(1)} cm²</b>
+              </div>
+              <div>
+                <span>Font Height</span>
+                <b>{vals.char_height_mm.toFixed(1)} mm</b>
+              </div>
+              <div>
+                <span>Minimum Required</span>
+                <b className={vals.char_height_mm >= vals.required_mm ? "text-emerald" : "text-rose"}>
+                  {vals.required_mm.toFixed(1)} mm
+                </b>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {audit.usp && audit.usp.applicable && (
         <div className="usp-audit-card">
           <div className="usp-header">
@@ -109,6 +141,87 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {audit.fssai_verification && (
+        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-cyan" />
+            <strong>FSSAI & Food Safety Compliance</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>FSSAI License No</span>
+              <b>{audit.fssai_verification.license_number || "Not Found"}</b>
+            </div>
+            <div>
+              <span>License Format Status</span>
+        <div
+          className="usp-audit-card fssai-audit-card"
+          style={{ marginTop: "16px" }}
+        >
+          <div className="usp-header">
+            <ShieldCheck size={16} className="text-emerald" />
+            <strong>FSSAI & Food Safety Regulation</strong>
+          </div>
+          <div className="usp-grid">
+            <div>
+              <span>14-Digit FSSAI License No.</span>
+              <b
+                className={
+                  audit.fssai_verification.is_valid_format
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.is_valid_format
+                  ? "✓ Valid 14-Digit Format"
+                  : "✗ Invalid / Missing"}
+                {audit.fssai_verification.fssai_license_number
+                  ? audit.fssai_verification.fssai_license_number
+                  : "Invalid/Missing"}
+              </b>
+            </div>
+            <div>
+              <span>Veg/Non-Veg Symbol</span>
+              <b
+                className={
+                  audit.fssai_verification.veg_nonveg_symbol
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.veg_nonveg_symbol
+                  ? `✓ Detected (${audit.fssai_verification.veg_nonveg_symbol})`
+                  : "✗ Missing / Undetected"}
+              </b>
+            </div>
+            <div>
+              <span>Strict SI Units (Food)</span>
+              <b
+                className={
+                  audit.fssai_verification.status === "PASS"
+                    ? "text-emerald"
+                    : "text-rose"
+                }
+              >
+                {audit.fssai_verification.status === "PASS"
+                  ? "✓ Validated"
+                  : "✗ See Rule 6(1)(c)"}
+              </b>
+            </div>
+          </div>
+        </div>
+      )}
+
+                  ? `✓ Detected`
+                  : "✗ Missing"}
+              </b>
+            </div>
+            <div>
+              <span>SI Metric Unit Compliance</span>
+              <b
+                className={
+                  audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                  "PASS"
       {audit.bilingual_verification && (
         <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
           <div className="usp-header">
@@ -116,6 +229,23 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
             <strong>Bilingual Language Consistency</strong>
           </div>
           <div className="usp-grid">
+            {!audit.bilingual_verification?.is_bilingual ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-muted">Monolingual Label</b>
+              </div>
+            ) : audit.bilingual_verification?.price_match ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-emerald">
+                  ✓ Hindi & English Pricing Match Verified
+                </b>
+              </div>
+            ) : (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <b className="text-rose">
+                  ✗ {audit.bilingual_verification?.discrepancy_reason}
+                </b>
+              </div>
+            )}
             <div>
               <span>English Details</span>
               <b>
@@ -150,6 +280,10 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                     : "text-rose"
                 }
               >
+                {audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
+                "PASS"
+                  ? "✓ Verified"
+                  : "✗ Non-compliant"}
                 {audit.bilingual_verification.mrp_match !== false &&
                 audit.bilingual_verification.qty_match !== false
                   ? "✓ Consistent"
@@ -201,6 +335,7 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       )}
 
+      {audit.penalty && audit.penalty.estimated_fine_range && (
       {audit.fine_risk && (
         <div className="usp-audit-card" style={{ marginTop: "16px" }}>
           <div className="usp-header">
@@ -210,10 +345,11 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
           <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               <span>Legal Section</span>
-              <b>{audit.fine_risk.legal_section}</b>
+              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
             </div>
             <div>
               <span>Estimated Fine</span>
+              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
               <b className="text-rose">
                 ₹{audit.fine_risk.min_penalty_inr} - ₹
                 {audit.fine_risk.max_penalty_inr}
