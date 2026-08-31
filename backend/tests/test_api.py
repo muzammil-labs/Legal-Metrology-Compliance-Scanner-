@@ -26,7 +26,7 @@ Base.metadata.create_all(bind=engine)
 # That's perfectly fine, because it initializes the test DB with seed data.
 
 from main import app, get_db, status_for
-from schemas import RuleResult, RuleStatus, StatutoryRule, USPResult, PenaltyEstimate
+from backend.schemas import RuleResult, RuleStatus, StatutoryRule, USPResult, PenaltyEstimate
 from models import Inspection, Violation, AuditCertificate
 
 def override_get_db():

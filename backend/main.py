@@ -115,7 +115,7 @@ def root_status():
 
 
 @app.post("/api/scan", response_model=AuditResponse)
-def scan(
+async def scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     ocr_text: str = Form(default=""),
@@ -123,12 +123,14 @@ def scan(
     gps_location: str = Form(default="28.6139° N, 77.2090° E"),
     db: Session = Depends(get_db),
 ):
-    content = file.file.read(MAX_FILE_SIZE + 1)
-    content = file.file.read()
+    await file.seek(0)
+    content = await file.read(MAX_FILE_SIZE + 1)
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+    await file.seek(0)
+    content = await file.read()
 
     digest = sha256(content).hexdigest()
     # If OCR text wasn't supplied directly in Form, attempt vision extraction via Gemini
@@ -211,7 +213,7 @@ def scan(
 
 
 @app.post("/api/scan/batch", response_model=BatchAuditResponse)
-def batch_scan(
+async def batch_scan(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
@@ -220,11 +222,15 @@ def batch_scan(
     passed_count = 0
 
     for idx, f in enumerate(files):
-        content = f.file.read(MAX_FILE_SIZE + 1)
-        if content and len(content) > MAX_FILE_SIZE:
+        await f.seek(0)
+        content = await f.read(MAX_FILE_SIZE + 1)
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded image is empty")
+        if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+        await f.seek(0)
 
-        content = f.file.read()
+
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
         mock_text = f"Manufactured by Seller Entity Ltd, Plot {idx+1} Industrial Road, New Delhi 110001. Packaged Commodity Net Qty 500 g MRP Rs. {100 + idx*10} (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com. Country of origin: India"
@@ -393,3 +399,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.post("/api/v1/pre-audit")
+def pre_audit():
+    return {"status": "ok"}

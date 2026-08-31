@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import sqlite3
+import io
 from hashlib import sha256
 from pathlib import Path
 
@@ -35,13 +36,18 @@ def verify_endpoints(client: TestClient):
     if response.status_code != 200:
         raise ReadinessError(f"/health failed with {response.status_code}")
 
-    response = client.get("/api/inspections")
+    dummy_file = {"file": ("test_image.jpg", io.BytesIO(b"dummy image data"), "image/jpeg")}
+    response = client.post("/api/scan", files=dummy_file, data={"region": "Test Region", "gps_location": "0.0, 0.0"})
     if response.status_code != 200:
-        raise ReadinessError(f"/api/inspections failed with {response.status_code}")
+        raise ReadinessError(f"/api/scan failed with {response.status_code}")
 
     response = client.get("/api/analytics/summary")
     if response.status_code != 200:
         raise ReadinessError(f"/api/analytics/summary failed with {response.status_code}")
+
+    response = client.post("/api/v1/pre-audit", json={})
+    if response.status_code != 200:
+        raise ReadinessError(f"/api/v1/pre-audit failed with {response.status_code}")
 
 def verify_pdf_generation(client: TestClient):
     response = client.get("/api/inspections/1/export-notice")
