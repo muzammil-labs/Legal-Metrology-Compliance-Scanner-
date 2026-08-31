@@ -110,6 +110,6 @@ export async function executeBatchScan(files) {
   return await response.json();
 }
 
-export function getNoticeDownloadUrl(inspectionId) {
-  return `/api/inspections/${inspectionId}/export-notice`;
+export function getNoticeDownloadUrl(inspectionId, noticeType = "COMPOUNDING") {
+  return `/api/inspections/${inspectionId}/export-notice?notice_type=${noticeType}`;
 }

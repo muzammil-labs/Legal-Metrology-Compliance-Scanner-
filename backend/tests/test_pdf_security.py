@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from services.pdf_generator import generate_section_36_notice
+from services.pdf_generator import generate_compounding_notice_pdf
 
 class MockViolation:
     def __init__(self, rule, status, reason):
@@ -12,7 +12,7 @@ def test_pdf_content_injection_sanitization():
     v = MockViolation("<rule_tag>", "FAIL", "<reason_tag>")
 
     try:
-        pdf_bytes = generate_section_36_notice(
+        pdf_bytes = generate_compounding_notice_pdf(
             inspection_id=1,
             source_filename="<script>alert(1)</script>.jpg",
             sha256_digest="abcdef1234567890",

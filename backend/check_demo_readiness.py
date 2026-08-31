@@ -18,7 +18,7 @@ class ReadinessError(Exception):
     pass
 
 def verify_database():
-    db_path = Path("backend/inspections.db")
+    db_path = Path("inspections.db")
     if not db_path.exists():
         raise ReadinessError("backend/inspections.db does not exist.")
 
@@ -64,7 +64,7 @@ def verify_pdf_generation(client: TestClient):
 
 def verify_fixtures():
     fixtures = ["control_pass.json", "control_fail_tax.json", "control_fail_unit.json"]
-    base_dir = Path("frontend/src/fixtures")
+    base_dir = Path("../frontend/src/fixtures")
 
     schema_keys = set(AuditResponse.model_fields.keys())
 
