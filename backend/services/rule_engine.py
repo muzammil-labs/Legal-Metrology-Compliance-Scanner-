@@ -3,8 +3,10 @@ from datetime import date
 import re
 from services.bilingual_auditor import audit_bilingual_text
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from services.fine_calculator import calculate_penalty
 
 try:
+    from schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType
     from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FineEstimation, OffenceType, FSSAIVerification
     from backend.schemas import ExtractedField, RuleResult, RuleStatus, StatutoryRule, Unit, USPResult, PenaltyEstimate, FSSAIVerification
 except ModuleNotFoundError:

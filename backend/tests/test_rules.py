@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from services.rule_engine import audit_text, calculate_trust_score, _base_quantity, audit_usp
 from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+from services.pdf_generator import generate_compounding_notice_pdf, generate_improvement_notice_pdf
 from services.pdf_generator import generate_improvement_notice_pdf
 # from services.pdf_generator import generate_section_36_notice
 from services.pdf_generator import generate_improvement_notice_pdf

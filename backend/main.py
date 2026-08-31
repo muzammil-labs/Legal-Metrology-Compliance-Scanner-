@@ -49,6 +49,26 @@ from schemas import (
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm import Session, joinedload
 
+from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
+from services.rule_engine import audit_text, calculate_trust_score
+from services.pdf_generator import generate_improvement_notice_pdf, generate_compounding_notice_pdf
+from services.gemini_service import extract_label_with_gemini
+from seed import seed as seed_db
+from services.evidence_ledger import compute_ledger_hash
+from schemas import (
+    StatutoryRule,
+    AnalyticsSummary,
+    AuditResponse,
+    BilingualVerification,
+    BatchAuditItem,
+    BatchAuditResponse,
+    BoundingBox,
+    ExtractedField,
+    InspectionMetadata,
+    InspectionSummary,
+    RuleStatus,
+)
+
 try:
     from models import AuditCertificate, Inspection, SessionLocal, Violation, init_db
     from services.rule_engine import audit_text, calculate_trust_score
@@ -120,13 +140,11 @@ app = FastAPI(title="Legal Metrology Compliance Scanner", version="1.0.0")
 from routers.b2b_saas import router as b2b_saas_router
 app.include_router(b2b_saas_router)
 
-# Read allowed origins from environment variable, fallback to common dev ports
-cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
-origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+app = FastAPI(title="SIH26034 - E-Commerce Metrology Scanner")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -139,23 +157,12 @@ def get_db():
     finally:
         db.close()
 
-
-def save_violations_and_certificate(inspection_id: int, rules: list):
-    db = SessionLocal()
-    try:
-        for rule in rules:
-            if rule.status != RuleStatus.PASS:
-                db.add(Violation(inspection_id=inspection_id, rule=rule.rule.value, status=rule.status.value, reason=rule.reason))
-        db.add(AuditCertificate(inspection_id=inspection_id, certificate_number=f"LM-{inspection_id:08d}"))
-        db.commit()
-    finally:
-        db.close()
-
-
 def status_for(rules) -> RuleStatus:
-    if any(rule.status == RuleStatus.FAIL for rule in rules):
+    has_fail = any(r.status == RuleStatus.FAIL for r in rules)
+    has_warn = any(r.status == RuleStatus.WARNING for r in rules)
+    if has_fail:
         return RuleStatus.FAIL
-    if any(rule.status == RuleStatus.WARNING for rule in rules):
+    if has_warn:
         return RuleStatus.WARNING
     return RuleStatus.PASS
 
@@ -666,6 +673,13 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def root():
+    return {"status": "online", "message": "Legal Metrology API", "project": "SIH26034", "ministry": "DOCA", "docs": "/docs"}
 
 @app.post("/api/v1/pre-audit")
 def pre_audit():
