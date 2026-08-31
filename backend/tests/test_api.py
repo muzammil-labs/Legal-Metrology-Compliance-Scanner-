@@ -26,6 +26,7 @@ Base.metadata.create_all(bind=engine)
 # That's perfectly fine, because it initializes the test DB with seed data.
 
 from main import app, get_db, status_for
+from backend.schemas import RuleResult, RuleStatus, StatutoryRule, USPResult, PenaltyEstimate
 from services.auth import create_access_token, UserRole
 
 def get_auth_headers(role: UserRole = UserRole.CENTRAL_ADMIN):

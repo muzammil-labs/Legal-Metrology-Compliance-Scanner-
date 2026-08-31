@@ -224,7 +224,7 @@ def login_for_access_token(req: LoginRequest):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/api/scan", response_model=AuditResponse)
-def scan(
+async def scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     ocr_text: str = Form(default=""),
@@ -233,6 +233,8 @@ def scan(
     db: Session = Depends(get_db),
     user: User = Depends(RoleChecker([Role.FIELD_INSPECTOR, Role.CENTRAL_ADMIN]))
 ):
+    await file.seek(0)
+    content = await file.read(MAX_FILE_SIZE + 1)
     content = file.file.read(MAX_FILE_SIZE + 1)
     file.file.seek(0)
     content = file.file.read()
@@ -241,6 +243,8 @@ def scan(
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+    await file.seek(0)
+    content = await file.read()
 
     digest = sha256(content).hexdigest()
     # If OCR text wasn't supplied directly in Form, attempt vision extraction via Gemini
@@ -396,7 +400,7 @@ def v1_batch_audit_download(batch_id: str):
     )
 
 @app.post("/api/scan/batch", response_model=BatchAuditResponse)
-def batch_scan(
+async def batch_scan(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(RoleChecker([Role.CENTRAL_ADMIN, Role.DISTRICT_MAGISTRATE]))
@@ -406,10 +410,17 @@ def batch_scan(
     passed_count = 0
 
     for idx, f in enumerate(files):
+        await f.seek(0)
+        content = await f.read(MAX_FILE_SIZE + 1)
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded image is empty")
+        if len(content) > MAX_FILE_SIZE:
         # We need this exact behavior to pass test_file_size.py which does a 10MB test
         content = f.file.read(10 * 1024 * 1024 + 1)
         if content and len(content) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="File size exceeds 10 MB limit")
+        await f.seek(0)
+
 
         digest = sha256(content).hexdigest() if content else "0" * 64
         # Default mock text extraction per SKU name
@@ -654,4 +665,9 @@ if __name__ == "__main__":
 
     import uvicorn
 
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.post("/api/v1/pre-audit")
+def pre_audit():
+    return {"status": "ok"}
     uvicorn.run(app, host="0.0.0.0", port=8000)

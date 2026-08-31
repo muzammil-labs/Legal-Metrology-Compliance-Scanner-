@@ -94,6 +94,7 @@
   ],
   "overall_status": "FAIL",
   "trust_score": 50,
+  "penalty": {"sections_violated": ["Section 36"], "estimated_fine_range": "₹25,000 - ₹50,000"},
   "usp": {
     "applicable": true,
     "declared_value": null,
