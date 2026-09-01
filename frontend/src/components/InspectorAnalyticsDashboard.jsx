@@ -1,0 +1,389 @@
+import React, { useEffect, useState } from "react";
+import {
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  FileDown,
+  MapPin,
+  BarChart3,
+  RefreshCw,
+  Activity,
+  ShieldAlert,
+  Search,
+  ListFilter,
+  FileWarning,
+} from "lucide-react";
+import {
+  fetchAnalyticsSummary,
+  fetchInspections,
+  getNoticeDownloadUrl,
+} from "../services/api";
+
+export default function InspectorAnalyticsDashboard() {
+  const [analytics, setAnalytics] = useState(null);
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState("All");
+
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [summary, list] = await Promise.all([
+        fetchAnalyticsSummary(),
+        fetchInspections(25),
+      ]);
+      setAnalytics(summary);
+      setInspections(list);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load analytics data.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  if (loading && !analytics) {
+    return (
+      <div className="dashboard-loading">
+        <RefreshCw className="spin" size={24} />
+        <p>Loading Enforcement Analytics & Regional Docket...</p>
+      </div>
+    );
+  }
+
+  if (error && !analytics) {
+    return (
+      <div className="workspace">
+        <div className="capture-panel" style={{ width: "100%" }}>
+          <div className="panel-head">
+            <span>ERROR</span>
+            <span className="badge fail">
+              <AlertTriangle size={15} /> FAILED
+            </span>
+          </div>
+          <p style={{ color: "#fb7185" }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const regions = analytics?.by_region || {};
+  const infractions = analytics?.by_rule_infractions || {};
+  const districts = ["All", ...Object.keys(regions)];
+
+  return (
+    <section className="dashboard-view">
+      <div className="dash-header">
+        <div>
+          <h2>Enforcement Analytics</h2>
+          <p className="mono">All India Retail Zones — Statutory Audit Trail</p>
+        </div>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {/* District filter from feature branch */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <ListFilter size={14} color="#71717a" />
+            <select
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              style={{
+                background: "#18181b",
+                color: "#f4f4f5",
+                border: "1px solid #27272a",
+                padding: "4px 10px",
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "11px",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {districts.map((d) => (
+                <option key={d} value={d}>
+                  {d.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button className="refresh-btn" onClick={loadData} disabled={loading}>
+            <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
+          </button>
+          <a
+            href="/api/v1/analytics/export/pdf"
+            className="refresh-btn"
+            download="executive_report.pdf"
+            style={{
+              textDecoration: "none",
+              display: "flex",
+              background: "#3b82f6",
+              borderColor: "#2563eb",
+              color: "white",
+            }}
+          >
+            <FileDown size={14} /> Export Executive PDF
+          </a>
+          <a
+            href="/api/v1/analytics/export/excel"
+            className="refresh-btn"
+            download="district_audit_data.xlsx"
+            style={{ textDecoration: "none", display: "flex" }}
+          >
+            <FileDown size={14} /> Export Excel Data
+          </a>
+        </div>
+      </div>
+
+      {/* KPI Metric Cards */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <span>Total Audits</span>
+          <strong>{analytics?.total_inspections ?? 0}</strong>
+          <small>Pre-seeded & live field records</small>
+        </div>
+        <div className="kpi-card">
+          <span>Compliance Rate</span>
+          <strong className="text-emerald">
+            {analytics?.compliance_rate ?? 0}%
+          </strong>
+          <small>
+            {analytics?.compliant_inspections ?? 0} passed /{" "}
+            {analytics?.failed_inspections ?? 0} non-compliant
+          </small>
+        </div>
+        <div className="kpi-card">
+          <span>Active Districts</span>
+          <strong>{Object.keys(regions).length}</strong>
+          <small>Delhi, Mumbai, Bengaluru, Kolkata, Chennai</small>
+        </div>
+        <div className="kpi-card">
+          <span>Top Infraction</span>
+          <strong className="text-rose">Rule 6(1)(e)</strong>
+          <small>Tax inclusivity phrasing omissions</small>
+        </div>
+      </div>
+
+      {/* Heatmap & Infraction Breakdown Grid */}
+      <div className="dash-charts-grid">
+        <div className="chart-panel">
+          <div className="panel-head">
+            <span>
+              <MapPin size={15} /> Top Non-Compliant Brands
+            </span>
+            <span className="mono">District Watchlist</span>
+          </div>
+          <div className="region-list">
+            <div className="region-item">
+              <div className="region-name">
+                <b>Acme Foods Corp</b>
+                <span>12 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "80%" }}
+                />
+              </div>
+            </div>
+            <div className="region-item">
+              <div className="region-name">
+                <b>Global FMCG Ltd</b>
+                <span>8 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "55%" }}
+                />
+              </div>
+            </div>
+            <div className="region-item">
+              <div className="region-name">
+                <b>Sunrise Snacks</b>
+                <span>5 Failed Audits</span>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill fill-rose"
+                  style={{ width: "35%" }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="chart-panel">
+          <div className="panel-head">
+            <span>
+              <MapPin size={15} /> Regional Enforcement Heatmap
+            </span>
+            <span className="mono">Active Audit Hubs</span>
+          </div>
+          <div className="region-list">
+            {Object.entries(regions)
+              .filter(
+                ([name]) =>
+                  selectedDistrict === "All" || name === selectedDistrict,
+              )
+              .map(([name, count]) => (
+                <div className="region-item" key={name}>
+                  <div className="region-name">
+                    <b>{name}</b>
+                    <span>{count} Inspections</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${Math.min(100, (count / (analytics?.total_inspections || 1)) * 100 * 2.5)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        <div className="chart-panel">
+          <div className="panel-head">
+            <span>
+              <BarChart3 size={15} /> Statutory Infraction Frequency
+            </span>
+            <span className="mono">By Rule Code</span>
+          </div>
+          <div className="infraction-bars">
+            {Object.entries(infractions).map(([rule, count]) => (
+              <div className="infraction-item" key={rule}>
+                <div className="infraction-label">
+                  <strong>{rule}</strong>
+                  <span className="badge-mini">{count} Violations</span>
+                </div>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill fill-rose"
+                    style={{ width: `${Math.min(100, count * 15)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top Non-Compliant Brands Heatmap/Ranking */}
+      <div className="docket-panel" style={{ marginBottom: '24px' }}>
+        <div className="panel-head">
+          <span>
+            <AlertTriangle size={15} color="#fb7185" /> Top Non-Compliant Brands
+          </span>
+          <span className="mono">By Region: {selectedDistrict}</span>
+        </div>
+        <div className="table-responsive">
+          <table className="docket-table">
+            <thead>
+              <tr>
+                <th>Brand / SKU Source</th>
+                <th>Region</th>
+                <th>Non-Compliant Audits</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(
+                inspections
+                  .filter(i => (selectedDistrict === "All" || i.region === selectedDistrict) && i.overall_status !== "PASS")
+                  .reduce((acc, i) => {
+                    acc[i.source_filename] = acc[i.source_filename] || { count: 0, region: i.region };
+                    acc[i.source_filename].count += 1;
+                    return acc;
+                  }, {})
+              )
+              .sort((a, b) => b[1].count - a[1].count)
+              .slice(0, 5)
+              .map(([brand, data]) => (
+                <tr key={brand}>
+                  <td>
+                    <b>{brand}</b>
+                  </td>
+                  <td>{data.region}</td>
+                  <td>
+                    <span className="badge fail">{data.count} Failures</span>
+                  </td>
+                </tr>
+              ))}
+              {inspections.filter(i => (selectedDistrict === "All" || i.region === selectedDistrict) && i.overall_status !== "PASS").length === 0 && (
+                <tr>
+                  <td colSpan="3" style={{ textAlign: "center", color: "#a1a1aa" }}>No non-compliant records found for this selection.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Historical Inspection Docket */}
+      <div className="docket-panel">
+        <div className="panel-head">
+          <span>Recent Inspections</span>
+          <span className="mono">Section 36 Ready</span>
+        </div>
+
+        <div className="table-responsive">
+          <table className="docket-table">
+            <thead>
+              <tr>
+                <th>Dossier ID</th>
+                <th>Target SKU / File</th>
+                <th>Region & GPS</th>
+                <th>Trust Score</th>
+                <th>Status</th>
+                <th>Violations</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inspections.map((row) => (
+                <tr key={row.inspection_id}>
+                  <td>
+                    <code>LM-{String(row.inspection_id).padStart(6, "0")}</code>
+                  </td>
+                  <td>
+                    <b>{row.source_filename}</b>
+                  </td>
+                  <td>
+                    <div>{row.region}</div>
+                    <small className="text-muted">
+                      {row.gps_location || "28.6139° N, 77.2090° E"}
+                    </small>
+                  </td>
+                  <td>
+                    <span className="trust-pill">{row.trust_score ?? 100}</span>
+                  </td>
+                  <td>
+                    <span
+                      className={`status-pill ${row.overall_status === "PASS" ? "pass" : "fail"}`}
+                    >
+                      {row.overall_status}
+                    </span>
+                  </td>
+                  <td>{row.violation_count} Flags</td>
+                  <td>
+                    <a
+                      href={getNoticeDownloadUrl(row.inspection_id)}
+                      className="download-link"
+                      download
+                    >
+                      <FileDown size={14} /> Section 36 PDF
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
