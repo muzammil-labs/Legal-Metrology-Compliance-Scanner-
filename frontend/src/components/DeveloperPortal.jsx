@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Key, Code, Activity, Copy, Check } from 'lucide-react';
+import { Key, Code, Activity, Copy, Check, Zap, Shield, Database } from 'lucide-react';
 
 export default function DeveloperPortal() {
   const [apiKey, setApiKey] = useState(null);
   const [keyType, setKeyType] = useState('trial'); // 'trial' or 'enterprise'
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState('curl');
 
   // Mock usage data
   const usage = {
@@ -14,8 +13,8 @@ export default function DeveloperPortal() {
   };
 
   const generateKey = () => {
-    const prefix = keyType === 'trial' ? 'trial_' : 'enterprise_';
-    const randomHex = Array.from({length: 32}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    const prefix = keyType === 'trial' ? 'pk_test_' : 'pk_live_';
+    const randomHex = Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
     setApiKey(`${prefix}${randomHex}`);
   };
 
@@ -27,152 +26,124 @@ export default function DeveloperPortal() {
     }
   };
 
-  const snippets = {
-    curl: `curl -X POST ${window.location.origin}/api/v1/pre-audit \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: ${apiKey || 'YOUR_API_KEY'}" \\
-  -d '{
-    "ocr_text": "Manufactured by Seller Entity Ltd, Plot 1, New Delhi 110001. Net Qty 500 g MRP Rs. 100 (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com"
-  }'`,
-    python: `import requests
-
-url = "${window.location.origin}/api/v1/pre-audit"
-headers = {
-    "X-API-Key": "${apiKey || 'YOUR_API_KEY'}",
-    "Content-Type": "application/json"
-}
-data = {
-    "ocr_text": "Manufactured by Seller Entity Ltd, Plot 1, New Delhi 110001. Net Qty 500 g MRP Rs. 100 (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com"
-}
-
-response = requests.post(url, json=data, headers=headers)
-print(response.json())`,
-    nodejs: `const fetch = require('node-fetch');
-
-const url = '${window.location.origin}/api/v1/pre-audit';
-const options = {
-  method: 'POST',
-  headers: {
-    'X-API-Key': '${apiKey || 'YOUR_API_KEY'}',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    ocr_text: 'Manufactured by Seller Entity Ltd, Plot 1, New Delhi 110001. Net Qty 500 g MRP Rs. 100 (incl. of all taxes) 04/2026. Consumer care 1800111222 care@seller.com'
-  })
-};
-
-fetch(url, options)
-  .then(res => res.json())
-  .then(json => console.log(json))
-  .catch(err => console.error('error:' + err));`
-  };
-
   return (
-    <div className="analytics-dashboard" style={{ padding: '2rem' }}>
-      <h2><Code size={24} style={{ verticalAlign: 'middle', marginRight: '8px' }}/> Developer Portal</h2>
-
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-
-        {/* API Key Management */}
-        <div className="card">
-          <h3><Key size={18} style={{ verticalAlign: 'middle', marginRight: '8px' }}/> API Key Management</h3>
-          <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-            <label style={{ marginRight: '1rem' }}>
-              <input
-                type="radio"
-                name="keyType"
-                value="trial"
-                checked={keyType === 'trial'}
-                onChange={() => setKeyType('trial')}
-                style={{ marginRight: '0.5rem' }}
-              />
-              Trial (100 req/min)
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="keyType"
-                value="enterprise"
-                checked={keyType === 'enterprise'}
-                onChange={() => setKeyType('enterprise')}
-                style={{ marginRight: '0.5rem' }}
-              />
-              Enterprise (10,000 req/min)
-            </label>
-          </div>
-
-          <button className="primary-btn" onClick={generateKey} style={{ marginBottom: '1rem' }}>
-            Generate API Key
-          </button>
-
-          {apiKey && (
-            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-              <code style={{ flex: 1, fontFamily: 'monospace' }}>{apiKey}</code>
-              <button onClick={copyToClipboard} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                {copied ? <Check size={18} color="green" /> : <Copy size={18} />}
-              </button>
-            </div>
-          )}
+    <div className="space-y-8 w-full max-w-5xl mx-auto py-8 animate-in delay-1">
+      {/* Header section */}
+      <div className="text-center space-y-4 mb-12">
+        <div className="inline-flex items-center justify-center p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-600 mb-2 shadow-sm">
+          <Code className="w-8 h-8" />
         </div>
-
-        {/* Usage Quota */}
-        <div className="card">
-          <h3><Activity size={18} style={{ verticalAlign: 'middle', marginRight: '8px' }}/> Usage Quota</h3>
-          <div style={{ marginTop: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span>Scans Used / Per Minute Quota</span>
-              <strong>{usage.used} / {usage.limit}</strong>
-            </div>
-            <div style={{ width: '100%', height: '8px', background: 'var(--surface-color)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{
-                width: `${(usage.used / usage.limit) * 100}%`,
-                height: '100%',
-                background: 'var(--accent-color)'
-              }}></div>
-            </div>
-          </div>
-        </div>
-
+        <h2 className="text-4xl font-extrabold tracking-tight text-gray-900">Developer Portal</h2>
+        <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          Manage your API keys, monitor real-time usage quotas, and access enterprise-grade statutory compliance engines.
+        </p>
       </div>
 
-      {/* Code Snippets */}
-      <div className="card" style={{ marginTop: '2rem' }}>
-        <h3>API Integration Snippets</h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          Use the <code>/api/v1/pre-audit</code> endpoint to analyze packaging artwork compliance programmatically.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        {/* API Key Management Card */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm hover:shadow-xl transition-all duration-500 relative overflow-hidden group flex flex-col">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+          
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <Key className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight">API Key Management</h3>
+          </div>
 
-        <div style={{ borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
-          {Object.keys(snippets).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === tab ? '2px solid var(--accent-color)' : 'none',
-                padding: '0.5rem 1rem',
-                cursor: 'pointer',
-                color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: activeTab === tab ? 'bold' : 'normal'
-              }}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+          <div className="space-y-6 flex-1 flex flex-col">
+            <div className="flex bg-gray-50 p-1.5 rounded-xl border border-gray-200">
+              <button 
+                onClick={() => setKeyType('trial')}
+                className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all ${
+                  keyType === 'trial' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Trial Tier (100/min)
+              </button>
+              <button 
+                onClick={() => setKeyType('enterprise')}
+                className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all ${
+                  keyType === 'enterprise' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Enterprise (10k/min)
+              </button>
+            </div>
+
+            <div className="mt-auto">
+              <button 
+                onClick={generateKey} 
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-gray-900 text-white font-bold rounded-xl hover:bg-black active:scale-95 transition-all shadow-md hover:shadow-xl"
+              >
+                <Zap className="w-5 h-5 text-yellow-400" />
+                Generate New Key
+              </button>
+            </div>
+
+            {apiKey && (
+              <div className="animate-in delay-1 flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-inner">
+                <code className="text-sm font-mono text-gray-700 truncate mr-4 tracking-tight">{apiKey}</code>
+                <button 
+                  onClick={copyToClipboard} 
+                  className="shrink-0 flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all active:scale-95"
+                >
+                  {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <pre style={{
-          background: 'var(--surface-color)',
-          padding: '1rem',
-          borderRadius: '4px',
-          overflowX: 'auto',
-          fontFamily: 'monospace',
-          fontSize: '0.9rem',
-          border: '1px solid var(--border-color)'
-        }}>
-          <code>{snippets[activeTab]}</code>
-        </pre>
+        {/* Usage Quota Card */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm hover:shadow-xl transition-all duration-500 relative overflow-hidden group flex flex-col">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+          
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <Activity className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Real-time Telemetry</h3>
+          </div>
+
+          <div className="space-y-8 flex-1">
+            
+            <div>
+              <div className="flex justify-between items-end mb-3">
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Current Minute Load</span>
+                <div className="flex items-baseline gap-1">
+                  <strong className="text-3xl font-black text-gray-900 tracking-tight">{usage.used}</strong>
+                  <span className="text-sm font-medium text-gray-500">/ {usage.limit.toLocaleString()}</span>
+                </div>
+              </div>
+              
+              <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${(usage.used / usage.limit) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 w-full h-full animate-[scanline_2s_ease-in-out_infinite]"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col items-center justify-center text-center">
+                <Shield className="w-6 h-6 text-indigo-500 mb-2" />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</span>
+                <span className="text-sm font-extrabold text-gray-900">Secure & Active</span>
+              </div>
+              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col items-center justify-center text-center">
+                <Database className="w-6 h-6 text-purple-500 mb-2" />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Engine</span>
+                <span className="text-sm font-extrabold text-gray-900">Multimodal AI</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
   );

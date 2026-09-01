@@ -308,12 +308,17 @@ export default function ComplianceSummaryCard({
       )}
 
       {/* 5. Statutory Clauses Breakdown Interactive Grid */}
-      <div className="space-y-4 animate-in stagger-6 pt-4">
-        <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 px-1">
-          Statutory Rule Verification (Rule 6)
-        </h3>
+      <div className="space-y-6 animate-in stagger-6 pt-6">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">
+            Statutory Verification (Rule 6)
+          </h3>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-md">
+            {rules.length} Rules Processed
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {rules.map((item, idx) => {
             const isItemPass = item.status === 'PASS';
             const isItemWarning = item.status === 'WARNING';
@@ -321,52 +326,59 @@ export default function ComplianceSummaryCard({
             const isExpanded = expandedRule === idx;
 
             return (
-              <div key={idx} className="rule-card">
+              <div key={idx} className="rule-card group">
                 <button
                   onClick={() => toggleAccordion(idx)}
-                  className="w-full p-4 flex items-start justify-between text-left focus:outline-none bg-transparent border-none cursor-pointer"
+                  className="w-full p-5 flex items-start justify-between text-left focus:outline-none bg-transparent border-none cursor-pointer"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 shrink-0">
-                      {isItemPass && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-                      {isItemWarning && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
-                      {isItemFail && <XCircle className="w-5 h-5 text-red-500" />}
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-0.5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                      isItemPass ? 'status-glow-pass text-green-500' :
+                      isItemWarning ? 'text-yellow-500' :
+                      'status-glow-fail text-red-500'
+                    }`}>
+                      {isItemPass && <CheckCircle2 className="w-6 h-6" />}
+                      {isItemWarning && <AlertTriangle className="w-6 h-6" />}
+                      {isItemFail && <XCircle className="w-6 h-6" />}
                     </div>
-                    <div>
-                      <span className="text-sm font-bold text-gray-900 block mb-1">{item.rule}</span>
-                      <span className="text-[11px] text-gray-500 line-clamp-2 pr-2">{item.reason}</span>
+                    <div className="pt-0.5">
+                      <span className="text-base font-extrabold text-gray-900 block mb-1.5 tracking-tight group-hover:text-blue-600 transition-colors">{item.rule}</span>
+                      <span className="text-xs text-gray-500 leading-relaxed line-clamp-2 pr-4">{item.reason}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                        isItemPass ? 'bg-green-50 text-green-600 border-green-200' : 
-                        isItemWarning ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 
-                        'bg-red-50 text-red-600 border-red-200'
+                  <div className="flex flex-col items-end gap-3 shrink-0 pt-0.5">
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border shadow-sm ${
+                        isItemPass ? 'bg-green-50 text-green-600 border-green-200 shadow-green-100/50' : 
+                        isItemWarning ? 'bg-yellow-50 text-yellow-600 border-yellow-200 shadow-yellow-100/50' : 
+                        'bg-red-50 text-red-600 border-red-200 shadow-red-100/50'
                       }`}
                     >
                       {item.status}
                     </span>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    <div className="p-1 rounded-full bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
                   </div>
                 </button>
 
                 <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`}>
                   <div className="expandable-inner">
-                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50 text-xs space-y-3">
+                    <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50/50 text-sm space-y-4">
                       <div>
-                        <span className="text-gray-400 font-bold uppercase tracking-wider text-[10px] block mb-1">Reasoning</span>
-                        <p className="text-gray-700 font-medium">{item.reason}</p>
+                        <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px] block mb-1.5">Reasoning Details</span>
+                        <p className="text-gray-700 font-medium leading-relaxed">{item.reason}</p>
                       </div>
                       {item.statutory_clause && (
                         <div>
-                          <span className="text-gray-400 font-bold uppercase tracking-wider text-[10px] block mb-1">Clause Reference</span>
-                          <code className="text-gray-600 font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200">{item.statutory_clause}</code>
+                          <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px] block mb-1.5">Statutory Clause</span>
+                          <code className="text-blue-700 font-mono text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100 shadow-sm inline-block">{item.statutory_clause}</code>
                         </div>
                       )}
                       {item.remedy && (
-                        <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 shadow-sm mt-2">
-                          <span className="font-bold block mb-1">Remediation Action</span>
-                          <p className="font-medium">{item.remedy}</p>
+                        <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-blue-100 shadow-sm mt-3 relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
+                          <span className="text-blue-800 font-extrabold uppercase tracking-widest text-[10px] block mb-1">Required Remediation</span>
+                          <p className="text-blue-900 font-semibold text-sm leading-relaxed">{item.remedy}</p>
                         </div>
                       )}
                     </div>
