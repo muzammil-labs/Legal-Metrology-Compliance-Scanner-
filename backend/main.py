@@ -28,6 +28,8 @@ from schemas import (
     ECommerceAuditResponse
 )
 from services.rule_engine import audit_text, calculate_compounding_fine
+from services.fssai_auditor import audit_fssai_declarations
+
 from services.gemini_service import extract_label_with_gemini
 from services.auth import require_role, UserRole, validate_b2b_api_key
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
@@ -71,6 +73,8 @@ async def scan(
     elif any(r.status == RuleStatus.WARNING for r in rules):
         overall_status = RuleStatus.WARNING
 
+    fssai_verification = audit_fssai_declarations(text)
+
     sha256_hash = hashlib.sha256(content).hexdigest()
     inspection = InspectionRecord(
         sha256=sha256_hash,
@@ -89,6 +93,7 @@ async def scan(
         rules=rules,
         timestamp=inspection.inspected_at.isoformat(),
         penalty=calculate_compounding_fine(rules),
+        fssai_verification=fssai_verification
     )
 
 @app.post("/api/v1/pre-audit", response_model=PreAuditResponse)
@@ -103,11 +108,13 @@ async def pre_audit_endpoint(
     elif any(r.status == RuleStatus.WARNING for r in rules):
         overall_status = RuleStatus.WARNING
 
+    fssai_verification = audit_fssai_declarations(payload.artwork_text)
     fine_info = calculate_compounding_fine(rules)
     return PreAuditResponse(
         overall_status=overall_status,
         rules=rules,
-        estimated_fine_inr=fine_info.get("estimated_fine_inr", 0)
+        estimated_fine_inr=fine_info.get("estimated_fine_inr", 0),
+        fssai_verification=fssai_verification
     )
 
 @app.get("/api/v1/analytics/export/pdf")

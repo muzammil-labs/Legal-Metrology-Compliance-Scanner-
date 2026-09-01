@@ -104,5 +104,6 @@
     "within_tolerance": null
   },
   "ocr_text": "Packed by Masala Snacks Pvt Ltd, Plot 12 Industrial Road, Delhi 110020. Masala Chips Net Qty 50 g MRP Rs. 50/- 07/2026. Consumer Care 9876543210 care@masalasnacks.example",
-  "bilingual_verification": null
+  "bilingual_verification": null,
+  "fssai_verification": null
 }
