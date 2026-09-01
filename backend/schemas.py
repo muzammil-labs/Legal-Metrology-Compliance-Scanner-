@@ -77,6 +77,7 @@ class PreAuditResponse(BaseModel):
     overall_status: RuleStatus
     rules: List[RuleResult]
     estimated_fine_inr: int
+    fssai_verification: Optional[FSSAIVerification] = None
 
 class AuditResponse(BaseModel):
     inspection_id: str
@@ -85,6 +86,7 @@ class AuditResponse(BaseModel):
     rules: List[RuleResult]
     timestamp: str
     penalty: Optional[Dict[str, Any]] = None
+    fssai_verification: Optional[FSSAIVerification] = None
 
 class BatchAuditItem(BaseModel):
     item_id: str
@@ -92,6 +94,7 @@ class BatchAuditItem(BaseModel):
     overall_status: str
     violations_count: int
     estimated_fine_inr: int
+    fssai_verification: Optional[FSSAIVerification] = None
 
 class BatchAuditResponse(BaseModel):
     batch_id: str
