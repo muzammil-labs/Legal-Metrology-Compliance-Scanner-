@@ -36,16 +36,32 @@ def extract_label_with_gemini(content: bytes) -> Tuple[str, float]:
             "Do not summarize or invent any text. Output only the raw extracted text."
         )
         
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=[image_part, prompt],
-            config=types.GenerateContentConfig(
-                temperature=0.0, # Deterministic extraction
-            )
-        )
+        fallback_models = [
+            "gemini-3.6-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro"
+        ]
         
-        extracted_text = response.text if response.text else ""
-        return extracted_text, 1.0
+        last_error = None
+        for model_name in fallback_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[image_part, prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.0, # Deterministic extraction
+                    )
+                )
+                extracted_text = response.text if response.text else ""
+                return extracted_text, 1.0
+            except Exception as model_err:
+                last_error = str(model_err)
+                print(f"Model {model_name} failed: {last_error}")
+                continue # Try the next model in the list
+                
+        # If all models fail, raise the last error to be caught by the outer block
+        raise Exception(f"All fallback models failed. Last error: {last_error}")
         
     except Exception as e:
         print(f"Gemini API Error: {str(e)}")
