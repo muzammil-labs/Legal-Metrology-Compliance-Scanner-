@@ -101,5 +101,6 @@
     "ratio": "50.00",
     "within_tolerance": true
   },
-  "ocr_text": "Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001. Wheat Flour Net Qty 2 kg MRP Rs. 100 (incl. of all taxes) 01/2026. Consumer Care Cell, 411001 9876543210 care@acme.example. Country of Origin: India. Rs. 50/kg"
+  "ocr_text": "Manufactured by Acme Foods, Plot 4 Industrial Road, Pune, Maharashtra 411001. Wheat Flour Net Qty 2 kg MRP Rs. 100 (incl. of all taxes) 01/2026. Consumer Care Cell, 411001 9876543210 care@acme.example. Country of Origin: India. Rs. 50/kg",
+  "fssai_verification": null
 }

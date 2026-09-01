@@ -270,6 +270,10 @@ export default function ComplianceSummaryCard({
               </span>
             </div>
           </div>
+          {fssai_verification?.violations && fssai_verification.violations.length > 0 && (
+            <div className="mt-3 p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs">
+              <span className="font-semibold block mb-1">Detected Statutory Violations:</span>
+              <ul className="list-disc pl-5 space-y-1">
 
           {fssai_verification.violations && fssai_verification.violations.length > 0 && (
             <div className="mt-3 p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs">

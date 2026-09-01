@@ -277,13 +277,6 @@ describe("api.js", () => {
     });
   });
 
-  describe("getNoticeDownloadUrl", () => {
-    it("returns correct url", () => {
-      expect(getNoticeDownloadUrl("123")).toBe(
-        "/api/inspections/123/export-notice?notice_type=COMPOUNDING",
-      );
-        "/api/inspections/123/export-notice",
-      );
   describe('getNoticeDownloadUrl', () => {
     it('returns correct url', () => {
       expect(getNoticeDownloadUrl('123')).toBe('/api/inspections/123/export-notice?notice_type=COMPOUNDING');

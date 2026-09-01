@@ -64,7 +64,7 @@ class FSSAIVerification(BaseModel):
     license_number: Optional[str] = None
     is_license_valid_format: bool = False
     has_veg_nonveg_symbol: bool = False
-    dietary_type: Optional[str] = None
+    dietary_type: Optional[str] = None  # "VEGETARIAN", "NON_VEGETARIAN", "UNKNOWN"
     fortified_symbol_present: bool = False
     status: RuleStatus = RuleStatus.PASS
     violations: List[str] = []
@@ -74,12 +74,14 @@ class PreAuditRequest(BaseModel):
     brand_name: Optional[str] = None
 
 class PreAuditResponse(BaseModel):
+    fssai_verification: Optional[FSSAIVerification] = None
     overall_status: RuleStatus
     rules: List[RuleResult]
     estimated_fine_inr: int
     fssai_verification: Optional[FSSAIVerification] = None
 
 class AuditResponse(BaseModel):
+    fssai_verification: Optional[FSSAIVerification] = None
     inspection_id: str
     sha256_hash: str
     overall_status: RuleStatus
@@ -89,6 +91,7 @@ class AuditResponse(BaseModel):
     fssai_verification: Optional[FSSAIVerification] = None
 
 class BatchAuditItem(BaseModel):
+    fssai_verification: Optional[FSSAIVerification] = None
     item_id: str
     filename: str
     overall_status: str

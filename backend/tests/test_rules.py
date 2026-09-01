@@ -167,6 +167,16 @@ def test_b2b_saas_preaudit_authentication(client):
     assert "overall_status" in data
     assert "rules" in data
 
+def test_fssai_auditor_declarations_non_food():
+    non_food_text = "Standard detergent box. Net Qty: 1 kg."
+    res = audit_fssai_declarations(non_food_text)
+    assert res.is_food_product is False
+
+def test_fssai_auditor_declarations_invalid_lic():
+    food_text = "Ingredients: Sugar. FSSAI Lic No 30014011000123. Vegetarian."
+    res = audit_fssai_declarations(food_text)
+    assert res.is_food_product is True
+    assert res.is_license_valid_format is False
 def test_fssai_invalid_format():
     food_text = "Ingredients: Sugar, Wheat, Milk. FSSAI Lic. No. 30014011000123. 100% Vegetarian."
     res = audit_fssai_declarations(food_text)
