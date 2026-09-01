@@ -6,6 +6,7 @@ import InspectorAnalyticsDashboard from "./components/InspectorAnalyticsDashboar
 import SellerBulkAudit from "./components/SellerBulkAudit";
 import NoticePreviewModal from "./components/NoticePreviewModal";
 import PublicCitizenPortal from "./components/PublicCitizenPortal";
+import DeveloperPortal from "./components/DeveloperPortal";
 import {
   executeScanWithCircuitBreaker,
   loadPrecachedFixture,
@@ -126,6 +127,8 @@ export default function App() {
       {activeTab === "officer" && <InspectorAnalyticsDashboard />}
 
       {activeTab === "seller" && <SellerBulkAudit />}
+
+      {activeTab === "developer" && <DeveloperPortal />}
 
       <NoticePreviewModal
         isOpen={!!noticeModalType}
