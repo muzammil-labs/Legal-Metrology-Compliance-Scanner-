@@ -1,482 +1,332 @@
-import React from "react";
+import React, { useState } from 'react';
 import {
-  AlertTriangle,
   CheckCircle2,
+  AlertTriangle,
+  XCircle,
   FileText,
+  ChevronDown,
+  ChevronUp,
   Scale,
-  ShieldCheck,
-  Phone,
-  Languages,
-} from "lucide-react";
+  ShieldAlert,
+  Send,
+  Copy,
+  Check
+} from 'lucide-react';
 
-// Plain-language consumer explanations for each rule failure
-const RULE_PLAIN_TEXT = {
-  "Rule 6(1)(a)":
-    "The manufacturer or importer name, address, or PIN code is missing or incomplete.",
-  "Rule 6(1)(b)":
-    'No common product name (like "Wheat Flour" or "Biscuit") is printed — only a brand name.',
-  "Rule 6(1)(c)":
-    "The quantity is written using an illegal abbreviation like 'gm' instead of 'g', or is missing entirely.",
-  "Rule 6(1)(d)":
-    "The date of manufacture or packing is missing, in the wrong format, or is a future date — indicating mislabeling.",
-  "Rule 6(1)(e)":
-    "The price (MRP) doesn't say '(incl. of all taxes)' — this is mandatory by law.",
-  "Rule 6(1)(f)":
-    "The consumer helpline, email, or grievance officer contact is missing or incomplete.",
-  "Rule 6(11)":
-    "The Unit Sale Price (₹ per g/kg/ml/l) is missing or mathematically incorrect.",
-  "Rule 5/9 (Font / PDP)":
-    "Printed numerals may be too small to read — font height may violate legal minimum standards.",
-  "Rule 5":
-    "PDP font height does not meet the minimum requirements for this package size.",
-  "Bilingual Consistency":
-    "Hindi and English label declarations (quantity or MRP) do not match.",
-};
+export default function ComplianceSummaryCard({
+  auditData,
+  onGenerateNotice,
+  onOpenGrievanceModal
+}) {
+  const [expandedRule, setExpandedRule] = useState(null);
+  const [copiedHash, setCopiedHash] = useState(false);
 
-export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
-  if (!audit) return null;
+  if (!auditData) return null;
 
-  const failed = audit.overall_status === "FAIL";
-  const passedRules = audit.rules.filter((r) => r.status === "PASS").length;
-  const trustScore =
-    audit.trust_score !== undefined ? audit.trust_score : failed ? 45 : 100;
+  const {
+    overall_status = 'PASS',
+    rules = [],
+    penalty = null,
+    fssai_verification = null,
+    pdp_font_evaluation = null,
+    sha256_hash = '',
+    inspection_id = ''
+  } = auditData;
+
+  const isPass = overall_status === 'PASS';
+  const isWarning = overall_status === 'WARNING';
+  const isFail = overall_status === 'FAIL';
+
+  const toggleAccordion = (index) => {
+    setExpandedRule(expandedRule === index ? null : index);
+  };
+
+  const handleCopyHash = () => {
+    if (!sha256_hash) return;
+    navigator.clipboard.writeText(sha256_hash);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
 
   return (
-    <div className="results-panel">
-      <div className="panel-head">
-        <span>Compliance Result</span>
-        <span className={failed ? "badge fail" : "badge pass"}>
-          {failed ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}{" "}
-          {audit.overall_status}
-        </span>
-      </div>
-
-      <div className="result-hero">
-        {/* Dynamic score ring — rose border when FAIL, emerald when PASS */}
-        <div
-          className={`score-ring ${failed ? "fail" : ""}`}
-          style={{ "--score": trustScore }}
-        >
-          <span className="result-number">{trustScore}</span>
-          <small>/100 TRUST</small>
-        </div>
-        <div>
-          <h2>
-            {passedRules} of {audit.rules.length} checks passed
-          </h2>
-          <p>
-            Evaluated under Legal Metrology (Packaged Commodities) Rules, 2011
-          </p>
-        </div>
-      </div>
-
-
-
-      {(() => {
-        const rule5 = audit.rules.find(r => r.rule === "Rule 5 PDP Font Height & Area Ratio" || r.rule === "Rule 5 PDP" || r.rule.includes("Rule 5"));
-        if (!rule5 || !rule5.calculated_values || rule5.calculated_values.pdp_area_cm2 === undefined) return null;
-        const vals = rule5.calculated_values;
-        return (
-          <div className="usp-audit-card" style={{ marginTop: '16px' }}>
-            <div className="usp-header">
-              <Scale size={16} className="text-cyan" />
-              <strong>Rule 5 PDP Font Height & Area Ratio</strong>
-            </div>
-            <div className="usp-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-              <div>
-                <span>PDP Area</span>
-                <b>{vals.pdp_area_cm2.toFixed(1)} cm²</b>
-              </div>
-              <div>
-                <span>Font Height</span>
-                <b>{vals.char_height_mm.toFixed(1)} mm</b>
-              </div>
-              <div>
-                <span>Minimum Required</span>
-                <b className={vals.char_height_mm >= vals.required_mm ? "text-emerald" : "text-rose"}>
-                  {vals.required_mm.toFixed(1)} mm
-                </b>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {audit.usp && audit.usp.applicable && (
-        <div className="usp-audit-card">
-          <div className="usp-header">
-            <Scale size={16} className="text-cyan" />
-            <strong>Unit Sale Price Verification</strong>
-          </div>
-          <div className="usp-grid">
-            <div>
-              <span>Declared USP</span>
-              <b>
-                {audit.usp.declared_value
-                  ? `₹ ${audit.usp.declared_value} / ${audit.usp.declared_unit || "unit"}`
-                  : "Not Declared"}
-              </b>
-            </div>
-            <div>
-              <span>Calculated USP</span>
-              <b>
-                {audit.usp.calculated_value
-                  ? `₹ ${audit.usp.calculated_value} / base unit`
-                  : "N/A"}
-              </b>
-            </div>
-            <div>
-              <span>Math Compliance</span>
-              <b
-                className={
-                  audit.usp.within_tolerance ? "text-emerald" : "text-rose"
-                }
-              >
-                {audit.usp.within_tolerance
-                  ? "✓ Matched (±₹0.01)"
-                  : "✗ Discrepancy / Missing"}
-              </b>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {audit.fssai_verification && (
-        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-cyan" />
-            <strong>FSSAI & Food Safety Compliance</strong>
-          </div>
-          <div className="usp-grid">
-            <div>
-              <span>FSSAI License No</span>
-              <b>{audit.fssai_verification.license_number || "Not Found"}</b>
-            </div>
-            <div>
-              <span>License Format Status</span>
-        <div
-          className="usp-audit-card fssai-audit-card"
-          style={{ marginTop: "16px" }}
-        >
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-emerald" />
-            <strong>FSSAI & Food Safety Regulation</strong>
-          </div>
-          <div className="usp-grid">
-            <div>
-              <span>14-Digit FSSAI License No.</span>
-              <b
-                className={
-                  audit.fssai_verification.is_valid_format
-                    ? "text-emerald"
-                    : "text-rose"
-                }
-              >
-                {audit.fssai_verification.is_valid_format
-                  ? "✓ Valid 14-Digit Format"
-                  : "✗ Invalid / Missing"}
-                {audit.fssai_verification.fssai_license_number
-                  ? audit.fssai_verification.fssai_license_number
-                  : "Invalid/Missing"}
-              </b>
-            </div>
-            <div>
-              <span>Veg/Non-Veg Symbol</span>
-              <b
-                className={
-                  audit.fssai_verification.veg_nonveg_symbol
-                    ? "text-emerald"
-                    : "text-rose"
-                }
-              >
-                {audit.fssai_verification.veg_nonveg_symbol
-                  ? `✓ Detected (${audit.fssai_verification.veg_nonveg_symbol})`
-                  : "✗ Missing / Undetected"}
-              </b>
-            </div>
-            <div>
-              <span>Strict SI Units (Food)</span>
-              <b
-                className={
-                  audit.fssai_verification.status === "PASS"
-                    ? "text-emerald"
-                    : "text-rose"
-                }
-              >
-                {audit.fssai_verification.status === "PASS"
-                  ? "✓ Validated"
-                  : "✗ See Rule 6(1)(c)"}
-              </b>
-            </div>
-          </div>
-        </div>
-      )}
-
-                  ? `✓ Detected`
-                  : "✗ Missing"}
-              </b>
-            </div>
-            <div>
-              <span>SI Metric Unit Compliance</span>
-              <b
-                className={
-                  audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
-                  "PASS"
-      {audit.bilingual_verification && (
-        <div className="usp-audit-card" style={{ marginTop: "1rem" }}>
-          <div className="usp-header">
-            <Languages size={16} className="text-cyan" />
-            <strong>Bilingual Language Consistency</strong>
-          </div>
-          <div className="usp-grid">
-            {!audit.bilingual_verification?.is_bilingual ? (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <b className="text-muted">Monolingual Label</b>
-              </div>
-            ) : audit.bilingual_verification?.price_match ? (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <b className="text-emerald">
-                  ✓ Hindi & English Pricing Match Verified
-                </b>
-              </div>
-            ) : (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <b className="text-rose">
-                  ✗ {audit.bilingual_verification?.discrepancy_reason}
-                </b>
-              </div>
-            )}
-            <div>
-              <span>English Details</span>
-              <b>
-                {audit.bilingual_verification.english_mrp
-                  ? `MRP: ₹${audit.bilingual_verification.english_mrp}`
-                  : "MRP: N/A"}
-                <br />
-                {audit.bilingual_verification.english_qty
-                  ? `Qty: ${audit.bilingual_verification.english_qty}`
-                  : "Qty: N/A"}
-              </b>
-            </div>
-            <div>
-              <span>Hindi / Regional Details</span>
-              <b>
-                {audit.bilingual_verification.hindi_mrp
-                  ? `MRP: ₹${audit.bilingual_verification.hindi_mrp}`
-                  : "MRP: N/A"}
-                <br />
-                {audit.bilingual_verification.hindi_qty
-                  ? `Qty: ${audit.bilingual_verification.hindi_qty}`
-                  : "Qty: N/A"}
-              </b>
-            </div>
-            <div>
-              <span>Match Status</span>
-              <b
-                className={
-                  audit.bilingual_verification.mrp_match !== false &&
-                  audit.bilingual_verification.qty_match !== false
-                    ? "text-emerald"
-                    : "text-rose"
-                }
-              >
-                {audit.rules.find((r) => r.rule === "Rule 6(1)(c)")?.status ===
-                "PASS"
-                  ? "✓ Verified"
-                  : "✗ Non-compliant"}
-                {audit.bilingual_verification.mrp_match !== false &&
-                audit.bilingual_verification.qty_match !== false
-                  ? "✓ Consistent"
-                  : "✗ Discrepancy Found"}
-              </b>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {audit.penalty && audit.penalty.estimated_fine_range && (
-        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-rose" />
-            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
-          </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <span>Legal Section</span>
-              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
-            </div>
-            <div>
-              <span>Estimated Fine</span>
-              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {audit.fine_risk && (
-        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-rose" />
-            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
-          </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <span>Legal Section</span>
-              <b>{audit.fine_risk.legal_section}</b>
-            </div>
-            <div>
-              <span>Estimated Fine</span>
-              <b className="text-rose">
-                ₹{audit.fine_risk.min_penalty_inr} - ₹
-                {audit.fine_risk.max_penalty_inr}
-              </b>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {audit.penalty && audit.penalty.estimated_fine_range && (
-      {audit.fine_risk && (
-        <div className="usp-audit-card" style={{ marginTop: "16px" }}>
-          <div className="usp-header">
-            <ShieldCheck size={16} className="text-rose" />
-            <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
-          </div>
-          <div className="usp-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <div>
-              <span>Legal Section</span>
-              <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
-            </div>
-            <div>
-              <span>Estimated Fine</span>
-              <b className="text-rose">{audit.penalty.estimated_fine_range}</b>
-              <b className="text-rose">
-                ₹{audit.fine_risk.min_penalty_inr} - ₹
-                {audit.fine_risk.max_penalty_inr}
-              </b>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {audit.penalty &&
-        audit.penalty.estimated_fine_range &&
-        !audit.fine_risk && (
-          <div className="usp-audit-card" style={{ marginTop: "16px" }}>
-            <div className="usp-header">
-              <ShieldCheck size={16} className="text-rose" />
-              <strong>Estimated Penalty Range (Jan Vishwas 2026)</strong>
-            </div>
+    <div className="space-y-6 w-full max-w-4xl mx-auto">
+      {/* 1. Overall Status Hero Banner */}
+      <div
+        className={`p-6 rounded-2xl border backdrop-blur-xl transition-all shadow-2xl ${
+          isPass
+            ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-100 shadow-emerald-950/20'
+            : isWarning
+            ? 'bg-amber-950/20 border-amber-500/40 text-amber-100 shadow-amber-950/20'
+            : 'bg-rose-950/20 border-rose-500/40 text-rose-100 shadow-rose-950/20'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <div
-              className="usp-grid"
-              style={{ gridTemplateColumns: "1fr 1fr" }}
+              className={`p-3 rounded-xl border ${
+                isPass
+                  ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                  : isWarning
+                  ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                  : 'bg-rose-500/20 border-rose-500/30 text-rose-400'
+              }`}
             >
-              <div>
-                <span>Legal Section</span>
-                <b>{audit.penalty.sections_violated?.join(", ") || "N/A"}</b>
-              </div>
-              <div>
-                <span>Estimated Fine</span>
-                <b className="text-rose">
-                  {audit.penalty.estimated_fine_range}
-                </b>
-              </div>
+              {isPass && <CheckCircle2 className="w-8 h-8" />}
+              {isWarning && <AlertTriangle className="w-8 h-8" />}
+              {isFail && <XCircle className="w-8 h-8" />}
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-900/60 border border-slate-700/50">
+                  Legal Metrology Assessment
+                </span>
+                <span className="text-xs text-slate-400">ID: {inspection_id || 'SCAN-LOCAL'}</span>
+              </div>
+              <h2 className="text-2xl font-bold mt-1">
+                {isPass && 'Statutory Compliant Product'}
+                {isWarning && 'Procedural Warning Issued'}
+                {isFail && 'Statutory Infractions Detected'}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {onGenerateNotice && (
+              <button
+                onClick={onGenerateNotice}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 active:scale-95 transition-all shadow-[0_0_15px_rgba(34,211,238,0.15)]"
+              >
+                <FileText className="w-4 h-4" />
+                Section 36 Notice
+              </button>
+            )}
+
+            {isFail && onOpenGrievanceModal && (
+              <button
+                onClick={onOpenGrievanceModal}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 active:scale-95 transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)]"
+              >
+                <Send className="w-4 h-4" />
+                Report to NCH
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Cryptographic SHA-256 Ledger Verification */}
+        {sha256_hash && (
+          <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 font-mono">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="text-slate-500 uppercase tracking-wider font-sans">SHA-256 Chain:</span>
+              <span className="truncate text-slate-300">{sha256_hash}</span>
+            </div>
+            <button
+              onClick={handleCopyHash}
+              className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 shrink-0 font-sans"
+            >
+              {copiedHash ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedHash ? 'Copied' : 'Copy Hash'}
+            </button>
           </div>
         )}
+      </div>
 
-      <div className="rule-list">
-        {audit.rules.map((rule) => {
-          const isPass = rule.status === "PASS";
-          const plainText = !isPass ? RULE_PLAIN_TEXT[rule.rule] : null;
-          const isExpandable =
-            rule.rule === "Rule 5" || rule.rule === "Bilingual Consistency";
-          return (
-            <div className="rule" key={rule.rule}>
-              <span className={isPass ? "rule-icon pass" : "rule-icon fail"}>
-                {isPass ? (
-                  <CheckCircle2 size={16} />
-                ) : (
-                  <AlertTriangle size={16} />
-                )}
-              </span>
-              <div>
-                <strong>{rule.rule}</strong>
-                <p>{rule.reason}</p>
-                {/* Consumer-friendly plain-language explanation for failures */}
-                {plainText && (
-                  <p
-                    className="text-muted"
-                    style={{ fontSize: "11px", marginTop: "2px" }}
-                  >
-                    ℹ️ {plainText}
-                  </p>
-                )}
-                {rule.evidence && rule.evidence.length > 0 && (
-                  <div className="rule-evidence">
-                    Evidence: <code>{rule.evidence.join(", ")}</code>
-                  </div>
-                )}
-                {/* Expandable calculated_values for Rule 5 and Bilingual checks */}
-                {isExpandable &&
-                  rule.calculated_values &&
-                  Object.keys(rule.calculated_values).length > 0 && (
-                    <details
-                      className="rule-details"
-                      style={{ marginTop: "6px", fontSize: "11px" }}
-                    >
-                      <summary style={{ cursor: "pointer", color: "#71717a" }}>
-                        View calculated values
-                      </summary>
-                      <pre style={{ margin: "4px 0 0", color: "#a1a1aa" }}>
-                        {JSON.stringify(rule.calculated_values, null, 2)}
-                      </pre>
-                    </details>
-                  )}
+      {/* 2. Statutory Penalty / Jan Vishwas 2026 Card */}
+      {penalty && (
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <Scale className="w-5 h-5" />
               </div>
-              <span className={`rule-status ${isPass ? "pass" : "fail"}`}>
-                {rule.status}
+              <div>
+                <h3 className="font-semibold text-slate-100 text-sm">Compounding Liability Assessment</h3>
+                <p className="text-xs text-slate-400">{penalty.applicable_section || 'Legal Metrology Act, 2009'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-amber-300">
+                ₹{penalty.estimated_fine_inr?.toLocaleString('en-IN') || 0}
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-slate-400">Est. Monetary Exposure</span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Jan Vishwas 2026 Eligibility:</span>
+              <span className={`font-semibold ${penalty.jan_vishwas_eligible ? 'text-emerald-400' : 'text-slate-400'}`}>
+                {penalty.jan_vishwas_eligible ? 'Eligible (Grace Period Granted)' : 'Non-Compoundable'}
               </span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Statutory Rectification Window:</span>
+              <span className="font-semibold text-slate-200">
+                {penalty.grace_period_days ? `${penalty.grace_period_days} Days` : 'Immediate Rectification'}
+              </span>
+            </div>
+          </div>
+
+          {penalty.director_liability && (
+            <div className="mt-3 p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 flex items-center gap-2.5 text-xs">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>Critical Notice: Multiple infractions trigger Section 49 Corporate Director Liability.</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Rule 5 PDP Bounding Box Font Ratio Card */}
+      {pdp_font_evaluation && (
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
+              <span>Rule 5 & Schedule II: Principal Display Panel Geometry</span>
+            </h3>
+            <span
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                pdp_font_evaluation.font_size_compliance === 'PASS'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              }`}
+            >
+              {pdp_font_evaluation.font_size_compliance === 'PASS' ? 'COMPLIANT RATIO' : 'SUB-STATUTORY HEIGHT'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-slate-500 block">Est. PDP Area</span>
+              <span className="font-semibold text-slate-200">{pdp_font_evaluation.estimated_pdp_area_sq_cm} cm²</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-slate-500 block">Min. Mandated Font</span>
+              <span className="font-semibold text-slate-200">{pdp_font_evaluation.mandatory_min_font_height_mm} mm</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-slate-500 block">Measured Font</span>
+              <span className="font-semibold text-slate-200">{pdp_font_evaluation.measured_font_height_mm} mm</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-slate-500 block">Schedule Tier</span>
+              <span className="font-semibold text-cyan-400">Schedule II Tier</span>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">{pdp_font_evaluation.details}</p>
+        </div>
+      )}
+
+      {/* 4. FSSAI Dual-Regulatory Food Safety Section */}
+      {fssai_verification?.is_food_product && (
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                FSSAI
+              </span>
+              <h3 className="font-semibold text-slate-100 text-sm">Food Safety & Standards Dual-Verification</h3>
+            </div>
+            <span
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                fssai_verification.is_license_valid_format
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              }`}
+            >
+              {fssai_verification.is_license_valid_format ? 'VALID 14-DIGIT LICENSE' : 'INVALID FSSAI LIC'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-slate-500 block">License No:</span>
+              <span className="font-mono font-semibold text-slate-200">
+                {fssai_verification.license_number || 'Missing from Label'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-slate-500 block">Dietary Classification:</span>
+              <span className="font-semibold text-slate-200">{fssai_verification.dietary_type || 'STANDARD'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-slate-500 block">Veg/Non-Veg Symbol:</span>
+              <span className={`font-semibold ${fssai_verification.has_veg_nonveg_symbol ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {fssai_verification.has_veg_nonveg_symbol ? 'Present & Verified' : 'Unconfirmed'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Statutory Clauses Breakdown Accordion List */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+          Statutory Declarations Breakdown (Rule 6 & Rule 6(11))
+        </h3>
+
+        {rules.map((item, idx) => {
+          const isItemPass = item.status === 'PASS';
+          const isItemWarning = item.status === 'WARNING';
+          const isItemFail = item.status === 'FAIL';
+          const isExpanded = expandedRule === idx;
+
+          return (
+            <div
+              key={idx}
+              className="rounded-xl border border-slate-800 bg-slate-900/40 backdrop-blur-md overflow-hidden transition-all"
+            >
+              <button
+                onClick={() => toggleAccordion(idx)}
+                className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-slate-800/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {isItemPass && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  {isItemWarning && <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
+                  {isItemFail && <XCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+                  <div>
+                    <span className="text-xs font-semibold text-slate-200 block">{item.rule}</span>
+                    <span className="text-[11px] text-slate-400 truncate max-w-md block">{item.reason}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                      isItemPass
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : isItemWarning
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="px-4 pb-4 pt-1 border-t border-slate-800/60 bg-slate-950/40 text-xs space-y-2">
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Statutory Reasoning:</span>
+                    <p className="text-slate-300 mt-0.5">{item.reason}</p>
+                  </div>
+                  {item.statutory_clause && (
+                    <div>
+                      <span className="text-slate-500 font-semibold block">Statutory Reference:</span>
+                      <p className="text-slate-400 mt-0.5 font-mono">{item.statutory_clause}</p>
+                    </div>
+                  )}
+                  {item.remedy && (
+                    <div className="p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/30 text-cyan-300">
+                      <span className="font-semibold block">Mandatory Packaging Remedy:</span>
+                      <p className="mt-0.5">{item.remedy}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
-      </div>
-
-      <div
-        className="result-footer-actions"
-        style={{ flexDirection: "column" }}
-      >
-        <button
-          className="notice-btn"
-          onClick={() => onOpenNoticeModal("IMPROVEMENT")}
-          style={{ width: "100%" }}
-        >
-          <FileText size={16} /> Generate Improvement Notice (15-Day Grace)
-        </button>
-        <button
-          className="notice-btn"
-          onClick={() => onOpenNoticeModal("COMPOUNDING")}
-          style={{
-            width: "100%",
-            background: "rgba(225, 29, 72, 0.1)",
-            color: "#fb7185",
-            border: "1px solid rgba(225, 29, 72, 0.2)",
-          }}
-        >
-          <FileText size={16} /> Generate Compounding Penalty Demand
-        </button>
-
-        {/* One-tap NCH Grievance Filing — visible only on FAIL results */}
-        {failed && (
-          <a
-            href="tel:18001144000"
-            className="grievance-btn"
-            title="National Consumer Helpline — 1800-11-4000 (Toll Free)"
-          >
-            <Phone size={15} />
-            Report to Consumer Helpline (1800-11-4000)
-          </a>
-        )}
       </div>
     </div>
   );

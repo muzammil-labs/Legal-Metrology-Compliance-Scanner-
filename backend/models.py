@@ -1,60 +1,34 @@
 from datetime import datetime
+from sqlalchemy import Column, Integer, String, DateTime, Text, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from database import Base
 
-from sqlalchemy import DateTime, Float, Integer, String, Text, create_engine, ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
-
-import os
-
-DB_PATH = os.path.join(os.path.dirname(__file__), "inspections.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class Inspection(Base):
+class InspectionRecord(Base):
     __tablename__ = "inspections"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    inspected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    source_filename: Mapped[str] = mapped_column(String(255))
-    sha256: Mapped[str] = mapped_column(String(64), index=True)
-    region: Mapped[str] = mapped_column(String(120), default="Unknown")
-    gps_location: Mapped[str] = mapped_column(String(120), default="28.6139° N, 77.2090° E")
-    trust_score: Mapped[int] = mapped_column(Integer, default=100)
-    overall_status: Mapped[str] = mapped_column(String(20), index=True)
-    ocr_text: Mapped[str] = mapped_column(Text, default="")
-    previous_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    current_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    gps_latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
-    gps_longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
-    device_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    inspector_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    violations: Mapped[list["Violation"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")
-    certificate: Mapped["AuditCertificate | None"] = relationship(back_populates="inspection", uselist=False, cascade="all, delete-orphan")
 
+    id = Column(Integer, primary_key=True, index=True)
+    inspected_at = Column(DateTime, default=datetime.utcnow, index=True)
+    source_filename = Column(String(255), default="unknown.jpg")
+    sha256_hash = Column(String(64), index=True)
+    region = Column(String(120), default="Unknown")
+    gps_location = Column(String(120), default="28.6139° N, 77.2090° E")
+    trust_score = Column(Integer, default=100)
+    overall_status = Column(String(20), index=True)
+    extracted_text = Column(Text, default="")
+    timestamp = Column(String(50))
 
-class Violation(Base):
-    __tablename__ = "violations"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    inspection_id: Mapped[int] = mapped_column(ForeignKey("inspections.id"), index=True)
-    rule: Mapped[str] = mapped_column(String(40))
-    status: Mapped[str] = mapped_column(String(20))
-    reason: Mapped[str] = mapped_column(Text)
-    inspection: Mapped[Inspection] = relationship(back_populates="violations")
+    # We maintain aliases for compatibility with main.py vs old code
+    @property
+    def sha256(self):
+        return self.sha256_hash
+    @sha256.setter
+    def sha256(self, val):
+        self.sha256_hash = val
 
+    @property
+    def ocr_text(self):
+        return self.extracted_text
+    @ocr_text.setter
+    def ocr_text(self, val):
+        self.extracted_text = val
 
-class AuditCertificate(Base):
-    __tablename__ = "audit_certificates"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    inspection_id: Mapped[int] = mapped_column(ForeignKey("inspections.id"), unique=True)
-    certificate_number: Mapped[str] = mapped_column(String(80), unique=True)
-    issued_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    sha256_seal: Mapped[str] = mapped_column(String(64), default="")
-    inspection: Mapped[Inspection] = relationship(back_populates="certificate")
-
-
-def init_db() -> None:
-    Base.metadata.create_all(bind=engine)

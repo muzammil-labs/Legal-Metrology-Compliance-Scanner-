@@ -1523,6 +1523,7 @@ h1 {
 }
 .preset-btn:active {
   transform: scale(0.95);
+}
 /* Additional styles for BatchAuditModal */
 .batch-modal {
   max-width: 700px;
