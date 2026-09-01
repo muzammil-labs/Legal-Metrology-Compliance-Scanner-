@@ -51,14 +51,16 @@ export default function App() {
     }
   }
 
-  async function handleRunScan(customOcrText = "") {
+  async function handleRunScan(customOcrText = "", isDeepScan = false) {
     setLoading(true);
-    setMessage("Tokenizing label evidence & executing statutory rules...");
+    setMessage(isDeepScan ? "Executing Deep Scan (Real-time Vision AI)..." : "Tokenizing label evidence & executing statutory rules...");
     try {
       const result = await executeScanWithCircuitBreaker(
         file,
         demoMode,
         customOcrText,
+        "New Delhi",
+        isDeepScan
       );
       setAudit(result);
       setMessage(

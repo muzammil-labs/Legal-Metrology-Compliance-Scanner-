@@ -27,13 +27,15 @@ export async function executeScanWithCircuitBreaker(
   fixtureOverride = null,
   ocrText = "",
   region = "New Delhi",
+  isDeepScan = false
 ) {
   if (fixtureOverride) return loadPrecachedFixture(fixtureOverride);
   if (!imageFile)
     throw new Error("An image file is required for live scanning.");
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4500);
+  const timeoutMs = isDeepScan ? 9500 : 4500;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const formData = new FormData();
     formData.append("file", imageFile);
@@ -48,7 +50,7 @@ export async function executeScanWithCircuitBreaker(
     return await response.json();
   } catch (error) {
     console.warn(
-      "Scan unavailable; serving deterministic fallback and saving for later.",
+      `Scan unavailable (${timeoutMs}ms circuit breaker tripped); serving deterministic fallback and saving for later.`,
       error,
     );
     const fallbackResult = loadPrecachedFixture("control_pass");

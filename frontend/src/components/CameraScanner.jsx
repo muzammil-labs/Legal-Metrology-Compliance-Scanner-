@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Upload, FileScan, Eye, CameraOff } from "lucide-react";
 
 export default function CameraScanner({
@@ -12,14 +12,47 @@ export default function CameraScanner({
   const [showOcrInput, setShowOcrInput] = useState(false);
   const [customOcr, setCustomOcr] = useState("");
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [auditMode, setAuditMode] = useState("PHYSICAL"); // PHYSICAL or ECOMMERCE
+  const [auditMode, setAuditMode] = useState("PHYSICAL");
+  const [isDeepScan, setIsDeepScan] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
 
-  // Haptic feedback on demo fixture switch (from PWA branch)
+  // Generate object URL for image preview
+  const filePreviewUrl = useMemo(() => {
+    return file ? URL.createObjectURL(file) : null;
+  }, [file]);
+
+  // Clean up object URL to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+    };
+  }, [filePreviewUrl]);
+
+  // Haptic feedback
   useEffect(() => {
     if (demoMode && navigator.vibrate) {
       navigator.vibrate(50);
     }
   }, [demoMode]);
+
+  // Simulated progress animation while loading
+  useEffect(() => {
+    if (loading) {
+      setScanProgress(0);
+      const interval = setInterval(() => {
+        setScanProgress((prev) => {
+          if (prev >= 90) return prev;
+          // Slower progression towards the end to simulate actual work
+          const increment = prev < 50 ? 5 : prev < 80 ? 2 : 0.5;
+          return prev + increment;
+        });
+      }, 200);
+      return () => clearInterval(interval);
+    } else {
+      setScanProgress(100);
+      setTimeout(() => setScanProgress(0), 500); // Reset after completion
+    }
+  }, [loading]);
 
   function handleFileChange(event) {
     const chosen = event.target.files?.[0] ?? null;
@@ -30,7 +63,6 @@ export default function CameraScanner({
   }
 
   function handleInputError() {
-    // Triggered when browser blocks camera access (permission denied)
     setPermissionDenied(true);
   }
 
@@ -41,43 +73,22 @@ export default function CameraScanner({
         <span className="mono">{message}</span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          marginBottom: "10px",
-          background: "#18181b",
-          padding: "4px",
-          borderRadius: "8px",
-        }}
-      >
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         <button
           type="button"
           className={`tab-btn ${auditMode === "PHYSICAL" ? "active" : ""}`}
           onClick={() => setAuditMode("PHYSICAL")}
-          style={{
-            flex: 1,
-            padding: "8px",
-            borderRadius: "6px",
-            background: auditMode === "PHYSICAL" ? "#27272a" : "transparent",
-            color: auditMode === "PHYSICAL" ? "#fff" : "#a1a1aa",
-          }}
+          style={{ flex: 1 }}
         >
-          Physical Camera Audit
+          Physical Audit
         </button>
         <button
           type="button"
           className={`tab-btn ${auditMode === "ECOMMERCE" ? "active" : ""}`}
           onClick={() => setAuditMode("ECOMMERCE")}
-          style={{
-            flex: 1,
-            padding: "8px",
-            borderRadius: "6px",
-            background: auditMode === "ECOMMERCE" ? "#27272a" : "transparent",
-            color: auditMode === "ECOMMERCE" ? "#fff" : "#a1a1aa",
-          }}
+          style={{ flex: 1 }}
         >
-          E-Commerce Digital Listing
+          E-Commerce
         </button>
       </div>
 
@@ -86,39 +97,50 @@ export default function CameraScanner({
           <>
             <div className="grid-lines" />
 
-            {/* Scanline — pointer-events:none so it never blocks file input clicks */}
+            {/* Image Preview Area */}
+            {filePreviewUrl && (
+              <img 
+                src={filePreviewUrl} 
+                alt="Product Label Preview" 
+                className={`viewport-image ${loading ? 'scanning' : ''}`}
+              />
+            )}
+
+            {/* Simulated progress overlay */}
+            {loading && (
+              <div className="scan-progress-container">
+                <div className="scan-text">
+                  <span>{scanProgress < 40 ? "Extracting OCR Tokens..." : scanProgress < 75 ? "Evaluating Statutory Logic..." : "Finalizing Ledger..."}</span>
+                  <span>{Math.floor(scanProgress)}%</span>
+                </div>
+                <div className="scan-bar-bg">
+                  <div className="scan-bar-fill" style={{ width: `${scanProgress}%` }} />
+                </div>
+              </div>
+            )}
+            
             {loading && <div className="scanline" aria-hidden="true" />}
 
-            {/* Demo fixture active indicator */}
             {demoMode && (
               <div className="fixture-label">Demo Fixture Active</div>
             )}
 
-            {/* Permission-denied state */}
-            {permissionDenied ? (
+            {!filePreviewUrl && permissionDenied && (
               <div className="viewport-center">
                 <CameraOff size={32} className="text-rose" />
-                <p style={{ color: "#fb7185" }}>Camera access denied</p>
-                <small>
-                  Use the fixture selector in the header, or allow camera
-                  permissions and retry.
-                </small>
-              </div>
-            ) : (
-              <div className="viewport-center">
-                <Upload size={32} />
-                <p>
-                  {file
-                    ? file.name
-                    : demoMode
-                      ? "Demo Fixture Active"
-                      : "Capture or upload a product label"}
-                </p>
-                <small>Supports rear camera capture and image upload</small>
+                <p style={{ color: "#ef4444" }}>Camera access denied</p>
+                <small>Use fixture mode or allow permissions</small>
               </div>
             )}
 
-            {/* Native mobile rear-camera input — z-index above all overlays */}
+            {!filePreviewUrl && !permissionDenied && (
+              <div className="viewport-center">
+                <Upload size={32} />
+                <p>{demoMode ? "Demo Fixture Active" : "Upload or capture product label"}</p>
+                <small>Supports rear camera & standard images</small>
+              </div>
+            )}
+
             <input
               type="file"
               accept="image/*"
@@ -126,118 +148,41 @@ export default function CameraScanner({
               disabled={loading}
               onChange={handleFileChange}
               onError={handleInputError}
-              aria-label="Upload or capture product label image"
+              aria-label="Upload label image"
             />
           </>
         ) : (
-          <div
-            style={{
-              padding: "20px",
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Scanline Animation overlay during loading */}
-            {loading && (
-              <div
-                className="scanline"
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "2px",
-                  background: "cyan",
-                  boxShadow: "0 0 10px cyan",
-                  zIndex: 10,
-                  animation: "scan 2s linear infinite",
-                }}
-              />
-            )}
-
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-              <button
-                type="button"
-                className="preset-btn"
-                onClick={() =>
-                  setCustomOcr("https://blinkit.com/prn/product/12345")
-                }
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "11px",
-                  background: "#3f3f46",
-                  color: "#e4e4e7",
-                  borderRadius: "4px",
-                  border: "none",
-                }}
-                disabled={loading}
-              >
-                Blinkit Preset
-              </button>
-              <button
-                type="button"
-                className="preset-btn"
-                onClick={() =>
-                  setCustomOcr("https://zeptonow.com/pn/product/54321")
-                }
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "11px",
-                  background: "#3f3f46",
-                  color: "#e4e4e7",
-                  borderRadius: "4px",
-                  border: "none",
-                }}
-                disabled={loading}
-              >
-                Zepto Preset
-              </button>
-              <button
-                type="button"
-                className="preset-btn"
-                onClick={() =>
-                  setCustomOcr("https://www.swiggy.com/instamart/item/98765")
-                }
-                style={{
-                  padding: "4px 10px",
-                  fontSize: "11px",
-                  background: "#3f3f46",
-                  color: "#e4e4e7",
-                  borderRadius: "4px",
-                  border: "none",
-                }}
-                disabled={loading}
-              >
-                Swiggy Preset
-              </button>
+          <div style={{ padding: "24px", width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+            {loading && <div className="scanline" aria-hidden="true" />}
+            
+            <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+              {["Blinkit", "Zepto", "Swiggy"].map((platform) => (
+                <button
+                  key={platform}
+                  type="button"
+                  className="preset-btn tab-btn"
+                  onClick={() => setCustomOcr(`https://${platform.toLowerCase()}.com/product/12345`)}
+                  style={{ padding: "6px 12px", fontSize: "12px", minHeight: "36px" }}
+                  disabled={loading}
+                >
+                  {platform} Preset
+                </button>
+              ))}
             </div>
 
-            <label
-              style={{
-                marginBottom: "8px",
-                fontSize: "14px",
-                color: "#e4e4e7",
-              }}
-            >
+            <label style={{ marginBottom: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
               Digital Listing URL / Text
             </label>
             <textarea
               style={{
-                flex: 1,
-                width: "100%",
-                background: "transparent",
-                border: "1px solid #3f3f46",
-                borderRadius: "8px",
-                padding: "12px",
-                color: "#fff",
-                resize: "none",
+                flex: 1, width: "100%",
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "10px", padding: "16px",
+                color: "#fff", resize: "none",
+                fontFamily: "var(--font-family)"
               }}
-              placeholder="Paste Blinkit, Zepto, Swiggy Instamart URL or extracted listing text here..."
+              placeholder="Paste E-commerce URL or raw listing text..."
               value={customOcr}
               onChange={(e) => setCustomOcr(e.target.value)}
               disabled={loading}
@@ -246,44 +191,48 @@ export default function CameraScanner({
         )}
       </div>
 
+      {auditMode === "PHYSICAL" && (
+        <label className="deep-scan-toggle">
+          <input 
+            type="checkbox" 
+            checked={isDeepScan} 
+            onChange={(e) => setIsDeepScan(e.target.checked)}
+            disabled={loading || demoMode}
+          />
+          <strong>Deep Scan (Bypass 4.5s Circuit Breaker)</strong>
+          <span>Enable for real AI analysis (may take up to 9.5s). Uncheck for strict 4.5s offline-fallback testing.</span>
+        </label>
+      )}
+
       <div className="capture-actions">
         <button
           className="scan-button"
-          disabled={
-            loading ||
-            (auditMode === "PHYSICAL" && !file && !demoMode) ||
-            (auditMode === "ECOMMERCE" && !customOcr)
-          }
+          disabled={loading || (auditMode === "PHYSICAL" && !file && !demoMode) || (auditMode === "ECOMMERCE" && !customOcr)}
           onClick={() => {
             if (navigator.vibrate) navigator.vibrate(50);
-            onScan(customOcr);
+            onScan(customOcr, isDeepScan);
           }}
-          aria-label={loading ? "Scan in progress" : "Run compliance scan"}
         >
           <FileScan size={18} />
-          {loading ? "Analyzing label..." : "Scan for Compliance"}
+          {loading ? "Analyzing label..." : "Run Compliance Scan"}
         </button>
 
         <button
           type="button"
           className="ocr-toggle-btn"
           onClick={() => setShowOcrInput(!showOcrInput)}
-          aria-expanded={showOcrInput}
         >
           <Eye size={14} />
-          {showOcrInput ? "Hide OCR Override" : "Custom OCR Text Override"}
+          {showOcrInput ? "Hide Developer OCR Override" : "Developer OCR Override"}
         </button>
       </div>
 
       {showOcrInput && (
-        <div className="ocr-override-box">
-          <label htmlFor="custom-ocr-field">
-            Direct Raw OCR Text Stream (for manual testing or live editing):
-          </label>
+        <div className="ocr-override-box animate-in">
+          <label>Direct Raw OCR Text Stream Override:</label>
           <textarea
-            id="custom-ocr-field"
             rows={3}
-            placeholder="e.g. Manufactured by Acme Ltd 110001. Net Qty 500 g MRP Rs. 50 (incl. of all taxes) 01/2026..."
+            placeholder="e.g. Manufactured by Acme Ltd..."
             value={customOcr}
             onChange={(e) => setCustomOcr(e.target.value)}
           />

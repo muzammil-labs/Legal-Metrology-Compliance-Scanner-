@@ -56,7 +56,7 @@ export default function ComplianceSummaryCard({
     <div className="space-y-6 w-full max-w-4xl mx-auto">
       {/* 1. Overall Status Hero Banner */}
       <div
-        className={`p-6 rounded-2xl border backdrop-blur-xl transition-all shadow-2xl ${
+        className={`p-6 rounded-2xl border backdrop-blur-xl transition-all shadow-2xl animate-in delay-1 ${
           isPass
             ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-100 shadow-emerald-950/20'
             : isWarning
@@ -137,7 +137,7 @@ export default function ComplianceSummaryCard({
 
       {/* 2. Statutory Penalty / Jan Vishwas 2026 Card */}
       {penalty && (
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+        <div className="p-5 rounded-2xl bg-[rgba(17,24,39,0.6)] border border-[rgba(255,255,255,0.08)] backdrop-blur-xl shadow-lg animate-in delay-2">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -182,7 +182,7 @@ export default function ComplianceSummaryCard({
 
       {/* 3. Rule 5 PDP Bounding Box Font Ratio Card */}
       {pdp_font_evaluation && (
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+        <div className="p-5 rounded-2xl bg-[rgba(17,24,39,0.6)] border border-[rgba(255,255,255,0.08)] backdrop-blur-xl shadow-lg animate-in delay-3">
           <div className="flex items-center justify-between gap-4 mb-3">
             <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
               <span>Rule 5 & Schedule II: Principal Display Panel Geometry</span>
@@ -222,7 +222,7 @@ export default function ComplianceSummaryCard({
 
       {/* 4. FSSAI Dual-Regulatory Food Safety Section */}
       {fssai_verification?.is_food_product && (
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+        <div className="p-5 rounded-2xl bg-[rgba(17,24,39,0.6)] border border-[rgba(255,255,255,0.08)] backdrop-blur-xl shadow-lg animate-in delay-4">
           <div className="flex items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -291,7 +291,7 @@ export default function ComplianceSummaryCard({
       )}
 
       {/* 5. Statutory Clauses Breakdown Accordion List */}
-      <div className="space-y-3">
+      <div className="space-y-3 animate-in delay-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
           Statutory Declarations Breakdown (Rule 6 & Rule 6(11))
         </h3>
