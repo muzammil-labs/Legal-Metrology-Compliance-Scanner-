@@ -37,7 +37,7 @@ def extract_label_with_gemini(content: bytes) -> Tuple[str, float]:
         )
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=[image_part, prompt],
             config=types.GenerateContentConfig(
                 temperature=0.0, # Deterministic extraction
