@@ -15,6 +15,7 @@ class StatutoryRule(str, Enum):
     RULE_6_1_E = "Rule 6(1)(e) - Maximum Retail Price (MRP)"
     RULE_6_1_F = "Rule 6(1)(f) - Consumer Care Details"
     RULE_6_11_USP = "Rule 6(11) - Unit Sale Price (USP)"
+    RULE_6_10_ECOMMERCE = "Rule 6(10) - E-Commerce Digital Declarations"
 
 class RuleResult(BaseModel):
     rule: StatutoryRule
@@ -22,6 +23,26 @@ class RuleResult(BaseModel):
     reason: str
     statutory_clause: Optional[str] = None
     remedy: Optional[str] = None
+
+class DigitalDeclarationItem(BaseModel):
+    declaration_name: str
+    status: str
+    extracted_value: Optional[str] = None
+    statutory_clause: str
+    violation_reason: Optional[str] = None
+
+class ECommerceAuditRequest(BaseModel):
+    platform: str
+    listing_text: str
+    product_url: Optional[str] = None
+
+class ECommerceAuditResponse(BaseModel):
+    platform: str
+    overall_status: str
+    total_violations: int
+    declarations: List[DigitalDeclarationItem]
+    compounding_fine_exposure_inr: int
+    audited_at: str
 
 class DistrictMetricSummary(BaseModel):
     district_name: str

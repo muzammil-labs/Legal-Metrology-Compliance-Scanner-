@@ -9,7 +9,8 @@ from schemas import (
     StatutoryRule,
     RuleStatus,
     RuleResult,
-    FSSAIVerification
+    FSSAIVerification,
+    ECommerceAuditRequest
 )
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
 from services.rule_engine import (
@@ -23,6 +24,7 @@ from services.rule_engine import (
     calculate_compounding_fine
 )
 from services.fssai_auditor import audit_fssai_declarations
+from services.ecommerce_parser import audit_digital_listing
 from services.auth import UserRole
 
 def test_rule_manufacturer_pass():
@@ -97,6 +99,26 @@ def test_fssai_auditor_declarations():
     assert res.is_food_product is True
     assert res.is_license_valid_format is True
     assert res.dietary_type == "VEGETARIAN"
+
+def test_ecommerce_audit_compliant():
+    req = ECommerceAuditRequest(
+        platform="Blinkit",
+        listing_text="Mfg by ABC Corp, PIN: 500001. Country of Origin: India. Net Qty: 500 g. MRP Rs. 150 (incl. of all taxes). Support: care@abc.com"
+    )
+    res = audit_digital_listing(req)
+    assert res.overall_status == "COMPLIANT"
+    assert res.total_violations == 0
+    assert res.compounding_fine_exposure_inr == 0
+
+def test_ecommerce_audit_violations():
+    req = ECommerceAuditRequest(
+        platform="Zepto",
+        listing_text="Imported chocolate. Net Qty: 200 gm. MRP Rs. 250."
+    )
+    res = audit_digital_listing(req)
+    assert res.overall_status == "NON_COMPLIANT"
+    assert res.total_violations > 0
+    assert res.compounding_fine_exposure_inr >= 25000
 
 def test_executive_pdf_and_excel_export():
     mock_summary = ExecutiveAnalyticsResponse(

@@ -23,12 +23,15 @@ from schemas import (
     PreAuditRequest,
     PreAuditResponse,
     ExecutiveAnalyticsResponse,
-    DistrictMetricSummary
+    DistrictMetricSummary,
+    ECommerceAuditRequest,
+    ECommerceAuditResponse
 )
 from services.rule_engine import audit_text, calculate_compounding_fine
 from services.gemini_service import extract_label_with_gemini
 from services.auth import require_role, UserRole, validate_b2b_api_key
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
+from services.ecommerce_parser import audit_digital_listing
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -164,3 +167,7 @@ def export_excel_report(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=District_Audit_Data.xlsx"}
     )
+
+@app.post("/api/v1/audit-digital-listing", response_model=ECommerceAuditResponse)
+def audit_digital_listing_endpoint(payload: ECommerceAuditRequest):
+    return audit_digital_listing(payload)
