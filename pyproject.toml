@@ -1,5 +1,5 @@
 [tool.vercel]
-entrypoint = "backend/main.py"
+entrypoint = "api.index:app"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
