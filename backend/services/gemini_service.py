@@ -16,9 +16,10 @@ def extract_label_with_gemini(content: bytes) -> Tuple[str, float]:
     and returns the verbatim OCR text extracted from the label.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key or not genai:
-        # Fallback to mock if API key is not configured or SDK is missing
-        return "Mocked extracted text (No API Key or SDK configured)", 0.5
+    if not genai:
+        return "Mocked extracted text (ERROR: google-genai SDK failed to import on Vercel)", 0.5
+    if not api_key:
+        return "Mocked extracted text (ERROR: GEMINI_API_KEY is missing from environment variables)", 0.5
         
     try:
         client = genai.Client(api_key=api_key)
