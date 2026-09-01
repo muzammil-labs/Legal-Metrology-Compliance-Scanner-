@@ -105,6 +105,7 @@ class AuditResponse(BaseModel):
     overall_status: RuleStatus
     rules: List[RuleResult]
     timestamp: str
+    ocr_text: Optional[str] = None
     penalty: Optional[Dict[str, Any]] = None
     fssai_verification: Optional[FSSAIVerification] = None
 

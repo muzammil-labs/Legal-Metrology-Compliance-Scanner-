@@ -135,6 +135,7 @@ async def scan(
         overall_status=overall_status,
         rules=rules,
         timestamp=inspection.inspected_at.isoformat(),
+        ocr_text=text,
         penalty=calculate_compounding_fine(rules),
         fssai_verification=fssai_info
     )

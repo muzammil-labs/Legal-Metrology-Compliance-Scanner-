@@ -34,7 +34,8 @@ export default function ComplianceSummaryCard({
     fssai_verification = null,
     pdp_font_evaluation = null,
     sha256_hash = '',
-    inspection_id = ''
+    inspection_id = '',
+    ocr_text = ''
   } = auditData;
 
   const isPass = overall_status === 'PASS';
@@ -287,6 +288,21 @@ export default function ComplianceSummaryCard({
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 4.5 Raw OCR Dump for Transparency */}
+      {ocr_text && (
+        <div className="p-5 rounded-2xl bg-[rgba(17,24,39,0.03)] border border-[rgba(255,255,255,0.08)] shadow-sm animate-in delay-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+              <FileText className="w-4 h-4 text-cyan-600" />
+              <span>Vision AI Raw Extraction (Debug Mode)</span>
+            </h3>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 max-h-48 overflow-y-auto">
+            <pre className="text-[10px] text-slate-600 font-mono whitespace-pre-wrap">{ocr_text}</pre>
+          </div>
         </div>
       )}
 
