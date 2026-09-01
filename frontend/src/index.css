@@ -802,7 +802,131 @@ h1 {
   box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);
 }
 
-.primary-download-btn:hover {
-  background: var(--accent-blue-hover);
-  transform: translateY(-1px);
+/* --- Advanced UI Overhaul Styles --- */
+
+/* Smooth Slide & Expand */
+.expandable-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  opacity: 0;
+}
+.expandable-content.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.expandable-inner {
+  overflow: hidden;
+}
+
+/* Rule Card Enhancements */
+.rule-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+.rule-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(0, 112, 243, 0.2), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.rule-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.08);
+}
+.rule-card:hover::before {
+  opacity: 1;
+}
+
+/* Status Glowing Icons */
+.status-glow-pass {
+  position: relative;
+}
+.status-glow-pass::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--status-pass);
+  filter: blur(8px);
+  opacity: 0.4;
+  z-index: -1;
+  animation: breathe 3s infinite ease-in-out;
+}
+
+.status-glow-fail {
+  position: relative;
+}
+.status-glow-fail::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--status-fail);
+  filter: blur(8px);
+  opacity: 0.5;
+  z-index: -1;
+  animation: urgentPulse 2s infinite ease-in-out;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+@keyframes urgentPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); opacity: 0.4; }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); opacity: 0.4; }
+}
+
+/* Staggered Grid Animations */
+.stagger-1 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+.stagger-2 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+.stagger-3 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
+.stagger-4 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; }
+.stagger-5 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both; }
+.stagger-6 { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both; }
+
+/* Progress Ring */
+.progress-ring__circle {
+  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.score-badge {
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-elevated));
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 8px 16px rgba(0,0,0,0.05);
+  border-radius: 20px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.score-badge::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.8), transparent);
+  transform: rotate(45deg);
+  animation: shine 4s infinite;
+}
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  20%, 100% { transform: translateX(100%) rotate(45deg); }
 }
