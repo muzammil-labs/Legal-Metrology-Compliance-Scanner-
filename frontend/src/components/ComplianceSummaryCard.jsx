@@ -329,10 +329,10 @@ export default function ComplianceSummaryCard({
               <div key={idx} className="rule-card group">
                 <button
                   onClick={() => toggleAccordion(idx)}
-                  className="w-full p-5 flex items-start justify-between text-left focus:outline-none bg-transparent border-none cursor-pointer"
+                  className="w-full p-5 flex items-center justify-between text-left focus:outline-none bg-transparent border-none cursor-pointer gap-4"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className={`mt-0.5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                  <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                    <div className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${
                       isItemPass ? 'status-glow-pass text-green-500' :
                       isItemWarning ? 'text-yellow-500' :
                       'status-glow-fail text-red-500'
@@ -341,13 +341,13 @@ export default function ComplianceSummaryCard({
                       {isItemWarning && <AlertTriangle className="w-6 h-6" />}
                       {isItemFail && <XCircle className="w-6 h-6" />}
                     </div>
-                    <div className="pt-0.5">
-                      <span className="text-base font-extrabold text-gray-900 block mb-1.5 tracking-tight group-hover:text-blue-600 transition-colors">{item.rule}</span>
-                      <span className="text-xs text-gray-500 leading-relaxed line-clamp-2 pr-4">{item.reason}</span>
+                    <div className="flex-1 overflow-hidden pr-2">
+                      <span className="text-sm font-extrabold text-gray-900 block mb-1 tracking-tight group-hover:text-blue-600 transition-colors truncate">{item.rule}</span>
+                      <span className="text-xs text-gray-500 leading-relaxed line-clamp-1">{item.reason}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-3 shrink-0 pt-0.5">
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border shadow-sm ${
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className={`text-[10px] whitespace-nowrap font-black uppercase tracking-wider px-2.5 py-1 rounded-md border shadow-sm ${
                         isItemPass ? 'bg-green-50 text-green-600 border-green-200 shadow-green-100/50' : 
                         isItemWarning ? 'bg-yellow-50 text-yellow-600 border-yellow-200 shadow-yellow-100/50' : 
                         'bg-red-50 text-red-600 border-red-200 shadow-red-100/50'
@@ -355,7 +355,7 @@ export default function ComplianceSummaryCard({
                     >
                       {item.status}
                     </span>
-                    <div className="p-1 rounded-full bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                    <div className="p-1 rounded-full bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shrink-0">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
                   </div>
