@@ -237,7 +237,7 @@ export default function ComplianceSummaryCard({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
             <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
               <span className="text-slate-500 block">License No:</span>
               <span className="font-mono font-semibold text-slate-200">
@@ -246,7 +246,22 @@ export default function ComplianceSummaryCard({
             </div>
             <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
               <span className="text-slate-500 block">Dietary Classification:</span>
-              <span className="font-semibold text-slate-200">{fssai_verification.dietary_type || 'STANDARD'}</span>
+              <span className={`font-semibold flex items-center gap-1.5 ${
+                fssai_verification.dietary_type === 'VEGETARIAN' ? 'text-emerald-400' :
+                fssai_verification.dietary_type === 'NON_VEGETARIAN' ? 'text-amber-600' : 'text-slate-200'
+              }`}>
+                {fssai_verification.dietary_type === 'VEGETARIAN' && (
+                  <span className="inline-block w-3 h-3 rounded-full border border-emerald-500 bg-emerald-500/20 flex items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  </span>
+                )}
+                {fssai_verification.dietary_type === 'NON_VEGETARIAN' && (
+                  <span className="inline-block w-3 h-3 border border-amber-600 bg-amber-600/20 flex items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  </span>
+                )}
+                {fssai_verification.dietary_type || 'STANDARD'}
+              </span>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
               <span className="text-slate-500 block">Veg/Non-Veg Symbol:</span>
@@ -255,6 +270,20 @@ export default function ComplianceSummaryCard({
               </span>
             </div>
           </div>
+
+          {fssai_verification.violations && fssai_verification.violations.length > 0 && (
+            <div className="mt-3 p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs">
+              <div className="font-semibold mb-1 flex items-center gap-1.5">
+                <XCircle className="w-3.5 h-3.5" />
+                Statutory FSSAI Violations Detected:
+              </div>
+              <ul className="list-disc list-inside space-y-1 ml-1 text-rose-300/80">
+                {fssai_verification.violations.map((violation, i) => (
+                  <li key={i}>{violation}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

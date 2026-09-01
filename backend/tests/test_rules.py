@@ -77,10 +77,13 @@ def test_audit_text_comprehensive():
         "Consumer Care: care@abc.com. USP Rs. 0.20 / g"
     )
     results = audit_text(sample_text)
+    if isinstance(results, tuple) and len(results) == 5:
+        results = results[0]
     assert isinstance(results, list)
     assert len(results) == 6
     assert all(isinstance(r, RuleResult) for r in results)
     assert all(r.status == RuleStatus.PASS for r in results)
+
 
 def test_calculate_compounding_fine():
     pass_rules = [RuleResult(rule=StatutoryRule.RULE_6_1_A, status=RuleStatus.PASS, reason="OK")]
@@ -141,3 +144,16 @@ def test_b2b_saas_preaudit_authentication(client):
     data = res_auth.json()
     assert "overall_status" in data
     assert "rules" in data
+
+def test_fssai_invalid_format():
+    food_text = "Ingredients: Sugar, Wheat, Milk. FSSAI Lic. No. 30014011000123. 100% Vegetarian."
+    res = audit_fssai_declarations(food_text)
+    assert res.is_food_product is True
+    assert res.is_license_valid_format is False
+    assert "Missing or malformed 14-digit FSSAI License Number (must start with 1 or 2)" in res.violations
+
+def test_fssai_not_food_product():
+    non_food_text = "Shampoo, Paraben free. Made in India. MRP 100."
+    res = audit_fssai_declarations(non_food_text)
+    assert res.is_food_product is False
+    assert res.status == RuleStatus.PASS
