@@ -176,10 +176,10 @@ export default function CameraScanner({
             <textarea
               style={{
                 flex: 1, width: "100%",
-                background: "rgba(0,0,0,0.3)",
+                background: "var(--bg-surface)",
                 border: "1px solid var(--border-subtle)",
                 borderRadius: "10px", padding: "16px",
-                color: "#fff", resize: "none",
+                color: "var(--text-primary)", resize: "none",
                 fontFamily: "var(--font-family)"
               }}
               placeholder="Paste E-commerce URL or raw listing text..."
@@ -199,8 +199,10 @@ export default function CameraScanner({
             onChange={(e) => setIsDeepScan(e.target.checked)}
             disabled={loading || demoMode}
           />
-          <strong>Deep Scan (Bypass 4.5s Circuit Breaker)</strong>
-          <span>Enable for real AI analysis (may take up to 9.5s). Uncheck for strict 4.5s offline-fallback testing.</span>
+          <div>
+            <strong style={{display: 'block', marginBottom: '2px', color: 'var(--text-primary)'}}>Deep Scan (Bypass 4.5s Circuit Breaker)</strong>
+            <span>Enable for real AI analysis (may take up to 9.5s). Uncheck for strict 4.5s offline-fallback testing.</span>
+          </div>
         </label>
       )}
 
