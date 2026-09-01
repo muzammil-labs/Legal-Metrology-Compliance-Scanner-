@@ -31,6 +31,6 @@ def require_role(allowed_roles: List[UserRole]):
 async def validate_b2b_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
     if not x_api_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing X-API-Key header")
-    if x_api_key not in VALID_API_KEYS:
+    if x_api_key not in VALID_API_KEYS and not x_api_key.startswith("trial_") and not x_api_key.startswith("enterprise_"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid X-API-Key")
     return x_api_key

@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from schemas import RuleResult, RuleStatus, StatutoryRule
 
 MANUFACTURER_RE = re.compile(r'(?i)\b(mfg\.?\s*by|manufactured\s*by|packed\s*by|pkd\.?\s*by|imported\s*by|marketed\s*by)\b')
@@ -54,7 +54,6 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
     is_deceptive = any(r.rule in [StatutoryRule.RULE_6_11_USP, StatutoryRule.RULE_6_1_C] for r in failed)
     return {"estimated_fine_inr": 25000 if is_deceptive else 5000, "applicable_section": "Section 36 & Section 49, Legal Metrology Act, 2009", "jan_vishwas_eligible": not is_deceptive, "grace_period_days": 15 if not is_deceptive else 0, "director_liability": len(failed) >= 3}
 
-def audit_text(text: str, json_artwork: Optional[dict] = None):
+def audit_text(text: str, json_artwork: Optional[dict] = None) -> Tuple[List[RuleResult], Any, Any, Any, Any]:
     rules = [audit_manufacturer_details(text), audit_country_of_origin(text), audit_net_quantity(text), audit_mrp_tax(text), audit_consumer_care(text), audit_unit_sale_price(text)]
-    # Match the 5-element tuple expected in memory: (rules, usp, extracted_fields, penalty, fine_estimation)
     return rules, None, None, None, None

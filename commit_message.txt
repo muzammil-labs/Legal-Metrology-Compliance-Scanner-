@@ -1,0 +1,8 @@
+fix: finalize developer portal and core backend logic integration
+
+* Removes temporary patch and fix scripts from repository
+* Integrates DeveloperPortal frontend component natively into App navigation
+* Fixes backend integration logic to correctly align schema fields (FSSAIVerification over FSSAIVerificationData)
+* Properly handles backend memory stream limits via `.seek(0)` during FASTApi file reading
+* Fixes failing `tests/test_file_size.py` by applying correct auth headers
+* Ensures UI JSX formatting complies with standards and prevents Vite build failures

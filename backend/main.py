@@ -34,6 +34,7 @@ from services.gemini_service import extract_label_with_gemini
 from services.auth import require_role, UserRole, validate_b2b_api_key
 from services.executive_reports import generate_executive_pdf_report, generate_excel_export
 from services.ecommerce_parser import audit_digital_listing
+import routers.b2b_saas
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -46,6 +47,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(routers.b2b_saas.router)
 
 @app.get("/health")
 def health_check():
@@ -65,7 +68,6 @@ async def scan(
         raise HTTPException(status_code=413, detail="File size exceeds maximum size limit of 10MB")
     await file.seek(0)
 
-    # We also check the file extension/content type, but size comes first!
     if not file.filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
          raise HTTPException(status_code=400, detail="Invalid image format")
 
@@ -78,8 +80,6 @@ async def scan(
         overall_status = RuleStatus.FAIL
     elif any(r.status == RuleStatus.WARNING for r in rules):
         overall_status = RuleStatus.WARNING
-
-    fssai_verification = audit_fssai_declarations(text)
 
     sha256_hash = hashlib.sha256(content).hexdigest()
     inspection = InspectionRecord(
@@ -99,7 +99,6 @@ async def scan(
         rules=rules,
         timestamp=inspection.inspected_at.isoformat(),
         penalty=calculate_compounding_fine(rules),
-        fssai_verification=fssai_verification
         fssai_verification=fssai_info
     )
 
@@ -186,13 +185,11 @@ async def pre_audit_endpoint(
     elif any(r.status == RuleStatus.WARNING for r in rules):
         overall_status = RuleStatus.WARNING
 
-    fssai_verification = audit_fssai_declarations(payload.artwork_text)
     fine_info = calculate_compounding_fine(rules)
     return PreAuditResponse(
         overall_status=overall_status,
         rules=rules,
         estimated_fine_inr=fine_info.get("estimated_fine_inr", 0),
-        fssai_verification=fssai_verification
         fssai_verification=fssai_info
     )
 
