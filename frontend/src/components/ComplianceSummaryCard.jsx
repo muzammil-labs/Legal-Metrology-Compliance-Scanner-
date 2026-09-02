@@ -18,19 +18,41 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
 
   const toggleRule = (idx) => setExpandedRules(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
 
+  // Calculate Compliance Score
+  const totalRules = rules.length;
+  const passedRules = rules.filter(r => r.status === "PASS").length;
+  const complianceScore = totalRules > 0 ? Math.round((passedRules / totalRules) * 100) : 100;
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 w-full max-w-full pb-16">
       
-      {/* Hero Status Banner */}
-      <motion.div layout className={`p-6 rounded-2xl border shadow-sm ${isOverallPass ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+      {/* Hero Status Banner & Score */}
+      <motion.div layout className={`p-6 rounded-2xl shadow-[0_4px_20px_rgba(16,185,129,0.08)] ${isOverallPass ? "bg-emerald-50 border border-[#A7F3D0]" : "bg-rose-50 border border-rose-200"}`}>
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isOverallPass ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}>
+          <motion.div 
+            initial={{ scale: 0 }} 
+            animate={{ scale: 1 }} 
+            transition={{ type: "spring", stiffness: 300, damping: 15, duration: 0.4 }}
+            className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isOverallPass ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}
+          >
             {isOverallPass ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
-          </div>
-          <div>
+          </motion.div>
+          <div className="flex-1">
             <h2 className={`text-xl font-black ${isOverallPass ? "text-emerald-900" : "text-rose-900"}`}>{isOverallPass ? "CLEARED FOR RETAIL" : "NON-COMPLIANT PRODUCT"}</h2>
-            <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${isOverallPass ? "text-emerald-700" : "text-rose-700"}`}>Legal Metrology Rules, 2011</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <span className={`text-xs font-bold uppercase tracking-widest ${isOverallPass ? "text-emerald-700" : "text-rose-700"}`}>Compliance Score: {complianceScore}%</span>
+            </div>
           </div>
+        </div>
+        
+        {/* Animated Progress Bar */}
+        <div className="mt-4 w-full bg-black/5 rounded-full h-2 overflow-hidden">
+          <motion.div 
+            initial={{ width: 0 }} 
+            animate={{ width: `${complianceScore}%` }} 
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className={`h-full rounded-full ${isOverallPass ? "bg-emerald-500" : "bg-rose-500"}`}
+          />
         </div>
       </motion.div>
 
@@ -103,14 +125,16 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
           const isOpen = expandedRules.includes(idx);
           return (
             <motion.div layout key={idx} className="theme-bright-card overflow-hidden">
-              <button onClick={() => toggleRule(idx)} className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50 transition-colors min-h-[56px] focus:outline-none">
-                <div className="flex items-center gap-3">
-                  <div className={isPass ? "text-emerald-500" : "text-rose-500"}>{isPass ? <CheckCircle2 size={20}/> : <XCircle size={20}/>}</div>
-                  <span className="text-sm font-bold text-slate-900 text-left">{item.rule}</span>
+              <button onClick={() => toggleRule(idx)} className="w-full p-4 sm:p-5 flex items-start sm:items-center justify-between hover:bg-slate-50 transition-colors min-h-[56px] focus:outline-none gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className={`mt-0.5 shrink-0 ${isPass ? "text-emerald-500" : "text-rose-500"}`}>{isPass ? <CheckCircle2 size={20}/> : <XCircle size={20}/>}</div>
+                  <div className="flex flex-col flex-1 text-left">
+                    <span className="text-sm font-bold text-slate-900 whitespace-normal leading-snug">{item.rule}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${isPass ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"}`}>{item.status}</span>
-                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="text-slate-400"><ChevronDown size={16}/></motion.div>
+                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2, ease: "easeInOut" }} className="text-slate-400"><ChevronDown size={16}/></motion.div>
                 </div>
               </button>
               <AnimatePresence>
