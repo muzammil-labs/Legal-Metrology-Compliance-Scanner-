@@ -48,58 +48,55 @@ export default function App() {
     <main className="w-full min-h-screen px-4 sm:px-6 md:px-8 max-w-6xl mx-auto flex flex-col items-center">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} demoMode={demoMode} setDemoMode={handleChooseMode} />
 
-      <section className="w-full flex flex-col justify-center items-center text-center gap-2 pt-2 pb-4">
+      <section className="w-full flex flex-col justify-center items-center text-center gap-2 pt-6 pb-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, staggerChildren: 0.1 }} className="flex flex-col items-center">
           
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 mb-2">
-            <Shield size={12} className="text-blue-700" />
-            <p className="text-[11px] font-bold tracking-[0.08em] text-blue-700 uppercase">Department of Consumer Affairs - India</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-sage"></div>
+            <p className="text-[14px] font-bold text-ink-soft">Legal Metrology compliance, scanned in seconds</p>
           </motion.div>
           
-          <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-3xl sm:text-5xl font-[800] tracking-tight text-[#003399] leading-tight mb-2">
-            PakkaLabel India
+          <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-4xl sm:text-[56px] font-bold font-serif tracking-tight text-ink leading-[1.1] mb-4">
+            Make every label pakka.
           </motion.h1>
           
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-1 mb-2">
-            <p className="text-base text-slate-500 font-normal max-w-xl">
-              Automated label verification under Legal Metrology Rules, 2011.
+            <p className="text-[18px] text-ink-soft font-normal max-w-2xl leading-relaxed">
+              Point a camera at any packaged product and PakkaLabel checks it against India's Legal Metrology Rules, 2011 — instantly.
             </p>
-            <span className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-              <Sparkles size={10} className="text-blue-600" /> AI-POWERED
-            </span>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="mt-2 flex items-center bg-white border border-slate-200 rounded-full shadow-sm overflow-hidden h-7">
-            <div className="bg-blue-600 w-1.5 h-full"></div>
-            <span className="px-3 text-[10px] font-bold text-slate-500 tracking-wider">
-              MODE: <strong className="text-[#003399]">{demoMode ? "DEMO FIXTURE" : activeTab.toUpperCase()}</strong>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="mt-4 flex items-center bg-seal-cream border border-ink/10 rounded-full shadow-sm overflow-hidden h-8">
+            <div className="bg-turmeric w-2 h-full"></div>
+            <span className="px-4 text-[11px] font-bold text-ink-soft tracking-wider">
+              MODE: <strong className="text-turmeric-deep">{demoMode ? "DEMO FIXTURE" : activeTab.toUpperCase()}</strong>
             </span>
           </motion.div>
         </motion.div>
       </section>
 
       {/* How It Works Stepper */}
-      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="w-full max-w-4xl mx-auto my-4 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex flex-col items-center text-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2"><Camera size={14} /></div>
-            <strong className="text-[11px] font-bold text-slate-900 mb-0.5">1. Upload Label</strong>
-            <span className="text-[10px] text-slate-500 leading-tight">Capture or upload package image</span>
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="w-full max-w-4xl mx-auto my-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex flex-col items-center text-center p-4 bg-seal-cream border border-ink/10 rounded-xl shadow-sm">
+            <div className="w-9 h-9 rounded-full border border-turmeric/50 text-turmeric flex items-center justify-center mb-3 bg-paper"><Camera size={16} /></div>
+            <strong className="text-[13px] font-bold font-serif text-ink mb-1">1. Point camera</strong>
+            <span className="text-[12px] text-ink-soft leading-tight">Photo, barcode, or live scan</span>
           </div>
-          <div className="flex flex-col items-center text-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2"><Search size={14} /></div>
-            <strong className="text-[11px] font-bold text-slate-900 mb-0.5">2. AI Scans</strong>
-            <span className="text-[10px] text-slate-500 leading-tight">Extracts text, MRP, and dates</span>
+          <div className="flex flex-col items-center text-center p-4 bg-seal-cream border border-ink/10 rounded-xl shadow-sm">
+            <div className="w-9 h-9 rounded-full border border-turmeric/50 text-turmeric flex items-center justify-center mb-3 bg-paper"><Search size={16} /></div>
+            <strong className="text-[13px] font-bold font-serif text-ink mb-1">2. AI Scans</strong>
+            <span className="text-[12px] text-ink-soft leading-tight">Extracts text and mandatory declarations</span>
           </div>
-          <div className="flex flex-col items-center text-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2"><FileCheck size={14} /></div>
-            <strong className="text-[11px] font-bold text-slate-900 mb-0.5">3. Rules Verified</strong>
-            <span className="text-[10px] text-slate-500 leading-tight">Validated against PCR 2011</span>
+          <div className="flex flex-col items-center text-center p-4 bg-seal-cream border border-ink/10 rounded-xl shadow-sm">
+            <div className="w-9 h-9 rounded-full border border-turmeric/50 text-turmeric flex items-center justify-center mb-3 bg-paper"><FileCheck size={16} /></div>
+            <strong className="text-[13px] font-bold font-serif text-ink mb-1">3. Instant verdict</strong>
+            <span className="text-[12px] text-ink-soft leading-tight">Checked against the 2011 Rulebook</span>
           </div>
-          <div className="flex flex-col items-center text-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2"><Award size={14} /></div>
-            <strong className="text-[11px] font-bold text-slate-900 mb-0.5">4. Compliance Result</strong>
-            <span className="text-[10px] text-slate-500 leading-tight">Instant statutory breakdown</span>
+          <div className="flex flex-col items-center text-center p-4 bg-seal-cream border border-ink/10 rounded-xl shadow-sm">
+            <div className="w-9 h-9 rounded-full border border-turmeric/50 text-turmeric flex items-center justify-center mb-3 bg-paper"><Award size={16} /></div>
+            <strong className="text-[13px] font-bold font-serif text-ink mb-1">4. Act on it</strong>
+            <span className="text-[12px] text-ink-soft leading-tight">File complaint or fix listing</span>
           </div>
         </div>
       </motion.section>

@@ -1,18 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 min-h-screen overflow-x-hidden font-sans;
-    background-image: radial-gradient(ellipse at 50% -20%, rgba(37,99,235,0.06), rgba(248,250,252,1));
+    @apply bg-paper text-ink min-h-screen overflow-x-hidden font-sans;
   }
 }
 
 @layer components {
   .theme-bright-card {
-    @apply bg-white border border-slate-200/80 rounded-2xl;
-    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.03), 0 10px 25px -5px rgba(0,0,0,0.04), 0 20px 25px -5px rgba(0,0,0,0.02);
+    @apply bg-seal-cream border border-ink/10 rounded-2xl;
   }
 }
 

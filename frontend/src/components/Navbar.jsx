@@ -13,22 +13,34 @@ export default function Navbar({ activeTab, setActiveTab, demoMode, setDemoMode,
   ];
 
   return (
-    <nav className="w-full flex flex-col md:flex-row items-center justify-between py-4 mb-6 border-b border-slate-200/80 gap-4">
+    <nav className="w-full flex flex-col md:flex-row items-center justify-between py-4 mb-6 border-b border-ink/10 gap-4">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-600 rounded-xl shadow-sm text-white">
-          <Scale size={20} />
-        </div>
+        <svg viewBox="0 0 60 60" fill="none" className="w-10 h-10 shrink-0">
+          <circle cx="30" cy="30" r="27" stroke="#1E2148" strokeWidth="1.4" strokeDasharray="1.5 4.2"/>
+          <circle cx="30" cy="30" r="19" fill="#1E2148"/>
+          <g stroke="#E8A33D" strokeWidth="1.6">
+            <line x1="30" y1="15" x2="30" y2="21"/>
+            <line x1="30" y1="39" x2="30" y2="45"/>
+            <line x1="15" y1="30" x2="21" y2="30"/>
+            <line x1="39" y1="30" x2="45" y2="30"/>
+            <line x1="19.8" y1="19.8" x2="24" y2="24"/>
+            <line x1="36" y1="36" x2="40.2" y2="40.2"/>
+            <line x1="19.8" y1="40.2" x2="24" y2="36"/>
+            <line x1="36" y1="24" x2="40.2" y2="19.8"/>
+          </g>
+          <circle cx="30" cy="30" r="4.5" fill="#F7F3EA"/>
+        </svg>
         <div>
-          <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">PakkaLabel</h1>
-          <span className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">Enterprise</span>
+          <h1 className="text-xl font-bold font-serif text-ink tracking-tight leading-none">PakkaLabel</h1>
+          <span className="text-[10px] font-bold tracking-widest text-turmeric-deep uppercase">Enterprise</span>
         </div>
       </div>
 
-      <div className="flex bg-white border border-slate-200/80 p-1.5 rounded-xl shadow-sm overflow-x-auto w-full md:w-auto">
+      <div className="flex bg-seal-cream border border-ink/10 p-1.5 rounded-xl shadow-sm overflow-x-auto w-full md:w-auto">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-lg text-sm font-bold transition-all ${
-              activeTab === tab.id ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              activeTab === tab.id ? "bg-ink text-paper shadow-md" : "text-ink-soft hover:bg-paper hover:text-ink"
             }`}>
             <tab.icon size={16} /> <span className="hidden sm:inline">{tab.label}</span>
           </button>
@@ -36,17 +48,17 @@ export default function Navbar({ activeTab, setActiveTab, demoMode, setDemoMode,
       </div>
 
       <div className="flex items-center gap-3 w-full md:w-auto justify-end relative">
-        <button onClick={() => setShowDemoMenu(!showDemoMenu)} className="flex items-center gap-2 bg-white border border-slate-200/80 px-4 py-2 min-h-[48px] rounded-xl text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50">
-          <Beaker size={16} className="text-blue-600" /> Demo Fixtures <ChevronDown size={14} />
+        <button onClick={() => setShowDemoMenu(!showDemoMenu)} className="flex items-center gap-2 bg-seal-cream border border-ink/10 px-4 py-2 min-h-[48px] rounded-xl text-sm font-bold text-ink shadow-sm hover:bg-paper">
+          <Beaker size={16} className="text-turmeric-deep" /> Demo Fixtures <ChevronDown size={14} />
         </button>
         <AnimatePresence>
           {showDemoMenu && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-              className="absolute top-14 right-0 w-64 bg-white border border-slate-200/80 rounded-xl shadow-xl z-50 overflow-hidden">
-              <button onClick={() => { setDemoMode(null); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-100">Live Camera Mode</button>
-              <button onClick={() => { setDemoMode("control_pass"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-emerald-700 hover:bg-emerald-50 border-b border-slate-100">Product 1 - Compliant</button>
-              <button onClick={() => { setDemoMode("control_fail_tax"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-rose-700 hover:bg-rose-50 border-b border-slate-100">Product 2 - Tax Fail</button>
-              <button onClick={() => { setDemoMode("control_fail_unit"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-rose-700 hover:bg-rose-50">Product 3 - Unit Fail</button>
+              className="absolute top-14 right-0 w-64 bg-seal-cream border border-ink/10 rounded-xl shadow-xl z-50 overflow-hidden">
+              <button onClick={() => { setDemoMode(null); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-ink hover:bg-paper border-b border-ink/5">Live Camera Mode</button>
+              <button onClick={() => { setDemoMode("control_pass"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-sage hover:bg-sage/10 border-b border-ink/5">Product 1 - Compliant</button>
+              <button onClick={() => { setDemoMode("control_fail_tax"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-terracotta hover:bg-terracotta/10 border-b border-ink/5">Product 2 - Tax Fail</button>
+              <button onClick={() => { setDemoMode("control_fail_unit"); setShowDemoMenu(false); }} className="w-full text-left px-4 py-3 min-h-[48px] text-sm font-bold text-terracotta hover:bg-terracotta/10">Product 3 - Unit Fail</button>
             </motion.div>
           )}
         </AnimatePresence>
