@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchAnalyticsSummary } from "../services/api";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList } from "recharts";
 import { Download, FileText, Activity, AlertOctagon, TrendingUp, ShieldAlert, Target, Users, MapPin, Zap } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function InspectorAnalyticsDashboard() {
   const [data, setData] = useState(null);
@@ -47,10 +48,10 @@ export default function InspectorAnalyticsDashboard() {
   ];
 
   return (
-    <div className="space-y-6 w-full max-w-full overflow-x-hidden animate-fade-in-up pb-12">
+    <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="space-y-6 w-full max-w-full overflow-x-hidden pb-12">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5">
+      <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="relative flex h-3 w-3">
@@ -70,12 +71,12 @@ export default function InspectorAnalyticsDashboard() {
             <Download size={16} /> Raw CSV Data
           </a>
         </div>
-      </div>
+      </motion.div>
 
       {/* Bento Grid: Core KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="theme-bright-card p-6 relative overflow-hidden group">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/20 transition-all"></div>
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><Target size={20} /></div>
@@ -83,9 +84,9 @@ export default function InspectorAnalyticsDashboard() {
           </div>
           <strong className="text-4xl font-black text-slate-900 tracking-tighter block">{stats.total_scans.toLocaleString()}</strong>
           <span className="text-xs font-semibold text-emerald-600 mt-2 flex items-center gap-1"><TrendingUp size={12} /> +12% this week</span>
-        </div>
+        </motion.div>
 
-        <div className="theme-bright-card p-6 relative overflow-hidden group">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/20 transition-all"></div>
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><ShieldAlert size={20} /></div>
@@ -96,9 +97,9 @@ export default function InspectorAnalyticsDashboard() {
             <span className="text-xl font-bold text-emerald-500">%</span>
           </div>
           <span className="text-xs font-medium text-slate-400 mt-2 block">Aggregated passing score</span>
-        </div>
+        </motion.div>
 
-        <div className="theme-bright-card p-6 relative overflow-hidden group">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-rose-500/20 transition-all"></div>
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl"><Activity size={20} /></div>
@@ -106,9 +107,9 @@ export default function InspectorAnalyticsDashboard() {
           </div>
           <strong className="text-3xl font-black text-rose-600 tracking-tight block">₹{stats.total_fines.toLocaleString()}</strong>
           <span className="text-xs font-medium text-slate-400 mt-2 block">Sec 36 Compoundable estimates</span>
-        </div>
+        </motion.div>
 
-        <div className="theme-bright-card p-6 relative overflow-hidden flex flex-col justify-between group">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 relative overflow-hidden flex flex-col justify-between group">
            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-amber-500/20 transition-all"></div>
            <div>
              <div className="flex items-center justify-between mb-4">
@@ -126,7 +127,7 @@ export default function InspectorAnalyticsDashboard() {
                 </div>
              </div>
            </div>
-        </div>
+        </motion.div>
 
       </div>
 
@@ -134,7 +135,7 @@ export default function InspectorAnalyticsDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Compliance Ratio Pie Chart */}
-        <div className="theme-bright-card p-6 lg:col-span-1 flex flex-col h-[400px]">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 lg:col-span-1 flex flex-col h-[400px]">
           <h3 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
             <Zap size={16} className="text-emerald-500" /> Compliance Distribution
           </h3>
@@ -180,10 +181,10 @@ export default function InspectorAnalyticsDashboard() {
                </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Infraction Frequency Bar Chart */}
-        <div className="theme-bright-card p-6 lg:col-span-2 flex flex-col h-[400px]">
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 lg:col-span-2 flex flex-col h-[400px]">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <AlertOctagon size={16} className="text-blue-500" /> Infraction Frequency by Statutory Rule
@@ -226,9 +227,9 @@ export default function InspectorAnalyticsDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
       </div>
-    </div>
+    </motion.div>
   );
 }

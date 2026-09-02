@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Upload, FileScan, Eye, CameraOff, Box, ShoppingCart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CameraScanner({ file, setFile, demoMode, loading, message, onScan }) {
   const [showOcrInput, setShowOcrInput] = useState(false);
@@ -36,7 +37,12 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
   const progressLabel = scanProgress < 40 ? "Reading label text..." : scanProgress < 75 ? "Checking statutory compliance..." : "Preparing audit report...";
 
   return (
-    <div className="theme-bright-card p-5 sm:p-6 md:p-8 flex flex-col w-full max-w-full">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      transition={{ duration: 0.4 }}
+      className="theme-bright-card p-5 sm:p-6 md:p-8 flex flex-col w-full max-w-full"
+    >
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
           <FileScan className="text-blue-600 shrink-0" size={20} /> Label Compliance Scanner
@@ -127,24 +133,33 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
       )}
 
       <div className="flex flex-col gap-2.5 mt-5">
-        <button className="w-full flex items-center justify-center gap-2 min-h-[52px] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
+        <motion.button 
+          whileTap={{ scale: loading || (auditMode === "PHYSICAL" && !file && !demoMode) || (auditMode === "ECOMMERCE" && !customOcr) ? 1 : 0.96 }}
+          className="w-full flex items-center justify-center gap-2 min-h-[52px] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-sm hover:shadow-md"
           disabled={loading || (auditMode === "PHYSICAL" && !file && !demoMode) || (auditMode === "ECOMMERCE" && !customOcr)}
           onClick={() => { if (navigator.vibrate) navigator.vibrate(50); onScan(customOcr, isDeepScan); }}>
           <FileScan size={18} /> {loading ? "Analyzing Label..." : "Run Compliance Scan"}
-        </button>
+        </motion.button>
         <button type="button" className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
           onClick={() => setShowOcrInput(!showOcrInput)}>
           <Eye size={13} /> {showOcrInput ? "Hide Manual Input" : "Manual Text Input"}
         </button>
       </div>
 
-      {showOcrInput && (
-        <div className="mt-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Manual OCR Text Override</label>
-          <textarea rows={3} className="w-full bg-white border border-slate-200 text-slate-900 font-mono text-xs p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
-            placeholder="e.g. Manufactured by Acme Ltd..." value={customOcr} onChange={(e) => setCustomOcr(e.target.value)} />
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {showOcrInput && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: "auto" }} 
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-2 p-4 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden"
+          >
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Manual OCR Text Override</label>
+            <textarea rows={3} className="w-full bg-white border border-slate-200 text-slate-900 font-mono text-xs p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
+              placeholder="e.g. Manufactured by Acme Ltd..." value={customOcr} onChange={(e) => setCustomOcr(e.target.value)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

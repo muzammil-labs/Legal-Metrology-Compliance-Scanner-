@@ -1,7 +1,7 @@
-import React, { useState } from "react";
 import { Store, Upload, CheckCircle2, AlertTriangle, QrCode, ShieldCheck, Download, Sparkles, Box, ListChecks } from "lucide-react";
 import { executeBatchScan } from "../services/api";
 import BatchAuditModal from "./BatchAuditModal";
+import { motion } from "framer-motion";
 
 export default function SellerBulkAudit() {
   const [files, setFiles] = useState([]);
@@ -10,10 +10,10 @@ export default function SellerBulkAudit() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   return (
-    <section className="animate-fade-in-up pb-12 w-full overflow-x-hidden">
+    <motion.section initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="pb-12 w-full overflow-x-hidden">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
+      <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><Store size={14} /></span>
@@ -22,12 +22,12 @@ export default function SellerBulkAudit() {
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Catalogue Compliance Engine</h2>
           <p className="text-sm text-slate-500 mt-1.5 max-w-lg leading-relaxed">High-throughput pre-listing audit and Trust Badge issuance for digital marketplaces.</p>
         </div>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Upload Card */}
-        <div className="theme-bright-card p-6 flex flex-col justify-between relative overflow-hidden group h-full">
+        <motion.div variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }} className="theme-bright-card p-6 flex flex-col justify-between relative overflow-hidden group h-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
           <div>
@@ -58,10 +58,10 @@ export default function SellerBulkAudit() {
           >
             <ListChecks size={18} /> Launch High-Throughput Batch Audit
           </button>
-        </div>
+        </motion.div>
 
         {/* Verified Badge Generator Card */}
-        <div className="theme-bright-card p-6 flex flex-col relative overflow-hidden group h-full">
+        <motion.div variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }} className="theme-bright-card p-6 flex flex-col relative overflow-hidden group h-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
           <div className="flex items-center justify-between mb-6">
@@ -100,10 +100,10 @@ export default function SellerBulkAudit() {
             </div>
 
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <BatchAuditModal isOpen={isBatchModalOpen} onClose={() => setIsBatchModalOpen(false)} />
-    </section>
+    </motion.section>
   );
 }

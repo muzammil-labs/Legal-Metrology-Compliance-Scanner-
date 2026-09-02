@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Key, Code, Activity, Copy, Check, Zap, Shield, Database, Terminal, FileJson, Server } from 'lucide-react';
+import { Key, Code, Activity, Copy, Check, Zap, Shield, Database, Terminal, FileJson, Server, ShieldAlert } from 'lucide-react';
+import { motion } from "framer-motion";
 
 export default function DeveloperPortal() {
   const [apiKey, setApiKey] = useState(null);
@@ -24,10 +24,10 @@ export default function DeveloperPortal() {
   };
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden animate-fade-in-up pb-12">
+    <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="w-full max-w-full overflow-x-hidden pb-12">
       
       {/* Header section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
+      <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="p-1.5 bg-slate-900 text-white rounded-lg"><Terminal size={14} /></span>
@@ -41,12 +41,12 @@ export default function DeveloperPortal() {
             <FileJson size={16} className="text-slate-500" /> Read Documentation
           </a>
         </div>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* API Key Management Card */}
-        <div className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
+        <motion.div variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }} className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-700 to-slate-900 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
           <div className="flex items-center justify-between mb-8">
@@ -80,7 +80,7 @@ export default function DeveloperPortal() {
 
             <div className="mt-auto">
               {apiKey ? (
-                <div className="animate-fade-in-up">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 pl-1">Your Secret Key</span>
                   <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-inner group/key">
                     <code className="text-sm font-mono text-emerald-400 truncate mr-4 tracking-tight px-2">{apiKey}</code>
@@ -94,22 +94,23 @@ export default function DeveloperPortal() {
                   <p className="text-[11px] text-rose-500 font-semibold mt-3 flex items-center gap-1.5 bg-rose-50 p-2.5 rounded-lg border border-rose-100">
                     <ShieldAlert size={12} /> Do not expose this key in public client-side code.
                   </p>
-                </div>
+                </motion.div>
               ) : (
-                <button 
+                <motion.button 
+                  whileTap={{ scale: 0.95 }}
                   onClick={generateKey} 
-                  className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-slate-900 text-white font-bold rounded-xl hover:bg-black active:scale-95 transition-all shadow-md hover:shadow-xl group/btn"
+                  className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md hover:shadow-xl group/btn"
                 >
                   <Zap className="w-4 h-4 text-amber-400 group-hover/btn:scale-110 transition-transform" />
                   Generate {keyType === 'trial' ? 'Sandbox' : 'Production'} Key
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Usage Quota Card */}
-        <div className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
+        <motion.div variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }} className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
           <div className="flex items-center gap-3 mb-8">
@@ -156,9 +157,9 @@ export default function DeveloperPortal() {
             </div>
 
           </div>
-        </div>
+        </motion.div>
 
       </div>
-    </div>
+    </motion.div>
   );
 }

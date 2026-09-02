@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
 import {
   ShieldCheck, ShieldAlert, CheckCircle2, XCircle, AlertTriangle,
   ChevronDown, ChevronUp, Scale, FileText, FileWarning, Leaf
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const RULE_LABELS = {
   "Rule 6(1)(a)": "Rule 6(1)(a) — Manufacturer / Packer Details",
@@ -46,10 +46,10 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
   const complianceRate = rules.length ? Math.round((passCount / rules.length) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-16">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="flex flex-col gap-5 w-full max-w-full overflow-x-hidden pb-16">
 
       {/* Hero Status Banner */}
-      <div className={`p-6 sm:p-8 rounded-2xl border ${isOverallPass ? "bg-emerald-50 border-emerald-200/80" : "bg-rose-50 border-rose-200/80"}`}>
+      <motion.div layout className={`p-6 sm:p-8 rounded-2xl border shadow-sm ${isOverallPass ? "bg-emerald-50 border-emerald-200/80" : "bg-rose-50 border-rose-200/80"}`}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${isOverallPass ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}>
@@ -73,9 +73,9 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
         </div>
       </div>
 
-      {/* Jan Vishwas Penalty Card */}
+      <AnimatePresence>
       {!isOverallPass && (
-        <div className="theme-bright-card p-5 sm:p-6 border-l-4 border-l-rose-500">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="theme-bright-card p-5 sm:p-6 border-l-4 border-l-rose-500 shadow-md">
           <div className="flex items-start gap-4">
             <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl shrink-0"><Scale size={22} /></div>
             <div className="flex-1 min-w-0">
@@ -97,25 +97,28 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Section 36 Notice Button */}
+      <AnimatePresence>
       {!isOverallPass && onOpenNoticeModal && (
-        <button onClick={() => onOpenNoticeModal("COMPOUNDING")}
-          className="w-full flex items-center justify-center gap-2 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.98]">
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} onClick={() => onOpenNoticeModal("COMPOUNDING")}
+          className="w-full flex items-center justify-center gap-2 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-colors shadow-lg shadow-slate-900/20">
           <FileWarning size={18} /> Generate Section 36 Compounding Notice
-        </button>
+        </motion.button>
       )}
+      </AnimatePresence>
 
       {/* Statutory Verification Log */}
-      <div className="space-y-3">
+      <motion.div layout className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Statutory Verification Log</h3>
           <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold">{rules.length} Rules</span>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
+        <motion.div layout className="grid grid-cols-1 gap-3">
           {rules.map((item, idx) => {
             const isPass = item.status === "PASS";
             const isWarn = item.status === "WARNING";
@@ -123,7 +126,7 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
             const isOpen = expandedRules.includes(idx);
 
             return (
-              <div key={idx} className="theme-bright-card overflow-hidden">
+              <motion.div layout key={idx} className="theme-bright-card overflow-hidden">
                 <button onClick={() => toggleRule(idx)}
                   className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/50 transition-colors focus:outline-none min-h-[56px] gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -143,44 +146,48 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
                       isWarn ? "bg-amber-50 text-amber-900 border-amber-200/80" :
                       "bg-rose-50 text-rose-800 border-rose-200/80"
                     }`}>{item.status}</span>
-                    <div className="text-slate-400 p-0.5">{isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
+                    <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="text-slate-400 p-0.5"><ChevronDown size={16} /></motion.div>
                   </div>
                 </button>
 
+                <AnimatePresence>
                 {isOpen && (
-                  <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 space-y-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-1.5">
-                        <FileText size={11} /> Extracted Label Text
-                      </span>
-                      <div className="bg-slate-900 rounded-xl p-3 border border-slate-800 shadow-inner">
-                        <code className="text-xs font-mono text-slate-300 break-words leading-relaxed">
-                          {(item.evidence && item.evidence.length > 0) ? item.evidence.join(" | ") : "No label text was detected for this declaration."}
-                        </code>
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="border-t border-slate-100 bg-slate-50/50">
+                    <div className="p-4 sm:p-5 space-y-4">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-1.5">
+                          <FileText size={11} /> Extracted Label Text
+                        </span>
+                        <div className="bg-slate-900 rounded-xl p-3 border border-slate-800 shadow-inner">
+                          <code className="text-xs font-mono text-slate-300 break-words leading-relaxed">
+                            {(item.evidence && item.evidence.length > 0) ? item.evidence.join(" | ") : "No label text was detected for this declaration."}
+                          </code>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Statutory Finding</span>
-                      <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-200/80 p-3 rounded-xl shadow-sm">{item.reason}</p>
-                    </div>
-                    {item.remedy && isFail && (
-                      <div className="bg-blue-50 border border-blue-200/80 p-4 rounded-xl relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-700 block mb-1 pl-2">Required Corrective Action</span>
-                        <p className="text-sm font-semibold text-blue-900 pl-2">{item.remedy}</p>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Statutory Finding</span>
+                        <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-200/80 p-3 rounded-xl shadow-sm">{item.reason}</p>
                       </div>
-                    )}
-                  </div>
+                      {item.remedy && isFail && (
+                        <div className="bg-blue-50 border border-blue-200/80 p-4 rounded-xl relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-blue-700 block mb-1 pl-2">Required Corrective Action</span>
+                          <p className="text-sm font-semibold text-blue-900 pl-2">{item.remedy}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
                 )}
-              </div>
+                </AnimatePresence>
+              </motion.div>
             );
           })}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* FSSAI Panel */}
       {fssai_verification && (
-        <div className="theme-bright-card p-5 sm:p-6">
+        <motion.div layout className="theme-bright-card p-5 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><Leaf size={20} /></div>
             <h4 className="text-base font-bold text-slate-900">FSSAI Food Safety Verification</h4>
@@ -201,8 +208,8 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
               <strong className="text-sm font-bold text-slate-700">{fssai_verification.veg_nonveg_symbol || "Not Declared"}</strong>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
