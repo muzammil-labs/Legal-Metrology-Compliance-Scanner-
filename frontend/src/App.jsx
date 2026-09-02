@@ -37,8 +37,10 @@ export default function App() {
   function handleChooseMode(key) {
     setDemoMode(key);
     if (key) {
+      setFile(null); // Fix picture bleed
       setAudit(loadPrecachedFixture(key));
       setMessage(`Demo loaded: ${FIXTURE_LABELS[key] || key}`);
+      setActiveTab("consumer"); // Route to scanner tab to see notice
     } else {
       setMessage("Live camera mode active");
     }

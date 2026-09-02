@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import { Key, Code, Activity, Copy, Check, Zap, Shield, Database } from 'lucide-react';
+import { Key, Code, Activity, Copy, Check, Zap, Shield, Database, Terminal, FileJson, Server } from 'lucide-react';
 
 export default function DeveloperPortal() {
   const [apiKey, setApiKey] = useState(null);
-  const [keyType, setKeyType] = useState('trial'); // 'trial' or 'enterprise'
+  const [keyType, setKeyType] = useState('enterprise');
   const [copied, setCopied] = useState(false);
 
   // Mock usage data
-  const usage = {
-    used: 45,
-    limit: keyType === 'trial' ? 100 : 10000
-  };
+  const usage = { used: 45, limit: keyType === 'trial' ? 100 : 10000 };
 
   const generateKey = () => {
     const prefix = keyType === 'trial' ? 'pk_test_' : 'pk_live_';
@@ -27,117 +24,134 @@ export default function DeveloperPortal() {
   };
 
   return (
-    <div className="space-y-8 w-full max-w-5xl mx-auto py-8 animate-in delay-1">
+    <div className="w-full max-w-full overflow-x-hidden animate-fade-in-up pb-12">
+      
       {/* Header section */}
-      <div className="text-center space-y-4 mb-12">
-        <div className="inline-flex items-center justify-center p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-600 mb-2 shadow-sm">
-          <Code className="w-8 h-8" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="p-1.5 bg-slate-900 text-white rounded-lg"><Terminal size={14} /></span>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-slate-600 uppercase">Developers & API</span>
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">API Command Center</h2>
+          <p className="text-sm text-slate-500 mt-1.5 max-w-lg leading-relaxed">Enterprise-grade endpoints for automated statutory compliance and OCR telemetry.</p>
         </div>
-        <h2 className="text-4xl font-extrabold tracking-tight text-gray-900">Developer Portal</h2>
-        <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-          Manage your API keys, monitor real-time usage quotas, and access enterprise-grade statutory compliance engines.
-        </p>
+        <div className="flex gap-3">
+          <a href="/docs/api" className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm active:scale-95">
+            <FileJson size={16} className="text-slate-500" /> Read Documentation
+          </a>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* API Key Management Card */}
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm hover:shadow-xl transition-all duration-500 relative overflow-hidden group flex flex-col">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+        <div className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-700 to-slate-900 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <Key className="w-6 h-6" />
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl border border-slate-200">
+                <Key className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight">Authentication Keys</h3>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 tracking-tight">API Key Management</h3>
           </div>
 
           <div className="space-y-6 flex-1 flex flex-col">
-            <div className="flex bg-gray-50 p-1.5 rounded-xl border border-gray-200">
+            <div className="flex bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/80">
               <button 
                 onClick={() => setKeyType('trial')}
-                className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all ${
-                  keyType === 'trial' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-lg transition-all ${
+                  keyType === 'trial' ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Trial Tier (100/min)
+                Trial Sandbox (100/min)
               </button>
               <button 
                 onClick={() => setKeyType('enterprise')}
-                className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all ${
-                  keyType === 'enterprise' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-lg transition-all ${
+                  keyType === 'enterprise' ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Enterprise (10k/min)
+                Enterprise Live (10k/min)
               </button>
             </div>
 
             <div className="mt-auto">
-              <button 
-                onClick={generateKey} 
-                className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-gray-900 text-white font-bold rounded-xl hover:bg-black active:scale-95 transition-all shadow-md hover:shadow-xl"
-              >
-                <Zap className="w-5 h-5 text-yellow-400" />
-                Generate New Key
-              </button>
-            </div>
-
-            {apiKey && (
-              <div className="animate-in delay-1 flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-inner">
-                <code className="text-sm font-mono text-gray-700 truncate mr-4 tracking-tight">{apiKey}</code>
+              {apiKey ? (
+                <div className="animate-fade-in-up">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 pl-1">Your Secret Key</span>
+                  <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-inner group/key">
+                    <code className="text-sm font-mono text-emerald-400 truncate mr-4 tracking-tight px-2">{apiKey}</code>
+                    <button 
+                      onClick={copyToClipboard} 
+                      className="shrink-0 flex items-center justify-center w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-all active:scale-95"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-rose-500 font-semibold mt-3 flex items-center gap-1.5 bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+                    <ShieldAlert size={12} /> Do not expose this key in public client-side code.
+                  </p>
+                </div>
+              ) : (
                 <button 
-                  onClick={copyToClipboard} 
-                  className="shrink-0 flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all active:scale-95"
+                  onClick={generateKey} 
+                  className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-slate-900 text-white font-bold rounded-xl hover:bg-black active:scale-95 transition-all shadow-md hover:shadow-xl group/btn"
                 >
-                  {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                  <Zap className="w-4 h-4 text-amber-400 group-hover/btn:scale-110 transition-transform" />
+                  Generate {keyType === 'trial' ? 'Sandbox' : 'Production'} Key
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
         {/* Usage Quota Card */}
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm hover:shadow-xl transition-all duration-500 relative overflow-hidden group flex flex-col">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+        <div className="theme-bright-card p-6 relative overflow-hidden group flex flex-col h-full">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
           
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Activity className="w-6 h-6" />
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+              <Activity className="w-5 h-5" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Real-time Telemetry</h3>
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight">Real-time Telemetry</h3>
           </div>
 
-          <div className="space-y-8 flex-1">
+          <div className="space-y-8 flex-1 flex flex-col justify-between">
             
             <div>
               <div className="flex justify-between items-end mb-3">
-                <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Current Minute Load</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Minute Load</span>
                 <div className="flex items-baseline gap-1">
-                  <strong className="text-3xl font-black text-gray-900 tracking-tight">{usage.used}</strong>
-                  <span className="text-sm font-medium text-gray-500">/ {usage.limit.toLocaleString()}</span>
+                  <strong className="text-3xl font-black text-slate-900 tracking-tighter">{usage.used}</strong>
+                  <span className="text-sm font-semibold text-slate-400">/ {usage.limit.toLocaleString()}</span>
                 </div>
               </div>
               
-              <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner relative">
                 <div 
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                  className="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                   style={{ width: `${(usage.used / usage.limit) * 100}%` }}
                 >
-                  <div className="absolute inset-0 bg-white/20 w-full h-full animate-[scanline_2s_ease-in-out_infinite]"></div>
+                  <div className="absolute inset-0 bg-white/30 w-full h-full animate-scanline"></div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col items-center justify-center text-center">
-                <Shield className="w-6 h-6 text-indigo-500 mb-2" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</span>
-                <span className="text-sm font-extrabold text-gray-900">Secure & Active</span>
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col items-start hover:shadow-sm transition-all">
+                <Server className="w-5 h-5 text-indigo-500 mb-3" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Node Status</span>
+                <span className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online & Secure
+                </span>
               </div>
-              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col items-center justify-center text-center">
-                <Database className="w-6 h-6 text-purple-500 mb-2" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Engine</span>
-                <span className="text-sm font-extrabold text-gray-900">Multimodal AI</span>
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col items-start hover:shadow-sm transition-all">
+                <Database className="w-5 h-5 text-blue-500 mb-3" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">OCR Engine</span>
+                <span className="text-sm font-black text-slate-900">v4.2 Multimodal</span>
               </div>
             </div>
 
