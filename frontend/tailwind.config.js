@@ -7,20 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        paper: "#F7F3EA",
-        "seal-cream": "#EFE6D3",
-        ink: "#1E2148",
-        "ink-soft": "#33366B",
-        turmeric: "#E8A33D",
-        "turmeric-deep": "#B87A1F",
-        terracotta: "#B23A2E",
-        sage: "#4C7A5E",
-      },
-      fontFamily: {
-        sans: ["IBM Plex Sans", "sans-serif"],
-        serif: ["Zilla Slab", "serif"],
-      }
-    },
-  },
-  plugins: [],
-}
+  paper: "#F8F7F2",
+  "seal-cream": "#FFFFFF",
+  ink: "#172554",
+  "ink-soft": "#475569",
+  turmeric: "#0F766E",
+  "turmeric-deep": "#115E59",
+  terracotta: "#C2413B",
+  sage: "#3F7D6B",
+},
