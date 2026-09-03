@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1E3A5F" />
     <title>PakkaLabel India — Legal Metrology Compliance</title>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          let needsReload = false;
+          for(let registration of registrations) {
+            registration.unregister();
+            needsReload = true;
+          }
+          if (needsReload) {
+            window.location.reload(true);
+          }
+        });
+      }
+    </script>
   </head>
   <body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>
 </html>
