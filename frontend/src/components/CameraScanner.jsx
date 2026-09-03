@@ -50,7 +50,15 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
         ) : demoMode ? (
           <div className="text-center p-6"><h3 className="text-lg font-bold text-ink mb-1">Demo Fixture Active</h3><p className="text-sm text-ink-soft">Bypassing live camera. Ready for inspection.</p></div>
         ) : file ? (
-          <img src={URL.createObjectURL(file)} alt="Captured label" className="absolute inset-0 w-full h-full object-contain p-2" />
+          <>
+            <img src={URL.createObjectURL(file)} alt="Captured label" className="absolute inset-0 w-full h-full object-contain p-2" />
+            {loading && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="w-full h-1 bg-turmeric shadow-[0_0_15px_rgba(232,163,61,0.8)] animate-scanline" />
+                <div className="absolute inset-0 bg-turmeric/10 animate-pulse" />
+              </div>
+            )}
+          </>
         ) : (
           <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
             <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">

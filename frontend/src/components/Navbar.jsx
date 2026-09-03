@@ -32,8 +32,7 @@ export default function Navbar({ activeTab, setActiveTab, demoMode, setDemoMode,
           <circle cx="30" cy="30" r="4.5" fill="#F7F3EA"/>
         </svg>
         <div>
-          <h1 className="text-xl font-bold font-serif text-ink tracking-tight leading-none group-hover:text-turmeric-deep transition-colors">PakkaLabel</h1>
-          <span className="text-[10px] font-bold tracking-widest text-turmeric-deep uppercase">Enterprise</span>
+          <h1 className="text-xl font-bold font-serif text-ink tracking-tight leading-none group-hover:text-turmeric-deep transition-colors">PakkaLabel India</h1>
         </div>
       </div>
 

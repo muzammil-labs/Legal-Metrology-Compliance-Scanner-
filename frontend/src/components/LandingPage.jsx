@@ -156,15 +156,14 @@ export default function LandingPage({ onEnter }) {
         <div className="flex items-center gap-3">
           <PakkaSeal size={44} />
           <div>
-            <div className="text-xl font-bold font-serif text-ink tracking-tight leading-none">PakkaLabel</div>
-            <div className="text-[10px] font-bold tracking-widest text-turmeric-deep uppercase">India &middot; SIH26034</div>
+            <div className="text-xl font-bold font-serif text-ink tracking-tight leading-none">PakkaLabel India</div>
           </div>
         </div>
         <nav className="hidden lg:flex items-center gap-1 bg-seal-cream border border-ink/10 px-2 py-1.5 rounded-xl">
           {["Consumer", "Seller", "Officer", "Pricing", "Rules", "About", "FAQ", "API"].map(link => (
-            <a key={link} href={`#${link.toLowerCase()}`} className="px-3 py-2 text-sm font-bold text-ink-soft hover:text-ink hover:bg-paper rounded-lg transition-all">
+            <button key={link} onClick={(e) => { e.preventDefault(); document.getElementById(link.toLowerCase())?.scrollIntoView({ behavior: 'smooth' }); }} className="px-3 py-2 text-sm font-bold text-ink-soft hover:text-ink hover:bg-paper rounded-lg transition-all">
               {link}
-            </a>
+            </button>
           ))}
         </nav>
         <button onClick={onEnter} className="flex items-center gap-2 bg-ink text-paper px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-ink-soft transition-all shadow-sm">
@@ -194,10 +193,10 @@ export default function LandingPage({ onEnter }) {
               <Camera size={18} className="text-turmeric" /> Try PakkaLabel
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <a href="#how-it-works"
+            <button onClick={(e) => { e.preventDefault(); document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="flex items-center justify-center gap-2 bg-seal-cream text-ink border border-ink/10 px-7 py-4 rounded-xl text-base font-bold hover:bg-paper transition-all">
               See how it works
-            </a>
+            </button>
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
             className="grid grid-cols-4 gap-px bg-ink/10 rounded-xl overflow-hidden border border-ink/10 w-full max-w-sm">
@@ -229,7 +228,7 @@ export default function LandingPage({ onEnter }) {
           </div>
           <div className="grid md:grid-cols-3 gap-5">
             {AUDIENCES.map((a, i) => (
-              <motion.div key={a.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              <motion.div key={a.title} id={a.title.toLowerCase()} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 className="bg-paper border rounded-2xl p-6 flex flex-col gap-4 hover:shadow-md transition-all group cursor-pointer"
                 style={{ borderColor: a.border }} onClick={onEnter}>

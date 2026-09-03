@@ -1,4 +1,4 @@
-﻿/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
@@ -15,6 +15,10 @@ export default {
         "turmeric-deep": "#115E59",
         terracotta: "#B23A2E",
         sage: "#4C7A5E",
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        serif: ['Playfair Display', 'serif'],
       }
     }
   }
