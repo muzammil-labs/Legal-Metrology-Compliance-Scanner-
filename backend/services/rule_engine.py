@@ -16,9 +16,10 @@ USP_RE = re.compile(r'(?i)\b(?:unit\s*sale\s*price|usp)\s*[:.]?\s*(?:rs\.?|₹)?
 NOT_A_LABEL_MARKER = "NOT_A_PACKAGED_PRODUCT"
 BLURRY_MARKER = "IMAGE_QUALITY_POOR"
 
-def audit_manufacturer_details(text: str) -> RuleResult:
-    has_prefix = bool(MANUFACTURER_RE.search(text))
-    has_pin = bool(PINCODE_RE.search(text))
+def audit_manufacturer_details(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    has_prefix = bool(MANUFACTURER_RE.search(text)) or bool(json_artwork.get('manufacturer_name'))
+    has_pin = bool(PINCODE_RE.search(text)) or bool(json_artwork.get('manufacturer_pincode'))
     if has_prefix and has_pin:
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_A,
@@ -43,8 +44,9 @@ def audit_manufacturer_details(text: str) -> RuleResult:
         remedy="Add the name and complete postal address of the manufacturer, packer, or importer (with 6-digit PIN code) on the label."
     )
 
-def audit_country_of_origin(text: str) -> RuleResult:
-    if COUNTRY_RE.search(text):
+def audit_country_of_origin(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    if COUNTRY_RE.search(text) or bool(json_artwork.get('country_of_origin')):
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_B,
             status=RuleStatus.PASS,
@@ -60,8 +62,13 @@ def audit_country_of_origin(text: str) -> RuleResult:
         remedy="Declare the Country of Origin (e.g., 'Country of Origin: India' or 'Made in India') on the label."
     )
 
-def audit_net_quantity(text: str) -> RuleResult:
-    if INVALID_UNIT_RE.search(text):
+def audit_net_quantity(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    # If the JSON unit matches an invalid one, or the regex matches
+    invalid_units = ["gm", "gms", "ml.", "kgs", "gram", "grams"]
+    json_unit = str(json_artwork.get('net_quantity_unit')).lower()
+    
+    if INVALID_UNIT_RE.search(text) or json_unit in invalid_units:
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_C,
             status=RuleStatus.FAIL,
@@ -69,7 +76,7 @@ def audit_net_quantity(text: str) -> RuleResult:
             statutory_clause="Rule 6(1)(c) read with Rule 5, Legal Metrology (Packaged Commodities) Rules, 2011",
             remedy="Replace non-standard units (gm, gms, ltr, kgs, gram) with prescribed SI metric symbols: g, kg, ml, or l."
         )
-    if NET_QTY_RE.search(text):
+    if NET_QTY_RE.search(text) or (json_artwork.get('net_quantity_value') and json_unit in ["g", "kg", "ml", "l", "n", "u"]):
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_C,
             status=RuleStatus.PASS,
@@ -85,8 +92,12 @@ def audit_net_quantity(text: str) -> RuleResult:
         remedy="Declare the net quantity in standard SI units (e.g., 'Net Qty: 500 g' or 'Net Vol: 200 ml') in numerals and prescribed metric symbols."
     )
 
-def audit_mrp_tax(text: str) -> RuleResult:
-    if MRP_TAX_RE.search(text):
+def audit_mrp_tax(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    json_taxes = str(json_artwork.get('mrp_includes_taxes_declared')).lower()
+    has_taxes = MRP_TAX_RE.search(text) or json_taxes in ['yes', 'true', 'y']
+    
+    if has_taxes:
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_E,
             status=RuleStatus.PASS,
@@ -102,8 +113,11 @@ def audit_mrp_tax(text: str) -> RuleResult:
         remedy="Print MRP as: 'MRP Rs. XX.XX (Incl. of all taxes)' on the label. Omitting the tax-inclusive declaration is a statutory violation."
     )
 
-def audit_consumer_care(text: str) -> RuleResult:
-    if CONSUMER_CARE_RE.search(text):
+def audit_consumer_care(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    has_care = CONSUMER_CARE_RE.search(text) or bool(json_artwork.get('consumer_care_phone')) or bool(json_artwork.get('consumer_care_email'))
+    
+    if has_care:
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_F,
             status=RuleStatus.PASS,
@@ -119,8 +133,11 @@ def audit_consumer_care(text: str) -> RuleResult:
         remedy="Add a consumer care contact (phone number or email address) on the label. Example: 'Consumer Care: 1800-XXX-XXXX or care@brand.com'."
     )
 
-def audit_unit_sale_price(text: str) -> RuleResult:
-    if USP_RE.search(text):
+def audit_unit_sale_price(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    has_usp = USP_RE.search(text) or bool(json_artwork.get('unit_sale_price'))
+    
+    if has_usp:
         return RuleResult(
             rule=StatutoryRule.RULE_6_11_USP,
             status=RuleStatus.PASS,
@@ -138,8 +155,11 @@ def audit_unit_sale_price(text: str) -> RuleResult:
 
 DATE_MFG_RE = re.compile(r'(?i)\b(?:mfg\.?\s*(?:date|dt\.?)?|pkd\.?\s*(?:date|dt\.?)?|date\s*of\s*(?:mfg|packing|import)|packed\s*on)\s*[:.]?\s*(\d{2}[/-]\d{4}|\d{2}[/-]\d{2}[/-]\d{4}|\w{3,9}\s*\d{4})\b')
 
-def audit_date_of_mfg(text: str) -> RuleResult:
-    if DATE_MFG_RE.search(text) or re.search(r'\b(0[1-9]|1[0-2])/(20\d{2})\b', text):
+def audit_date_of_mfg(text: str, json_artwork: Optional[dict] = None) -> RuleResult:
+    json_artwork = json_artwork or {}
+    has_mfg = DATE_MFG_RE.search(text) or re.search(r'\b(0[1-9]|1[0-2])/(20\d{2})\b', text) or bool(json_artwork.get('mfg_date'))
+    
+    if has_mfg:
         return RuleResult(
             rule=StatutoryRule.RULE_6_1_D,
             status=RuleStatus.PASS,
@@ -163,5 +183,13 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
     return {"estimated_fine_inr": 100000 if is_deceptive else 25000, "applicable_section": "Section 36 & Section 49, Legal Metrology Act, 2009 (Jan Vishwas Amendment 2023)", "jan_vishwas_eligible": not is_deceptive, "grace_period_days": 15 if not is_deceptive else 0, "director_liability": len(failed) >= 3}
 
 def audit_text(text: str, json_artwork: Optional[dict] = None):
-    rules = [audit_manufacturer_details(text), audit_country_of_origin(text), audit_net_quantity(text), audit_mrp_tax(text), audit_consumer_care(text), audit_unit_sale_price(text)]
+    rules = [
+        audit_manufacturer_details(text, json_artwork), 
+        audit_country_of_origin(text, json_artwork), 
+        audit_net_quantity(text, json_artwork), 
+        audit_mrp_tax(text, json_artwork), 
+        audit_consumer_care(text, json_artwork), 
+        audit_unit_sale_price(text, json_artwork),
+        audit_date_of_mfg(text, json_artwork)
+    ]
     return rules
