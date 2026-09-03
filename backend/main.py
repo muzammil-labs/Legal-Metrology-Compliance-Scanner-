@@ -510,9 +510,20 @@ def serve_spa(full_path: str):
     if full_path.startswith("api/") or full_path == "api":
         raise HTTPException(status_code=404, detail="Not Found")
         
+    # Security check: prevent directory traversal
+    if ".." in full_path:
+        raise HTTPException(status_code=400, detail="Invalid path")
+        
+    # Check if the requested file exists in the frontend_dist directory
+    requested_file = os.path.join(frontend_dist, full_path)
+    if os.path.exists(requested_file) and os.path.isfile(requested_file):
+        return FileResponse(requested_file)
+        
+    # If not a physical file, and it looks like a static asset, return 404 to avoid serving HTML as JS
     if full_path.startswith("assets/") or full_path.endswith((".js", ".css", ".png", ".jpg", ".ico", ".webmanifest", ".json")):
         raise HTTPException(status_code=404, detail="Static Asset Not Found")
         
+    # Otherwise, this is an SPA navigation route (like /citizen), so return index.html
     index_file = os.path.join(frontend_dist, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)

@@ -12,7 +12,7 @@
       "destination": "/api/index.py"
     },
     {
-      "source": "/(?!assets/|.*\\.(?:js|css|png|ico|webmanifest|json)$).*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
