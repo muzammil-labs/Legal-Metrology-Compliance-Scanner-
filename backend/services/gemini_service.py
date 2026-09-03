@@ -7,7 +7,7 @@ except ImportError:
     genai = None
     types = None
 
-def extract_label_with_gemini(content: bytes) -> Tuple[str, dict, float]:
+def extract_label_with_gemini(content: bytes, mime_type: str = "image/jpeg") -> Tuple[str, dict, float]:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not genai:
         return "Mocked extracted text (ERROR: google-genai SDK failed to import on Vercel)", {}, 0.5
@@ -15,7 +15,7 @@ def extract_label_with_gemini(content: bytes) -> Tuple[str, dict, float]:
         return "Mocked extracted text (ERROR: GEMINI_API_KEY is missing from environment variables)", {}, 0.5
     try:
         client = genai.Client(api_key=api_key)
-        image_part = types.Part.from_bytes(data=content, mime_type="image/jpeg")
+        image_part = types.Part.from_bytes(data=content, mime_type=mime_type)
         prompt = """You are a Legal Metrology OCR engine for India's PCR 2011.
 
 STEP 0 — IMAGE QUALITY AND SUBJECT CHECK (do this first before any OCR):
@@ -64,14 +64,29 @@ Use null for any field not visible. Do not invent values."""
                 )
                 import re as _re, json as _json
                 raw = response.text or ""
-                match = _re.search(r'```json\s*([\s\S]*?)\s*```', raw, _re.IGNORECASE)
+                match = _re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', raw, _re.IGNORECASE)
+                
+                json_str = None
+                raw_text = raw
+                
                 if match:
                     raw_text = raw[:match.start()].strip()
+                    json_str = match.group(1)
+                else:
+                    # Fallback: find the first { and last }
+                    start_idx = raw.find('{')
+                    end_idx = raw.rfind('}')
+                    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                        raw_text = raw[:start_idx].strip()
+                        json_str = raw[start_idx:end_idx+1]
+                        
+                if json_str:
                     try:
-                        structured = _json.loads(match.group(1))
+                        structured = _json.loads(json_str)
                         return raw_text, structured, 1.0
                     except Exception:
                         return raw_text, {}, 0.7
+                        
                 return raw.strip(), {}, 0.6
             except Exception as model_err:
                 last_error = str(model_err)
