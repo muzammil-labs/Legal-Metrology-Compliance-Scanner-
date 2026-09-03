@@ -50,15 +50,17 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
         ) : demoMode ? (
           <div className="text-center p-6"><h3 className="text-lg font-bold text-ink mb-1">Demo Fixture Active</h3><p className="text-sm text-ink-soft">Bypassing live camera. Ready for inspection.</p></div>
         ) : file ? (
-          <>
-            <img src={URL.createObjectURL(file)} alt="Captured label" className="absolute inset-0 w-full h-full object-contain p-2" />
-            {loading && (
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="w-full h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.9)] animate-[scanline_1.2s_linear_infinite]" />
-                <div className="absolute inset-0 bg-cyan-400/10 animate-pulse" />
-              </div>
-            )}
-          </>
+          <div className="relative w-full h-full flex items-center justify-center p-2">
+            <div className="relative max-w-full max-h-full inline-block">
+              <img src={URL.createObjectURL(file)} alt="Captured label" className="max-w-full max-h-full object-contain rounded-lg" />
+              {loading && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
+                  <div className="absolute left-0 w-full h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,1)] animate-[scanline_1.5s_ease-in-out_infinite]" />
+                  <div className="absolute inset-0 bg-cyan-400/10 animate-pulse" />
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
             <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
