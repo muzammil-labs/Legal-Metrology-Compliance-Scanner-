@@ -54,7 +54,7 @@ Use null for any field not visible. Do not invent values."""
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-1.5-flash-8b", "gemini-1.5-pro"
         ]
-        last_error = None
+        errors = []
         for model_name in fallback_models:
             try:
                 response = client.models.generate_content(
@@ -89,8 +89,8 @@ Use null for any field not visible. Do not invent values."""
                         
                 return raw.strip(), {}, 0.6
             except Exception as model_err:
-                last_error = str(model_err)
+                errors.append(f"{model_name}: {str(model_err)}")
                 continue
-        raise Exception(f"All fallback models failed. Last error: {last_error}")
+        raise Exception(f"All fallback models failed. Errors: {' | '.join(errors)}")
     except Exception as e:
         return f"OCR Extraction Failed: {str(e)}", {}, 0.0
