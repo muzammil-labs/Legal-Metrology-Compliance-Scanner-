@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Camera, FileScan, Eye, Package, ShoppingBag, X } from "lucide-react";
+import { Upload, Camera, FileScan, Eye, Package, ShoppingBag, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CameraScanner({ file, setFile, demoMode, loading, message, onScan }) {
@@ -7,7 +7,9 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
   const [customOcr, setCustomOcr] = useState("");
   const [scanType, setScanType] = useState("physical");
   const [isDeepScan, setIsDeepScan] = useState(false);
+  const [inputMode, setInputMode] = useState("upload"); // "upload" | "camera"
 
+  const uploadInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
   function handleFileChange(e) {
@@ -19,6 +21,11 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
   function clearFile() {
     setFile(null);
+  }
+
+  function switchToMode(mode) {
+    setInputMode(mode);
+    clearFile();
   }
 
   const previewUrl = file ? URL.createObjectURL(file) : null;
@@ -64,6 +71,32 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
           <ShoppingBag size={16} /> E-Commerce Listing
         </button>
       </div>
+
+      {/* ── Toggle 2: Upload / Camera — physical + no demo only ── */}
+      {scanType === "physical" && !demoMode && (
+        <div className="flex bg-seal-cream border border-ink/10 p-1 rounded-xl mb-4">
+          <button
+            onClick={() => switchToMode("upload")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 ${
+              inputMode === "upload"
+                ? "bg-paper shadow-sm text-ink border border-ink/10"
+                : "text-ink-soft hover:text-ink"
+            }`}
+          >
+            <Upload size={15} /> Upload Photo
+          </button>
+          <button
+            onClick={() => switchToMode("camera")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 ${
+              inputMode === "camera"
+                ? "bg-paper shadow-sm text-ink border border-ink/10"
+                : "text-ink-soft hover:text-ink"
+            }`}
+          >
+            <Camera size={15} /> Use Camera
+          </button>
+        </div>
+      )}
 
       {/* ── Drop zone / preview ── */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-[250px] border-2 border-dashed border-ink/20 hover:border-turmeric rounded-xl bg-seal-cream hover:bg-turmeric/5 transition-all duration-200 relative overflow-hidden mb-5 group">
@@ -120,8 +153,32 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
           </div>
         )}
 
-        {/* Camera trigger — no file yet */}
-        {scanType === "physical" && !demoMode && !file && (
+        {/* Upload trigger — no file yet, upload mode */}
+        {scanType === "physical" && !demoMode && !file && inputMode === "upload" && (
+          <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
+            <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+              <Upload size={28} />
+            </div>
+            <span className="text-sm font-bold text-ink group-hover:text-turmeric-deep transition-colors">
+              Upload Product Label
+            </span>
+            <span className="text-xs text-ink-soft mt-1">JPG, PNG, WEBP — up to 10 MB</span>
+            {/*
+              NO capture attribute here — opens gallery / file picker on mobile.
+              This is intentional. Do not add capture="environment".
+            */}
+            <input
+              ref={uploadInputRef}
+              type="file"
+              accept="image/*"
+              className="w-0 h-0 absolute opacity-0 overflow-hidden"
+              onChange={handleFileChange}
+            />
+          </label>
+        )}
+
+        {/* Camera trigger — no file yet, camera mode */}
+        {scanType === "physical" && !demoMode && !file && inputMode === "camera" && (
           <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
             <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
               <Camera size={28} />
@@ -129,7 +186,11 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             <span className="text-sm font-bold text-ink group-hover:text-turmeric-deep transition-colors">
               Tap to Open Camera
             </span>
-            <span className="text-xs text-ink-soft mt-1">Point at product label to capture</span>
+            <span className="text-xs text-ink-soft mt-1">Points at rear camera for label scanning</span>
+            {/*
+              capture="environment" is what forces the OS camera app on mobile.
+              MUST stay on this input. Do not remove it.
+            */}
             <input
               ref={cameraInputRef}
               type="file"
@@ -168,7 +229,9 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
         {!canScan && (
           <p className="text-center text-[12px] italic text-ink-soft mt-1">
-            Tap the camera area above to capture a label
+            {inputMode === "camera"
+              ? "Tap 'Use Camera' above, capture label, then scan"
+              : "Upload a product label to start scan"}
           </p>
         )}
 
