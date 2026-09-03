@@ -77,7 +77,7 @@ export default function App() {
         <motion.div key={activeTab} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }} className="w-full mt-6">
           {activeTab === "consumer" && (
             <div className="flex flex-col gap-6">
-              <CameraScanner file={file} setFile={setFile} demoMode={demoMode} loading={loading} message={message} onScan={handleRunScan} />
+              <CameraScanner file={file} setFile={setFile} demoMode={demoMode} loading={loading} message={message} onScan={handleRunScan} audit={audit} />
               <AnimatePresence>
                 {scanError && (
                   <motion.div
