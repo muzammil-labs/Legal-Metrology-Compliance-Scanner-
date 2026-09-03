@@ -63,7 +63,11 @@ DEMO_STRUCTURED = {
     "unit_sale_price": "21.43 per 100g",
 }
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as _db_init_err:
+    import logging as _logging
+    _logging.warning(f"DB create_all failed (non-fatal on Vercel): {_db_init_err}")
 
 app = FastAPI(title="Legal Metrology Compliance Engine", version="1.0.0")
 
@@ -166,9 +170,14 @@ async def scan(
         raise HTTPException(status_code=413, detail="File size exceeds maximum size limit of 10MB")
     await file.seek(0)
 
-    # We also check the file extension/content type, but size comes first!
-    if not file.filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
-         raise HTTPException(status_code=400, detail="Invalid image format")
+    # Check file type by content-type header OR extension — mobile cameras
+    # may send files with no extension (e.g. just 'image') so we can't rely on extension alone
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    allowed_extensions = (".png", ".jpg", ".jpeg", ".webp")
+    allowed_content_types = ("image/jpeg", "image/png", "image/webp", "image/jpg")
+    if not (filename.lower().endswith(allowed_extensions) or content_type.lower() in allowed_content_types or content_type.lower().startswith("image/")):
+        raise HTTPException(status_code=400, detail="Invalid image format. Please upload a JPG, PNG, or WEBP image.")
 
     if DEMO_MODE:
         text, structured_fields, ocr_confidence = DEMO_OCR_TEXT, DEMO_STRUCTURED, 1.0
@@ -205,16 +214,22 @@ async def scan(
         inspected_at=datetime.utcnow(),
         violation_count=computed_violations
     )
-    db.add(inspection)
-    db.commit()
-    db.refresh(inspection)
+    try:
+        db.add(inspection)
+        db.commit()
+        db.refresh(inspection)
+        inspection_id = str(inspection.id)
+    except Exception:
+        # DB write failure is non-fatal on Vercel ephemeral filesystem
+        db.rollback()
+        inspection_id = sha256_hash[:12]
 
     return AuditResponse(
-        inspection_id=str(inspection.id),
+        inspection_id=inspection_id,
         sha256_hash=sha256_hash,
         overall_status=overall_status,
         rules=rules,
-        timestamp=inspection.inspected_at.isoformat(),
+        timestamp=datetime.utcnow().isoformat(),
         ocr_text=text,
         penalty=calculate_compounding_fine(rules),
         fssai_verification=fssai_info
