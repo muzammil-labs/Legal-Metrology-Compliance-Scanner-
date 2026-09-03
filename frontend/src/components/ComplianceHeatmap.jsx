@@ -56,33 +56,37 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
   const getCoordinates = (ruleName) => {
     const lower = ruleName.toLowerCase();
     
-    // Left Column
+    // ROW 1: 15%
     if (lower.includes("manufacturer") || lower.includes("packer")) {
-      return { top: "15%", left: "15%" };
-    }
-    if (lower.includes("quantity") || lower.includes("weight")) {
-      return { top: "45%", left: "15%" };
-    }
-    if (lower.includes("consumer care")) {
-      return { top: "75%", left: "15%" };
-    }
-
-    // Right Column
-    // Must check USP before MRP since USP contains the word "price"
-    if (lower.includes("unit sale") || lower.includes("usp")) {
-      return { top: "55%", right: "15%" };
+      return { top: "15%", left: "4%" };
     }
     if (lower.includes("mrp") || lower.includes("price") || lower.includes("retail")) {
-      return { top: "15%", right: "15%" };
+      return { top: "15%", right: "4%" };
+    }
+
+    // ROW 2: 35%
+    if (lower.includes("quantity") || lower.includes("weight")) {
+      return { top: "35%", left: "4%" };
     }
     if (lower.includes("country") || lower.includes("origin")) {
-      return { top: "35%", right: "15%" };
+      return { top: "35%", right: "4%" };
+    }
+
+    // ROW 3: 55%
+    if (lower.includes("consumer care")) {
+      return { top: "55%", left: "4%" };
+    }
+    // Must check USP before other things but since we grouped it by row, it's fine.
+    if (lower.includes("unit sale") || lower.includes("usp")) {
+      return { top: "55%", right: "4%" };
+    }
+
+    // ROW 4: 75%
+    if (lower.includes("mfg") || lower.includes("manufacture") || lower.includes("packing") || lower.includes("date")) {
+      return { top: "75%", left: "4%" };
     }
     if (lower.includes("fssai") || lower.includes("safety") || lower.includes("food")) {
-      return { top: "75%", right: "15%" };
-    }
-    if (lower.includes("mfg") || lower.includes("manufacture") || lower.includes("packing") || lower.includes("date")) {
-      return { top: "90%", right: "15%" };
+      return { top: "75%", right: "4%" };
     }
     
     // Default fallback position for anything else
