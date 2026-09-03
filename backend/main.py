@@ -69,7 +69,18 @@ except Exception as _db_init_err:
     import logging as _logging
     _logging.warning(f"DB create_all failed (non-fatal on Vercel): {_db_init_err}")
 
-app = FastAPI(title="Legal Metrology Compliance Engine", version="1.0.0")
+app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Unhandled Backend Error: {traceback.format_exc()}"}
+    )
 
 app.add_middleware(
     CORSMiddleware,
