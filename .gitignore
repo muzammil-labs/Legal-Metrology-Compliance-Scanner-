@@ -11,6 +11,7 @@ venv/
 playwright-report/
 test-results/
 .vercel/
+# AI working files — do not commit
 AUDIT_DIAGNOSTIC_REPORT.md
 GEMINI.md
 CLAUDE_DEPRECATED.md
@@ -19,3 +20,12 @@ PROMPT_SPECIFICATION.md
 code_review_context.md
 code_review_context_2.md
 FRONTEND_OVERHAUL_BLUEPRINT.md
+.mcp.json
+.cursorrules
+.Jules/
+.claude/
+antigravity/
+
+# Logs
+frontend/frontend.log
+*.log
