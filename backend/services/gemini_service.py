@@ -50,8 +50,7 @@ PART 2 — after the raw text, output exactly one JSON block:
 ```
 Use null for any field not visible. Do not invent values."""
         fallback_models = [
-            "gemini-3.6-flash", "gemini-3.5-pro",
-            "gemini-2.5-pro"
+            "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"
         ]
         errors = []
         for model_name in fallback_models:
@@ -88,7 +87,10 @@ Use null for any field not visible. Do not invent values."""
                         
                 return raw.strip(), {}, 0.6
             except Exception as model_err:
-                errors.append(f"{model_name}: {str(model_err)}")
+                err_str = str(model_err)
+                if "429" in err_str or "quota" in err_str.lower() or "exhausted" in err_str.lower():
+                    return "Mocked extracted text (ERROR: Gemini API Quota Exhausted. Please check your billing or use DEMO MODE.)", {}, 0.0
+                errors.append(f"{model_name}: {err_str}")
                 continue
         raise Exception(f"All fallback models failed. Errors: {' | '.join(errors)}")
     except Exception as e:
