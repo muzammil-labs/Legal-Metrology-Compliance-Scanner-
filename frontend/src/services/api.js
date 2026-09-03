@@ -34,7 +34,7 @@ export async function executeScanWithCircuitBreaker(
     throw new Error("An image file is required for live scanning.");
 
   const controller = new AbortController();
-  const timeoutMs = isDeepScan ? 9500 : 4500;
+  const timeoutMs = isDeepScan ? 45000 : 30000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const formData = new FormData();
