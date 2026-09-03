@@ -49,14 +49,8 @@ export async function executeScanWithCircuitBreaker(
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {
-    console.warn(
-      `Scan unavailable (${timeoutMs}ms circuit breaker tripped); serving deterministic fallback and saving for later.`,
-      error,
-    );
-    const fallbackResult = loadPrecachedFixture("control_pass");
-    // Save to local storage for offline sync (from PWA branch)
-    await saveOfflineScan(imageFile, ocrText, fallbackResult);
-    return fallbackResult;
+    console.error("Scan failed or timed out.", error);
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -84,24 +78,14 @@ export async function fetchAnalyticsSummary() {
   } catch (err) {
     console.warn("Failed to fetch analytics summary.", err);
     return {
-      total_inspections: 30,
-      compliant_inspections: 18,
-      failed_inspections: 12,
+      total_inspections: 0,
+      compliant_inspections: 0,
+      failed_inspections: 0,
       warning_inspections: 0,
-      compliance_rate: 60.0,
-      by_region: {
-        "North Delhi": 8,
-        "South Mumbai": 7,
-        "Bengaluru Urban": 6,
-        "Kolkata Central": 5,
-        "Chennai South": 4,
-      },
-      by_rule_infractions: {
-        "Rule 6(1)(e)": 6,
-        "Rule 6(1)(c)": 4,
-        "Rule 6(11)": 4,
-        "Rule 6(1)(a)": 2,
-      },
+      compliance_rate: 0.0,
+      by_region: {},
+      by_rule_infractions: {},
+      last_inspection_at: null,
     };
   }
 }

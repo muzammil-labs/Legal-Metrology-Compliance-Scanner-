@@ -40,6 +40,29 @@ from services.pdf_generator import generate_compounding_notice_pdf, generate_imp
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
+DEMO_MODE = os.environ.get("DEMO_MODE", "false").lower() == "true"
+
+DEMO_OCR_TEXT = (
+    "Mfg. by: Nestle India Ltd, 100/101 World Trade Centre, "
+    "Barakhamba Lane, New Delhi - 110001\n"
+    "Country of Origin: India\nNet Qty: 70g\n"
+    "MRP Rs.15.00 (Incl. of all taxes)\nMfg: 08/2025\n"
+    "Consumer Care: 1800-103-6444\nFSSAI Lic. No. 10013022002845\n"
+    "Veg product\nUnit Sale Price: Rs.21.43 per 100g"
+)
+DEMO_STRUCTURED = {
+    "manufacturer_name": "Nestle India Ltd",
+    "manufacturer_pincode": "110001",
+    "country_of_origin": "India",
+    "net_quantity_value": "70", "net_quantity_unit": "g",
+    "mrp_value": "15.00", "mrp_includes_taxes_declared": "yes",
+    "mfg_date": "08/2025",
+    "consumer_care_phone": "1800-103-6444",
+    "fssai_license_number": "10013022002845",
+    "veg_nonveg_symbol": "VEG",
+    "unit_sale_price": "21.43 per 100g",
+}
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Legal Metrology Compliance Engine", version="1.0.0")
@@ -89,6 +112,46 @@ def root_endpoint():
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
+@app.get("/api/health/gemini")
+async def gemini_health_check():
+    import time
+    start = time.perf_counter()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    status = "demo_mode" if DEMO_MODE else "unknown"
+    error = None
+    if not DEMO_MODE:
+        try:
+            minimal_jpeg = bytes([
+                0xFF,0xD8,0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,
+                0x01,0x00,0x00,0x01,0x00,0x01,0x00,0x00,0xFF,0xDB,0x00,0x43,
+                0x00,0x08,0x06,0x06,0x07,0x06,0x05,0x08,0x07,0x07,0x07,0x09,
+                0x09,0x08,0x0A,0x0C,0x14,0x0D,0x0C,0x0B,0x0B,0x0C,0x19,0x12,
+                0x13,0x0F,0x14,0x1D,0x1A,0x1F,0x1E,0x1D,0x1A,0x1C,0x1C,0x20,
+                0x24,0x2E,0x27,0x20,0x22,0x2C,0x23,0x1C,0x1C,0x28,0x37,0x29,
+                0x2C,0x30,0x31,0x34,0x34,0x34,0x1F,0x27,0x39,0x3D,0x38,0x32,
+                0x3C,0x2E,0x33,0x34,0x32,0xFF,0xD9
+            ])
+            raw, _, conf = extract_label_with_gemini(minimal_jpeg)
+            latency = round((time.perf_counter() - start) * 1000, 1)
+            if raw and "Failed" not in raw and "Mocked" not in raw:
+                status = "ok"
+            else:
+                status = "degraded"
+                error = raw[:120] if raw else "Empty response"
+        except Exception as e:
+            status = "down"
+            error = str(e)[:200]
+            latency = round((time.perf_counter() - start) * 1000, 1)
+    else:
+        latency = 0.0
+    return {
+        "gemini_status": status,
+        "latency_ms": latency if DEMO_MODE is False else 0.0,
+        "api_key_present": bool(api_key),
+        "demo_mode_active": DEMO_MODE,
+        "error": error,
+    }
+
 @app.post("/api/scan", response_model=AuditResponse)
 async def scan(
     file: UploadFile = File(...),
@@ -107,8 +170,13 @@ async def scan(
     if not file.filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
          raise HTTPException(status_code=400, detail="Invalid image format")
 
-    text, _ = extract_label_with_gemini(content)
-    rules = audit_text(text)
+    if DEMO_MODE:
+        text, structured_fields, ocr_confidence = DEMO_OCR_TEXT, DEMO_STRUCTURED, 1.0
+    else:
+        if not os.environ.get("GEMINI_API_KEY"):
+            raise HTTPException(status_code=500, detail="CRITICAL: GEMINI_API_KEY is not configured on the Vercel server. Please add it to your Environment Variables.")
+        text, structured_fields, ocr_confidence = extract_label_with_gemini(content)
+    rules = audit_text(text, json_artwork=structured_fields)
     fssai_info = audit_fssai_declarations(text)
 
     overall_status = RuleStatus.PASS
@@ -118,12 +186,18 @@ async def scan(
         overall_status = RuleStatus.WARNING
 
     sha256_hash = hashlib.sha256(content).hexdigest()
+    
+    computed_violations = sum(1 for r in rules if r.status == RuleStatus.FAIL)
+    if fssai_info and fssai_info.status == RuleStatus.FAIL:
+        computed_violations += len(fssai_info.violations)
+
     inspection = InspectionRecord(
         sha256=sha256_hash,
         source_filename=file.filename or "unknown.jpg",
         overall_status=overall_status.value,
         ocr_text=text,
-        inspected_at=datetime.utcnow()
+        inspected_at=datetime.utcnow(),
+        violation_count=computed_violations
     )
     db.add(inspection)
     db.commit()
@@ -167,8 +241,11 @@ async def batch_scan(
         if not file.filename.endswith((".png", ".jpg", ".jpeg", ".webp", ".zip", ".csv")):
             raise HTTPException(status_code=400, detail=f"Invalid file format for {file.filename}")
 
-        text, _ = extract_label_with_gemini(content)
-        rules = audit_text(text)
+        if DEMO_MODE:
+            text, structured_fields, ocr_confidence = DEMO_OCR_TEXT, DEMO_STRUCTURED, 1.0
+        else:
+            text, structured_fields, ocr_confidence = extract_label_with_gemini(content)
+        rules = audit_text(text, json_artwork=structured_fields)
         fssai_info = audit_fssai_declarations(text)
 
         overall_status = RuleStatus.PASS
@@ -246,7 +323,7 @@ def list_inspections(
             "gps_location": r.gps_location or "28.6139° N, 77.2090° E",
             "trust_score": r.trust_score or 100,
             "overall_status": r.overall_status or "PASS",
-            "violation_count": 0 if r.overall_status == "PASS" else 2,
+            "violation_count": 0 if r.overall_status == "PASS" else 1,
             "sha256": r.sha256_hash or "",
             "inspected_at": r.inspected_at.isoformat() if r.inspected_at else datetime.utcnow().isoformat()
         })
@@ -261,8 +338,11 @@ def get_analytics_summary(db: Session = Depends(get_db)):
     warnings = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "WARNING").count()
     rate = round((compliant / total * 100), 1) if total > 0 else 0.0
 
-    region_counts = db.query(InspectionRecord.region, func.count(InspectionRecord.id)).group_by(InspectionRecord.region).all()
-    by_region = {region: count for region, count in region_counts if region}
+    region_counts = db.query(InspectionRecord.region, func.count(InspectionRecord.id)).filter(
+        InspectionRecord.region != None,
+        InspectionRecord.region != "Unknown"
+    ).group_by(InspectionRecord.region).all()
+    by_region = {region: count for region, count in region_counts}
 
     return {
         "total_inspections": total,
