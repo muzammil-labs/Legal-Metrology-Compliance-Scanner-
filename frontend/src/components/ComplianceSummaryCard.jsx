@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode } from "lucide-react";
+import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode, Volume2, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ComplianceHeatmap from "./ComplianceHeatmap";
 
@@ -54,6 +54,74 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
     riskLabel = "Medium Risk — Label correction advised";
   }
 
+  // Voice Readout State
+  const [lang, setLang] = useState("en-IN");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechError, setSpeechError] = useState("");
+
+  const speakResults = () => {
+    if (!audit) return;
+    if (!window.speechSynthesis) {
+      setSpeechError("Voice not supported in this browser");
+      setTimeout(() => setSpeechError(""), 3000);
+      return;
+    }
+    
+    window.speechSynthesis.cancel();
+    
+    const statusPrefixes = {
+      "en-IN": { pass: "Product is compliant.", fail: "Product is non-compliant." },
+      "hi-IN": { pass: "उत्पाद अनुपालन कर रहा है।", fail: "उत्पाद गैर-अनुपालन है।" },
+      "te-IN": { pass: "ఉత్పత్తి నిబంధనలకు అనుగుణంగా ఉంది.", fail: "ఉత్పత్తి నిబంధనలకు అనుగుణంగా లేదు." },
+      "ta-IN": { pass: "தயாரிப்பு விதிகளுக்கு உட்பட்டது.", fail: "தயாரிப்பு விதிகளுக்கு உட்படவில்லை." }
+    };
+    
+    const prefix = statusPrefixes[lang]?.[isOverallPass ? 'pass' : 'fail'] || statusPrefixes['en-IN'][isOverallPass ? 'pass' : 'fail'];
+    let text = prefix + " ";
+    
+    if (!isOverallPass) {
+      const failedRules = rules.filter(r => r.status === "FAIL");
+      if (failedRules.length > 0) {
+        text += "Violations found: " + failedRules.map(r => r.reason).join(". ") + ". ";
+      }
+    }
+    
+    const warnings = rules.filter(r => r.status === "WARNING").length;
+    if (warnings > 0) {
+      text += `There ${warnings === 1 ? 'is' : 'are'} ${warnings} warning${warnings === 1 ? '' : 's'}. `;
+    }
+    
+    if (penalty && penalty.estimated_fine_inr > 0 && !isOverallPass) {
+      text += `Estimated fine is ${penalty.estimated_fine_inr} rupees.`;
+    }
+    
+    // Web Speech API — supported in Chrome, Safari, Edge; partial in Firefox
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.9;
+    
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      const match = voices.find(v => v.lang === lang);
+      if (match) utterance.voice = match;
+    }
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      if (e.error !== 'canceled') setIsSpeaking(false);
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 w-full max-w-full pb-16">
       
@@ -62,20 +130,66 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
 
       {/* Hero Status Banner & Score */}
       <motion.div layout className={`p-6 rounded-2xl shadow-sm ${isOverallPass ? "bg-sage/10 border border-sage/20" : "bg-terracotta/10 border border-terracotta/20"}`}>
-        <div className="flex items-center gap-4">
-          <motion.div 
-            initial={{ scale: 0 }} 
-            animate={{ scale: 1 }} 
-            transition={{ type: "spring", stiffness: 300, damping: 15, duration: 0.4 }}
-            className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isOverallPass ? "bg-sage/20 text-sage" : "bg-terracotta/20 text-terracotta"}`}
-          >
-            {isOverallPass ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
-          </motion.div>
-          <div className="flex-1">
-            <h2 className={`text-xl font-bold font-serif ${isOverallPass ? "text-sage" : "text-terracotta"}`}>{isOverallPass ? "CLEARED FOR RETAIL" : "NON-COMPLIANT PRODUCT"}</h2>
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className={`text-xs font-bold uppercase tracking-widest ${isOverallPass ? "text-sage" : "text-terracotta"}`}>Compliance Score: {complianceScore}%</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+          <div className="flex items-center gap-4">
+            <motion.div 
+              initial={{ scale: 0 }} 
+              animate={{ scale: 1 }} 
+              transition={{ type: "spring", stiffness: 300, damping: 15, duration: 0.4 }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isOverallPass ? "bg-sage/20 text-sage" : "bg-terracotta/20 text-terracotta"}`}
+            >
+              {isOverallPass ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
+            </motion.div>
+            <div className="flex-1">
+              <h2 className={`text-xl font-bold font-serif ${isOverallPass ? "text-sage" : "text-terracotta"}`}>{isOverallPass ? "CLEARED FOR RETAIL" : "NON-COMPLIANT PRODUCT"}</h2>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className={`text-xs font-bold uppercase tracking-widest ${isOverallPass ? "text-sage" : "text-terracotta"}`}>Compliance Score: {complianceScore}%</span>
+              </div>
             </div>
+          </div>
+          
+          {/* Voice Readout Controls */}
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value)}
+                className="bg-paper border border-ink/10 rounded-lg px-2 py-1.5 text-xs font-bold text-ink cursor-pointer focus:outline-none focus:border-ink/30"
+              >
+                <option value="en-IN">English</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="te-IN">Telugu</option>
+                <option value="ta-IN">Tamil</option>
+              </select>
+              
+              {!isSpeaking ? (
+                <button 
+                  onClick={speakResults}
+                  className="bg-paper border border-ink/10 hover:bg-ink/5 rounded-lg px-3 py-1.5 text-xs font-bold text-ink flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <Volume2 size={14} className="text-turmeric-deep" /> Read Aloud
+                </button>
+              ) : (
+                <button 
+                  onClick={stopSpeaking}
+                  className="bg-paper border border-terracotta/30 hover:bg-terracotta/10 rounded-lg px-3 py-1.5 text-xs font-bold text-terracotta flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <Square size={14} /> Stop
+                </button>
+              )}
+            </div>
+            <AnimatePresence>
+              {speechError && (
+                <motion.span 
+                  initial={{ opacity: 0, y: -5 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0 }}
+                  className="text-[10px] font-bold text-terracotta bg-terracotta/10 px-2 py-0.5 rounded"
+                >
+                  {speechError}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         
