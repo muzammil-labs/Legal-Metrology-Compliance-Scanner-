@@ -20,11 +20,11 @@ def audit_fssai_declarations(text: str, detected_objects: Optional[List[str]] = 
     lic_match = FSSAI_LICENSE_RE.search(text or "")
     lic_num = lic_match.group(1) if lic_match else None
 
-    # Strict full-string validation: must be exactly 14 digits starting with 1 or 2
-    is_lic_valid = bool(lic_num and re.fullmatch(r'[12]\d{13}', lic_num))
+    # Relaxed validation: 14 digits (OCR might mistake 1 for 7, etc)
+    is_lic_valid = bool(lic_num and re.fullmatch(r'\d{14}', lic_num))
 
     if not is_lic_valid:
-        violations.append("Missing or malformed 14-digit FSSAI License Number (must start with 1 or 2)")
+        violations.append("Missing or malformed 14-digit FSSAI License Number")
 
     dietary_match = DIETARY_SYMBOL_RE.search(text or "")
     has_dietary = bool(dietary_match)
@@ -36,12 +36,12 @@ def audit_fssai_declarations(text: str, detected_objects: Optional[List[str]] = 
         else:
             dietary_type = "VEGETARIAN"
     else:
-        violations.append("Missing mandatory Veg / Non-Veg dietary declaration symbol")
+        violations.append("Missing mandatory Veg / Non-Veg dietary declaration symbol (WARNING)")
 
     if NON_SI_UNITS_RE.search(text or ""):
         violations.append("Food package Net Quantity uses non-compliant metric unit symbols")
 
-    overall_status = RuleStatus.FAIL if violations else RuleStatus.PASS
+    overall_status = RuleStatus.FAIL if not is_lic_valid else RuleStatus.WARNING if violations else RuleStatus.PASS
     return FSSAIVerification(
         is_food_product=True,
         license_number=lic_num,

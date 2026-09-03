@@ -182,7 +182,7 @@ def test_fssai_invalid_format():
     res = audit_fssai_declarations(food_text)
     assert res.is_food_product is True
     assert res.is_license_valid_format is False
-    assert "Missing or malformed 14-digit FSSAI License Number (must start with 1 or 2)" in res.violations
+    assert "Missing or malformed 14-digit FSSAI License Number" in res.violations
 
 def test_fssai_not_food_product():
     non_food_text = "Shampoo, Paraben free. Made in India. MRP 100."

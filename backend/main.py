@@ -208,8 +208,19 @@ async def scan(
     overall_status = RuleStatus.PASS
     if any(r.status == RuleStatus.FAIL for r in rules) or fssai_info.status == RuleStatus.FAIL:
         overall_status = RuleStatus.FAIL
-    elif any(r.status == RuleStatus.WARNING for r in rules):
+    elif any(r.status == RuleStatus.WARNING for r in rules) or fssai_info.status == RuleStatus.WARNING:
         overall_status = RuleStatus.WARNING
+        
+    if fssai_info.is_food_product:
+        fssai_rule = RuleResult(
+            rule="FSSAI Safety & Standards Declaration",
+            status=fssai_info.status,
+            reason=" | ".join(fssai_info.violations) if fssai_info.violations else "FSSAI License and Dietary symbols compliant.",
+            statutory_clause="FSS (Packaging and Labelling) Regulations, 2011",
+            remedy="Ensure valid 14-digit FSSAI license and Veg/Non-Veg symbols are clearly declared on the principal display panel." if fssai_info.status != RuleStatus.PASS else None,
+            evidence=[fssai_info.license_number] if fssai_info.license_number else []
+        )
+        rules.append(fssai_rule)
 
     sha256_hash = hashlib.sha256(content).hexdigest()
     
