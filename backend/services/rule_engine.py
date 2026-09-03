@@ -7,9 +7,14 @@ PINCODE_RE = re.compile(r'\b([1-9][0-9]{5}|[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}|\d{
 COUNTRY_RE = re.compile(r'(?i)\b(country\s*of\s*origin|made\s*in|product\s*of|scotland|uk|united\s*kingdom)\b')
 NET_QTY_RE = re.compile(r'(?i)\b(net\s*(?:qty|quantity|wt\.?|weight|vol\.?|volume)?)\s*[:.]?\s*(\d+(?:\.\d+)?)\s*(g|kg|ml|l|n|u)\b')
 INVALID_UNIT_RE = re.compile(r'(?i)\b\d+\s*(gm|gms|ml\.|kgs|gram|grams)\b')
-MRP_TAX_RE = re.compile(r'(?i)\b(incl\.?\s*of\s*all\s*taxes|inclusive\s*of\s*all\s*taxes|mrp)\b')
+# Strict: MRP must be accompanied by tax-inclusive declaration — NOT just the word "MRP"
+MRP_TAX_RE = re.compile(r'(?i)(incl\.?\s*of\s*all\s*taxes|inclusive\s*of\s*all\s*taxes)')
 CONSUMER_CARE_RE = re.compile(r'(?i)\b(consumer\s*care|customer\s*care|helpline|toll\s*free|feedback|support@|care@|email|sales@)\b')
 USP_RE = re.compile(r'(?i)\b(?:unit\s*sale\s*price|usp)\s*[:.]?\s*(?:rs\.?|₹)?\s*(\d+(?:\.\d+)?)\s*(?:per|/)\s*(g|kg|ml|l|piece|unit)\b')
+
+# Markers returned by Gemini for non-product or low-quality images
+NOT_A_LABEL_MARKER = "NOT_A_PACKAGED_PRODUCT"
+BLURRY_MARKER = "IMAGE_QUALITY_POOR"
 
 def audit_manufacturer_details(text: str) -> RuleResult:
     has_prefix = bool(MANUFACTURER_RE.search(text))

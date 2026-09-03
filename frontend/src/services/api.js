@@ -46,7 +46,14 @@ export async function executeScanWithCircuitBreaker(
       body: formData,
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try {
+        const errJson = await response.json();
+        if (errJson.detail) detail = errJson.detail;
+      } catch {}
+      throw new Error(detail);
+    }
     return await response.json();
   } catch (error) {
     console.error("Scan failed or timed out.", error);

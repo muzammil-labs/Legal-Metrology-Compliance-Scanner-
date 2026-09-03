@@ -10,6 +10,7 @@ import DeveloperPortal from "./components/DeveloperPortal";
 import LandingPage from "./components/LandingPage";
 import { executeScanWithCircuitBreaker, loadPrecachedFixture } from "./services/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle, X } from "lucide-react";
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
@@ -17,9 +18,10 @@ export default function App() {
   const [role, setRole] = useState("consumer");
   const [demoMode, setDemoMode] = useState(null);
   const [file, setFile] = useState(null);
-  const [audit, setAudit] = useState(() => loadPrecachedFixture("control_pass"));
+  const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("System ready");
+  const [scanError, setScanError] = useState(null);
   const [noticeModalType, setNoticeModalType] = useState(null);
 
   if (window.location.pathname === "/citizen") return <PublicCitizenPortal />;
@@ -38,15 +40,24 @@ export default function App() {
 
   async function handleRunScan(customOcrText = "", isDeepScan = false) {
     setLoading(true);
+    setScanError(null);
     setMessage("Analyzing...");
     try {
       const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText, "New Delhi", isDeepScan);
       setAudit(result);
+      setScanError(null);
       setMessage("Scan complete.");
     } catch (error) {
       console.error(error);
-      setMessage(`Scan failed: ${error.message}`);
-      setAudit(null); // Clear the default "PASS" fixture so the user knows it failed
+      // Try to parse FastAPI's { detail: "..." } JSON error body
+      let msg = error.message;
+      try {
+        const json = JSON.parse(error.message);
+        if (json.detail) msg = json.detail;
+      } catch {}
+      setScanError(msg);
+      setMessage(`Scan failed`);
+      // Do NOT clear audit so existing results stay visible
     } finally {
       setLoading(false);
     }
@@ -66,6 +77,22 @@ export default function App() {
           {activeTab === "consumer" && (
             <div className="flex flex-col gap-6">
               <CameraScanner file={file} setFile={setFile} demoMode={demoMode} loading={loading} message={message} onScan={handleRunScan} />
+              <AnimatePresence>
+                {scanError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl"
+                  >
+                    <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium flex-1">{scanError}</p>
+                    <button onClick={() => setScanError(null)} className="shrink-0 text-red-400 hover:text-red-700">
+                      <X size={16} />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <ComplianceSummaryCard audit={audit} onOpenNoticeModal={setNoticeModalType} />
             </div>
           )}

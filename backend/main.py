@@ -176,6 +176,12 @@ async def scan(
         if not os.environ.get("GEMINI_API_KEY"):
             raise HTTPException(status_code=500, detail="CRITICAL: GEMINI_API_KEY is not configured on the Vercel server. Please add it to your Environment Variables.")
         text, structured_fields, ocr_confidence = extract_label_with_gemini(content)
+
+    # Check for special markers returned by Gemini
+    if text.strip() == "NOT_A_PACKAGED_PRODUCT":
+        raise HTTPException(status_code=422, detail="This image does not appear to show a packaged consumer product. Please scan a product label.")
+    if text.strip() == "IMAGE_QUALITY_POOR":
+        raise HTTPException(status_code=422, detail="Image quality is too poor (blurry, glare, or out of focus). Please retake the photo in better lighting.")
     rules = audit_text(text, json_artwork=structured_fields)
     fssai_info = audit_fssai_declarations(text)
 
