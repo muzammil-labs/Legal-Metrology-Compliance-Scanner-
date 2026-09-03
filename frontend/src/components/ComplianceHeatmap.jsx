@@ -55,24 +55,36 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
   // These are percentage-based coordinates to float chips on the image.
   const getCoordinates = (ruleName) => {
     const lower = ruleName.toLowerCase();
+    
+    // Left Column
     if (lower.includes("manufacturer") || lower.includes("packer")) {
       return { top: "15%", left: "15%" };
-    }
-    if (lower.includes("mrp") || lower.includes("price")) {
-      return { top: "15%", right: "15%" };
     }
     if (lower.includes("quantity") || lower.includes("weight")) {
       return { top: "45%", left: "15%" };
     }
-    if (lower.includes("country") || lower.includes("origin")) {
-      return { top: "45%", right: "15%" };
-    }
     if (lower.includes("consumer care")) {
       return { top: "75%", left: "15%" };
     }
+
+    // Right Column
+    // Must check USP before MRP since USP contains the word "price"
     if (lower.includes("unit sale") || lower.includes("usp")) {
+      return { top: "55%", right: "15%" };
+    }
+    if (lower.includes("mrp") || lower.includes("price") || lower.includes("retail")) {
+      return { top: "15%", right: "15%" };
+    }
+    if (lower.includes("country") || lower.includes("origin")) {
+      return { top: "35%", right: "15%" };
+    }
+    if (lower.includes("fssai") || lower.includes("safety") || lower.includes("food")) {
       return { top: "75%", right: "15%" };
     }
+    if (lower.includes("mfg") || lower.includes("manufacture") || lower.includes("packing") || lower.includes("date")) {
+      return { top: "90%", right: "15%" };
+    }
+    
     // Default fallback position for anything else
     return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
   };
