@@ -4,18 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import ComplianceHeatmap from "./ComplianceHeatmap";
 
 export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loading, imageFile }) {
-  // Move all hooks to the top to obey React Rules of Hooks
-  const [expandedRules, setExpandedRules] = useState([]);
-  const [lang, setLang] = useState("en-IN");
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechError, setSpeechError] = useState("");
-
-  useEffect(() => {
-    if (audit && audit.rules) {
-      setExpandedRules(audit.rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null));
-    }
-  }, [audit]);
-
   if (!audit) {
     return loading ? (
       <div className="flex flex-col gap-4 animate-pulse">
@@ -26,9 +14,16 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
       </div>
     ) : null;
   }
-  
   const { overall_status, rules = [], fssai_verification, penalty, barcode_health } = audit;
   const isOverallPass = overall_status === "PASS";
+  
+  // Auto-expand FAIL rules immediately upon load
+  const initialExpanded = rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null);
+  const [expandedRules, setExpandedRules] = useState(initialExpanded);
+
+  useEffect(() => {
+    setExpandedRules(rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null));
+  }, [audit]);
 
   const toggleRule = (idx) => setExpandedRules(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
 
@@ -58,6 +53,11 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
     riskColorText = "text-turmeric-deep";
     riskLabel = "Medium Risk — Label correction advised";
   }
+
+  // Voice Readout State
+  const [lang, setLang] = useState("en-IN");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechError, setSpeechError] = useState("");
 
   const speakResults = () => {
     if (!audit) return;
