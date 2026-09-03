@@ -3,7 +3,8 @@ from typing import List, Optional
 from schemas import FSSAIVerification, RuleStatus
 
 FOOD_KEYWORDS_RE = re.compile(r'(?i)\b(ingredients|nutrition|energy|carbohydrate|sugar|fat|protein|food|fssai|edible|snack|beverage|biscuit|oil|flour)\b')
-FSSAI_LICENSE_RE = re.compile(r'(?i)(?:fssai|lic\.?\s*(?:no\.?)?|license)\s*[:\.]?\s*([12]\d{13}|[A-Z0-9]{8,15})\b')
+# Strict: exactly 14 digits starting with 1 or 2 — the actual FSSAI format
+FSSAI_LICENSE_RE = re.compile(r'(?i)(?:fssai|lic\.?\s*(?:no\.?)?|license)\s*[:\.]?\s*([12]\d{13})\b')
 DIETARY_SYMBOL_RE = re.compile(r'(?i)\b(100%\s*veg|vegetarian|suitable\s*for\s*vegetarians|green\s*dot|non-veg|contains\s*egg|contains\s*meat)\b')
 NON_SI_UNITS_RE = re.compile(r'(?i)\b\d+\s*(gm|gms|ml\.|ltr|kgs)\b')
 
@@ -18,12 +19,12 @@ def audit_fssai_declarations(text: str, detected_objects: Optional[List[str]] = 
     violations = []
     lic_match = FSSAI_LICENSE_RE.search(text or "")
     lic_num = lic_match.group(1) if lic_match else None
-    is_lic_valid = bool(lic_num and len(lic_num) >= 8)
+
+    # Strict full-string validation: must be exactly 14 digits starting with 1 or 2
+    is_lic_valid = bool(lic_num and re.fullmatch(r'[12]\d{13}', lic_num))
 
     if not is_lic_valid:
-        # Relaxed for international demo
-        is_lic_valid = True
-        lic_num = "INTL-EXEMPT-001"
+        violations.append("Missing or malformed 14-digit FSSAI License Number (must start with 1 or 2)")
 
     dietary_match = DIETARY_SYMBOL_RE.search(text or "")
     has_dietary = bool(dietary_match)

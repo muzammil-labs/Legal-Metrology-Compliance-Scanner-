@@ -329,7 +329,7 @@ def list_inspections(
             "gps_location": r.gps_location or "28.6139° N, 77.2090° E",
             "trust_score": r.trust_score or 100,
             "overall_status": r.overall_status or "PASS",
-            "violation_count": 0 if r.overall_status == "PASS" else 1,
+            "violation_count": r.violation_count if r.violation_count is not None else 0,
             "sha256": r.sha256_hash or "",
             "inspected_at": r.inspected_at.isoformat() if r.inspected_at else datetime.utcnow().isoformat()
         })
@@ -417,17 +417,22 @@ def export_pdf_report(
     current_role: UserRole = Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN, UserRole.ADMIN]))
 ):
     total_records = db.query(InspectionRecord).count()
+    compliant = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "PASS").count()
+    real_rate = round((compliant / total_records * 100), 1) if total_records > 0 else 0.0
+    from sqlalchemy import func as _func
+    total_violations = db.query(_func.sum(InspectionRecord.violation_count)).scalar() or 0
+    estimated_total_fine = int(total_violations) * 5000
     summary = ExecutiveAnalyticsResponse(
         generated_at=datetime.utcnow().isoformat(),
         reporting_month=datetime.utcnow().strftime("%B %Y"),
-        state_aggregate_compliance_rate=91.5,
+        state_aggregate_compliance_rate=real_rate,
         total_inspections_statewide=total_records,
         districts=[
             DistrictMetricSummary(
                 district_name="Central District",
                 total_inspections=total_records,
-                compliance_rate=90.0,
-                total_penalties_levied_inr=25000,
+                compliance_rate=real_rate,
+                total_penalties_levied_inr=estimated_total_fine,
                 top_statutory_violation="Rule 6(1)(e) - MRP Suffix",
                 repeat_offender_brands=[]
             )
@@ -446,17 +451,22 @@ def export_excel_report(
     current_role: UserRole = Depends(require_role([UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN, UserRole.ADMIN]))
 ):
     total_records = db.query(InspectionRecord).count()
+    compliant = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "PASS").count()
+    real_rate = round((compliant / total_records * 100), 1) if total_records > 0 else 0.0
+    from sqlalchemy import func as _func
+    total_violations = db.query(_func.sum(InspectionRecord.violation_count)).scalar() or 0
+    estimated_total_fine = int(total_violations) * 5000
     summary = ExecutiveAnalyticsResponse(
         generated_at=datetime.utcnow().isoformat(),
         reporting_month=datetime.utcnow().strftime("%B %Y"),
-        state_aggregate_compliance_rate=91.5,
+        state_aggregate_compliance_rate=real_rate,
         total_inspections_statewide=total_records,
         districts=[
             DistrictMetricSummary(
                 district_name="Central District",
                 total_inspections=total_records,
-                compliance_rate=90.0,
-                total_penalties_levied_inr=25000,
+                compliance_rate=real_rate,
+                total_penalties_levied_inr=estimated_total_fine,
                 top_statutory_violation="Rule 6(1)(e) - MRP Suffix",
                 repeat_offender_brands=[]
             )

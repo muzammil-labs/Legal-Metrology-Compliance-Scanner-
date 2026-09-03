@@ -20,45 +20,140 @@ def audit_manufacturer_details(text: str) -> RuleResult:
     has_prefix = bool(MANUFACTURER_RE.search(text))
     has_pin = bool(PINCODE_RE.search(text))
     if has_prefix and has_pin:
-        return RuleResult(rule=StatutoryRule.RULE_6_1_A, status=RuleStatus.PASS, reason="Compliant manufacturer details and postal PIN code identified.")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_A,
+            status=RuleStatus.PASS,
+            reason="Compliant manufacturer details and postal PIN code identified.",
+            statutory_clause="Rule 6(1)(a), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
     if has_prefix and not has_pin:
-        # Relaxing this to PASS for international formats during demo
-        return RuleResult(rule=StatutoryRule.RULE_6_1_A, status=RuleStatus.PASS, reason="Manufacturer identified (International/Standard).")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_A, status=RuleStatus.FAIL, reason="Missing mandatory manufacturer identification under Rule 6(1)(a).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_A,
+            status=RuleStatus.WARNING,
+            reason="Manufacturer name or packer prefix found but mandatory postal PIN code / address is absent or unreadable.",
+            statutory_clause="Rule 6(1)(a), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy="Print the complete name and full postal address (including 6-digit PIN code) of the manufacturer or packer on the principal display panel."
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_A,
+        status=RuleStatus.FAIL,
+        reason="Missing mandatory manufacturer identification under Rule 6(1)(a).",
+        statutory_clause="Rule 6(1)(a), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Add the name and complete postal address of the manufacturer, packer, or importer (with 6-digit PIN code) on the label."
+    )
 
 def audit_country_of_origin(text: str) -> RuleResult:
     if COUNTRY_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_B, status=RuleStatus.PASS, reason="Country of origin clearly declared.")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_B, status=RuleStatus.FAIL, reason="Missing mandatory Country of Origin declaration under Rule 6(1)(b).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_B,
+            status=RuleStatus.PASS,
+            reason="Country of origin clearly declared.",
+            statutory_clause="Rule 6(1)(b), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_B,
+        status=RuleStatus.FAIL,
+        reason="Missing mandatory Country of Origin declaration under Rule 6(1)(b).",
+        statutory_clause="Rule 6(1)(b), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Declare the Country of Origin (e.g., 'Country of Origin: India' or 'Made in India') on the label."
+    )
 
 def audit_net_quantity(text: str) -> RuleResult:
     if INVALID_UNIT_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_C, status=RuleStatus.FAIL, reason="Non-standard metric symbols detected. Must use SI units (g, kg, ml, l).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_C,
+            status=RuleStatus.FAIL,
+            reason="Non-standard metric symbols detected. Must use SI units (g, kg, ml, l).",
+            statutory_clause="Rule 6(1)(c) read with Rule 5, Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy="Replace non-standard units (gm, gms, ltr, kgs, gram) with prescribed SI metric symbols: g, kg, ml, or l."
+        )
     if NET_QTY_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_C, status=RuleStatus.PASS, reason="Net quantity declared in valid statutory SI metric units.")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_C, status=RuleStatus.FAIL, reason="Missing or unparseable net quantity declaration under Rule 6(1)(c).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_C,
+            status=RuleStatus.PASS,
+            reason="Net quantity declared in valid statutory SI metric units.",
+            statutory_clause="Rule 6(1)(c), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_C,
+        status=RuleStatus.FAIL,
+        reason="Missing or unparseable net quantity declaration under Rule 6(1)(c).",
+        statutory_clause="Rule 6(1)(c), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Declare the net quantity in standard SI units (e.g., 'Net Qty: 500 g' or 'Net Vol: 200 ml') in numerals and prescribed metric symbols."
+    )
 
 def audit_mrp_tax(text: str) -> RuleResult:
     if MRP_TAX_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_E, status=RuleStatus.PASS, reason="MRP properly formatted with mandatory '(incl. of all taxes)' declaration.")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_E, status=RuleStatus.FAIL, reason="MRP declaration missing mandatory '(incl. of all taxes)' suffix under Rule 6(1)(e).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_E,
+            status=RuleStatus.PASS,
+            reason="MRP properly formatted with mandatory '(incl. of all taxes)' declaration.",
+            statutory_clause="Rule 6(1)(e), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_E,
+        status=RuleStatus.FAIL,
+        reason="MRP declaration missing mandatory '(incl. of all taxes)' suffix under Rule 6(1)(e).",
+        statutory_clause="Rule 6(1)(e), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Print MRP as: 'MRP Rs. XX.XX (Incl. of all taxes)' on the label. Omitting the tax-inclusive declaration is a statutory violation."
+    )
 
 def audit_consumer_care(text: str) -> RuleResult:
     if CONSUMER_CARE_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_F, status=RuleStatus.PASS, reason="Consumer care contact details provided.")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_F, status=RuleStatus.FAIL, reason="Missing consumer care helpline/email contact details under Rule 6(1)(f).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_F,
+            status=RuleStatus.PASS,
+            reason="Consumer care contact details provided.",
+            statutory_clause="Rule 6(1)(f), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_F,
+        status=RuleStatus.FAIL,
+        reason="Missing consumer care helpline/email contact details under Rule 6(1)(f).",
+        statutory_clause="Rule 6(1)(f), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Add a consumer care contact (phone number or email address) on the label. Example: 'Consumer Care: 1800-XXX-XXXX or care@brand.com'."
+    )
 
 def audit_unit_sale_price(text: str) -> RuleResult:
     if USP_RE.search(text):
-        return RuleResult(rule=StatutoryRule.RULE_6_11_USP, status=RuleStatus.PASS, reason="Unit Sale Price (USP) declared with normalized metric denominator.")
-    return RuleResult(rule=StatutoryRule.RULE_6_11_USP, status=RuleStatus.WARNING, reason="Unit Sale Price (USP) missing or improperly formatted under Rule 6(11).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_11_USP,
+            status=RuleStatus.PASS,
+            reason="Unit Sale Price (USP) declared with normalized metric denominator.",
+            statutory_clause="Rule 6(11), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_11_USP,
+        status=RuleStatus.WARNING,
+        reason="Unit Sale Price (USP) missing or improperly formatted under Rule 6(11).",
+        statutory_clause="Rule 6(11), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Declare the Unit Sale Price in the format: 'Unit Sale Price: Rs. X.XX per g/kg/ml/l'. Required for packages above prescribed threshold weights."
+    )
 
 DATE_MFG_RE = re.compile(r'(?i)\b(?:mfg\.?\s*(?:date|dt\.?)?|pkd\.?\s*(?:date|dt\.?)?|date\s*of\s*(?:mfg|packing|import)|packed\s*on)\s*[:.]?\s*(\d{2}[/-]\d{4}|\d{2}[/-]\d{2}[/-]\d{4}|\w{3,9}\s*\d{4})\b')
 
 def audit_date_of_mfg(text: str) -> RuleResult:
     if DATE_MFG_RE.search(text) or re.search(r'\b(0[1-9]|1[0-2])/(20\d{2})\b', text):
-        return RuleResult(rule=StatutoryRule.RULE_6_1_D, status=RuleStatus.PASS, reason="Date of manufacture/packing clearly declared.")
-    return RuleResult(rule=StatutoryRule.RULE_6_1_D, status=RuleStatus.FAIL, reason="Missing mandatory Date of Manufacture/Packing under Rule 6(1)(d).")
+        return RuleResult(
+            rule=StatutoryRule.RULE_6_1_D,
+            status=RuleStatus.PASS,
+            reason="Date of manufacture/packing clearly declared.",
+            statutory_clause="Rule 6(1)(d), Legal Metrology (Packaged Commodities) Rules, 2011",
+            remedy=None
+        )
+    return RuleResult(
+        rule=StatutoryRule.RULE_6_1_D,
+        status=RuleStatus.FAIL,
+        reason="Missing mandatory Date of Manufacture/Packing under Rule 6(1)(d).",
+        statutory_clause="Rule 6(1)(d), Legal Metrology (Packaged Commodities) Rules, 2011",
+        remedy="Print the Month and Year of manufacture or packing on the label (e.g., 'Mfg: 08/2025')."
+    )
 
 def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
     failed = [r for r in violations if r.status == RuleStatus.FAIL]
@@ -69,5 +164,4 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
 
 def audit_text(text: str, json_artwork: Optional[dict] = None):
     rules = [audit_manufacturer_details(text), audit_country_of_origin(text), audit_net_quantity(text), audit_mrp_tax(text), audit_consumer_care(text), audit_unit_sale_price(text)]
-    # Match the 5-element tuple expected in memory: (rules, usp, extracted_fields, penalty, fine_estimation)
     return rules
