@@ -254,31 +254,24 @@ def list_inspections(
 
 @app.get("/api/analytics/summary")
 def get_analytics_summary(db: Session = Depends(get_db)):
+    from sqlalchemy import func
     total = db.query(InspectionRecord).count()
     compliant = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "PASS").count()
     failed = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "FAIL").count()
     warnings = db.query(InspectionRecord).filter(InspectionRecord.overall_status == "WARNING").count()
-    rate = round((compliant / total * 100), 1) if total > 0 else 100.0
+    rate = round((compliant / total * 100), 1) if total > 0 else 0.0
+
+    region_counts = db.query(InspectionRecord.region, func.count(InspectionRecord.id)).group_by(InspectionRecord.region).all()
+    by_region = {region: count for region, count in region_counts if region}
 
     return {
-        "total_inspections": total or 30,
-        "compliant_inspections": compliant or 18,
-        "failed_inspections": failed or 12,
-        "warning_inspections": warnings or 0,
-        "compliance_rate": rate if total > 0 else 60.0,
-        "by_region": {
-            "North Delhi": 8,
-            "South Mumbai": 7,
-            "Bengaluru Urban": 6,
-            "Kolkata Central": 5,
-            "Chennai South": 4,
-        },
-        "by_rule_infractions": {
-            "Rule 6(1)(e)": 6,
-            "Rule 6(1)(c)": 4,
-            "Rule 6(11)": 4,
-            "Rule 6(1)(a)": 2,
-        },
+        "total_inspections": total,
+        "compliant_inspections": compliant,
+        "failed_inspections": failed,
+        "warning_inspections": warnings,
+        "compliance_rate": rate if total > 0 else 0.0,
+        "by_region": by_region,
+        "by_rule_infractions": {},
     }
 
 @app.get("/api/inspections/{inspection_id}/export-notice")

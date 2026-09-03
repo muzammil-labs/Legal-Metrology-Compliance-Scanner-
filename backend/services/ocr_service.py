@@ -1,2 +1,2 @@
-def extract_label_with_gemini(content: bytes) -> tuple[str, float]:
-    return "Mocked extracted text", 1.0
+# DEPRECATED — real implementation is in services/gemini_service.py
+from services.gemini_service import extract_label_with_gemini as extract_label_with_gemini  # noqa: F401
