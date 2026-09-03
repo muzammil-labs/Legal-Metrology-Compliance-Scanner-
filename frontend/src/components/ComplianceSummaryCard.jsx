@@ -32,30 +32,25 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
   const passedRules = rules.filter(r => r.status === "PASS").length;
   const complianceScore = totalRules > 0 ? Math.round((passedRules / totalRules) * 100) : 100;
 
-  // Calculate Compliance Risk Score (FEATURE A)
-  const riskScoreRaw = rules.reduce((acc, r) => {
+  // Feature A: Risk Score Calculation
+  const rawRiskScore = rules.reduce((acc, r) => {
     if (r.status === "FAIL") return acc + 20;
     if (r.status === "WARNING") return acc + 8;
     return acc;
   }, 0);
-  const riskScore = Math.min(riskScoreRaw, 100);
-  
-  let riskTier = "Low";
-  let riskColor = "bg-sage";
-  let riskTextClass = "text-sage";
+  const riskScore = Math.min(rawRiskScore, 100);
+
+  let riskColorBg = "bg-sage";
+  let riskColorText = "text-sage";
   let riskLabel = "Low Risk — No immediate action required";
   
-  if (riskScore > 55) {
-    riskTier = "High";
-    riskColor = "bg-terracotta";
-    riskTextClass = "text-terracotta";
+  if (riskScore >= 56) {
+    riskColorBg = "bg-terracotta";
+    riskColorText = "text-terracotta";
     riskLabel = "High Risk — Inspector action recommended";
-  } else if (riskScore > 20) {
-    riskTier = "Medium";
-    riskColor = "bg-turmeric";
-    // Using turmeric-deep for text contrast against light backgrounds if needed, or turmeric if standard. 
-    // We'll use text-turmeric-deep for readability, falling back to standard tailwind if it doesn't exist, but it does in line 113.
-    riskTextClass = "text-turmeric-deep"; 
+  } else if (riskScore >= 21) {
+    riskColorBg = "bg-turmeric";
+    riskColorText = "text-turmeric-deep";
     riskLabel = "Medium Risk — Label correction advised";
   }
 
@@ -92,6 +87,44 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
             transition={{ duration: 0.8, ease: "easeOut" }}
             className={`h-full rounded-full ${isOverallPass ? "bg-sage" : "bg-terracotta"}`}
           />
+        </div>
+      </motion.div>
+
+      {/* Feature A: Compliance Risk Score */}
+      <motion.div layout className="theme-bright-card p-6">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-base font-bold font-serif text-ink">Compliance Risk Score</h4>
+          <span className="text-sm font-bold text-ink">{riskScore} / 100</span>
+        </div>
+        <div className="w-full bg-ink/5 rounded-full h-2 overflow-hidden mb-3">
+          <motion.div 
+            initial={{ width: 0 }} 
+            animate={{ width: `${riskScore}%` }} 
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className={`h-full rounded-full ${riskColorBg}`}
+          />
+        </div>
+        <p className={`text-xs font-bold ${riskColorText}`}>{riskLabel}</p>
+      </motion.div>
+
+      {/* Feature B: Compliance DNA Strip */}
+      <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="theme-bright-card p-6">
+        <div className="flex w-full h-5 rounded-lg overflow-hidden mb-3 gap-[1px] bg-ink/10">
+          {rules.map((r, idx) => {
+             const segmentBg = r.status === "PASS" ? "bg-sage" : r.status === "WARNING" ? "bg-turmeric" : "bg-terracotta";
+             return (
+               <div 
+                 key={idx} 
+                 className={`flex-1 h-full ${segmentBg}`} 
+                 title={`${r.rule} - ${r.status}`}
+               />
+             );
+          })}
+        </div>
+        <div className="text-center">
+          <p className="text-xs font-bold text-ink-soft">
+            Compliance DNA — {rules.length} declarations verified
+          </p>
         </div>
       </motion.div>
 
@@ -158,45 +191,6 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
         </motion.button>
       )}
       </AnimatePresence>
-
-      {/* FEATURE A: Compliance Risk Score */}
-      <motion.div layout className="theme-bright-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold font-serif text-ink">Compliance Risk Score</h3>
-          <span className={`text-base font-black ${riskTextClass}`}>{riskScore} / 100</span>
-        </div>
-        <div className="w-full bg-ink/5 rounded-full h-2 overflow-hidden mb-3">
-          <motion.div 
-            initial={{ width: 0 }} 
-            animate={{ width: `${riskScore}%` }} 
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className={`h-full rounded-full ${riskColor}`}
-          />
-        </div>
-        <p className={`text-xs font-bold uppercase tracking-widest ${riskTextClass}`}>
-          {riskLabel}
-        </p>
-      </motion.div>
-
-      {/* FEATURE B: Compliance DNA Strip */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} layout className="theme-bright-card p-6">
-        <div className="flex w-full h-5 rounded-lg overflow-hidden mb-4 gap-[2px]">
-          {rules.map((r, i) => {
-            const segColor = r.status === "PASS" ? "bg-sage" : r.status === "WARNING" ? "bg-turmeric" : "bg-terracotta";
-            const roundedClass = i === 0 ? "rounded-l-lg" : i === rules.length - 1 ? "rounded-r-lg" : "";
-            return (
-              <div 
-                key={i} 
-                title={`${r.rule} - ${r.status}`} 
-                className={`flex-1 ${segColor} ${roundedClass}`} 
-              />
-            );
-          })}
-        </div>
-        <p className="text-center text-[10px] font-bold uppercase tracking-widest text-ink-soft">
-          Compliance DNA — {rules.length} of {rules.length} declarations verified
-        </p>
-      </motion.div>
 
       {/* Statutory Rules - Enterprise Inspection Panels */}
       <motion.div layout className="space-y-4">
