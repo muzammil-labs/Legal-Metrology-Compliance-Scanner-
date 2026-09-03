@@ -8,6 +8,11 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
   const [scanType, setScanType] = useState("physical");
   const [isDeepScan, setIsDeepScan] = useState(false);
   const [inputMode, setInputMode] = useState("upload"); // "upload" | "camera"
+  const [isMobile, setIsMobile] = useState(true);
+
+  React.useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
 
   const uploadInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -73,7 +78,7 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
       </div>
 
       {/* ── Toggle 2: Upload / Camera — physical + no demo only ── */}
-      {scanType === "physical" && !demoMode && (
+      {scanType === "physical" && !demoMode && isMobile && (
         <div className="flex bg-seal-cream border border-ink/10 p-1 rounded-xl mb-4">
           <button
             onClick={() => switchToMode("upload")}
