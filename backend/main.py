@@ -505,6 +505,17 @@ def export_excel_report(
 def audit_digital_listing_endpoint(payload: ECommerceAuditRequest):
     return audit_digital_listing(payload)
 
+@app.get("/api/debug/fs")
+def debug_fs():
+    import glob
+    return {
+        "cwd": os.getcwd(),
+        "__file__": __file__,
+        "frontend_dist": frontend_dist,
+        "exists": os.path.exists(frontend_dist),
+        "files": glob.glob(f"{frontend_dist}/**/*", recursive=True) if os.path.exists(frontend_dist) else []
+    }
+
 @app.get("/{full_path:path}")
 def serve_spa(full_path: str):
     if full_path.startswith("api/") or full_path == "api":
