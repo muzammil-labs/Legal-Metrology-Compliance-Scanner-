@@ -32,7 +32,9 @@ export default function PublicCitizenPortal() {
       setAudit(result);
       setMessage("Analysis complete");
     } catch (error) {
+      console.error(error);
       setMessage(`Error: ${error.message}`);
+      setAudit(null);
     } finally {
       setLoading(false);
     }

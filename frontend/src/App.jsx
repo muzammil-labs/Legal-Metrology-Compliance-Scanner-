@@ -38,9 +38,15 @@ export default function App() {
 
   async function handleRunScan(customOcrText = "", isDeepScan = false) {
     setLoading(true);
+    setMessage("Analyzing...");
     try {
       const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText, "New Delhi", isDeepScan);
       setAudit(result);
+      setMessage("Scan complete.");
+    } catch (error) {
+      console.error(error);
+      setMessage(`Scan failed: ${error.message}`);
+      setAudit(null); // Clear the default "PASS" fixture so the user knows it failed
     } finally {
       setLoading(false);
     }
