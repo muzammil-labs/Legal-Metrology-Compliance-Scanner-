@@ -297,6 +297,162 @@ export default function LandingPage({ onEnter }) {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="w-full bg-paper py-16 border-b border-ink/5">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <div className="text-[11px] font-bold text-ink-soft uppercase tracking-widest mb-2">Flexible plans</div>
+            <h2 className="text-3xl font-bold font-serif text-ink">Pricing for every scale</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-seal-cream border border-ink/10 rounded-2xl p-8 flex flex-col items-center text-center">
+              <h3 className="text-xl font-bold font-serif text-ink mb-1">Citizen</h3>
+              <p className="text-sm text-ink-soft mb-6">For consumers & field inspectors.</p>
+              <div className="text-4xl font-black text-ink mb-6">Free</div>
+              <ul className="text-sm text-left w-full space-y-3 mb-8">
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> Unlimited mobile scans</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> Instant compliance verdicts</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> Compounding notice generation</li>
+              </ul>
+              <button className="w-full py-3 bg-paper border border-ink/20 rounded-xl font-bold text-ink hover:bg-ink hover:text-paper transition-all mt-auto" onClick={onEnter}>Start Scanning</button>
+            </div>
+            <div className="bg-ink border border-ink/10 rounded-2xl p-8 flex flex-col items-center text-center shadow-xl transform md:-translate-y-4 relative">
+              <div className="absolute top-0 transform -translate-y-1/2 bg-turmeric text-ink px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Recommended</div>
+              <h3 className="text-xl font-bold font-serif text-paper mb-1">Seller Pro</h3>
+              <p className="text-sm text-paper/70 mb-6">For brands and digital marketplaces.</p>
+              <div className="text-4xl font-black text-paper mb-2">₹2,500<span className="text-lg text-paper/60 font-medium">/mo</span></div>
+              <p className="text-[11px] text-paper/50 mb-6">Per seller account</p>
+              <ul className="text-sm text-left w-full space-y-3 mb-8 text-paper/80">
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-turmeric" /> Everything in Citizen</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-turmeric" /> 5,000 Bulk Audits / month</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-turmeric" /> Verified Trust Badge Generator</li>
+              </ul>
+              <button className="w-full py-3 bg-turmeric rounded-xl font-bold text-ink hover:bg-turmeric-deep hover:text-paper transition-all mt-auto" onClick={onEnter}>Get Started</button>
+            </div>
+            <div className="bg-seal-cream border border-ink/10 rounded-2xl p-8 flex flex-col items-center text-center">
+              <h3 className="text-xl font-bold font-serif text-ink mb-1">Enterprise API</h3>
+              <p className="text-sm text-ink-soft mb-6">For massive e-commerce catalogues.</p>
+              <div className="text-4xl font-black text-ink mb-2">Custom</div>
+              <p className="text-[11px] text-ink-soft mb-6">Volume-based pricing</p>
+              <ul className="text-sm text-left w-full space-y-3 mb-8">
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> Unlimited API requests</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> Dedicated telemetry dashboard</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-sage" /> SLA and 24/7 Support</li>
+              </ul>
+              <button className="w-full py-3 bg-paper border border-ink/20 rounded-xl font-bold text-ink hover:bg-ink hover:text-paper transition-all mt-auto" onClick={onEnter}>Contact Sales</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Rules */}
+      <section id="rules" className="w-full bg-seal-cream py-16 border-b border-ink/5">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold font-serif text-ink mb-2">Legal Metrology PCR 2011 Checklist</h2>
+            <p className="text-sm text-ink-soft">Our engine cross-references the extracted label text against all mandatory declaration rules.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {[
+              "Rule 6(1)(a): Manufacturer details",
+              "Rule 6(1)(b): Generic or common name",
+              "Rule 6(1)(c): Net quantity (standard units)",
+              "Rule 6(1)(d): Month & year of manufacture",
+              "Rule 6(1)(e): MRP inclusive of all taxes",
+              "Rule 6(1)(f): Consumer care contact",
+              "Rule 6(11): Effective date on price",
+              "Section 18: Standard declarations"
+            ].map((rule, idx) => (
+              <div key={idx} className="flex items-center gap-3 bg-paper p-4 border border-ink/10 rounded-xl">
+                <ShieldCheck className="text-sage shrink-0" size={20} />
+                <span className="text-sm font-bold text-ink">{rule}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* API */}
+      <section id="api" className="w-full bg-ink py-16">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="text-[11px] font-bold text-turmeric uppercase tracking-widest mb-2">Developer Friendly</div>
+            <h2 className="text-3xl font-bold font-serif text-paper mb-4">Integrate compliance into your pipeline</h2>
+            <p className="text-sm text-paper/70 leading-relaxed mb-6">
+              Connect to our REST API to automate label screening during supplier onboarding or marketplace listing creation. 
+              Supports high-throughput batch audits with sub-2 second response times.
+            </p>
+            <button className="flex items-center gap-2 text-sm font-bold text-turmeric hover:text-white transition-colors" onClick={onEnter}>
+              Read the API Docs <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="bg-[#0f1123] rounded-xl p-6 border border-white/10 shadow-2xl relative overflow-hidden">
+            <div className="flex gap-1.5 mb-4">
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+            </div>
+            <pre className="text-xs font-mono text-emerald-400 overflow-x-auto">
+{`curl -X POST https://api.pakkalabel.in/v1/scan \\
+  -H "Authorization: Bearer pk_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "image_url": "https://example.com/product.jpg",
+    "region": "IN-DL"
+  }'
+
+// Response
+{
+  "status": "success",
+  "compliance_score": 100,
+  "verdict": "PASS",
+  "infractions": []
+}`}
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="w-full bg-paper py-16 border-b border-ink/5">
+        <div className="w-full max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold font-serif text-ink mb-2">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {[
+              { q: "Do I need to create an account to use the scanner?", a: "No, the consumer scanner is entirely free and doesn't require registration. Field inspectors and sellers need an account to access the dashboard and API." },
+              { q: "Is the OCR accurate on curved bottles?", a: "Yes, we use advanced multimodal AI (Gemini 2.5 Flash) that handles curved surfaces, glare, and poor lighting exceptionally well." },
+              { q: "What happens when I flag a violation?", a: "For officers, the system auto-generates a compounding notice PDF. For consumers, it provides the relevant contact details for the local Legal Metrology department." }
+            ].map((faq, idx) => (
+              <div key={idx} className="bg-seal-cream border border-ink/10 rounded-xl p-5">
+                <h4 className="text-base font-bold text-ink mb-2 flex items-center gap-2"><Search size={16} className="text-turmeric-deep" /> {faq.q}</h4>
+                <p className="text-sm text-ink-soft leading-relaxed pl-6">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="about" className="w-full bg-seal-cream py-16">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <div className="inline-flex items-center justify-center p-3 bg-paper rounded-full border border-ink/10 mb-4">
+            <PakkaSeal size={32} />
+          </div>
+          <h2 className="text-3xl font-bold font-serif text-ink mb-4">About the Project</h2>
+          <p className="text-sm text-ink-soft leading-relaxed max-w-2xl mx-auto mb-6">
+            PakkaLabel India (SIH26034) is developed for the Smart India Hackathon to assist the Ministry of Consumer Affairs. 
+            Our mission is to eliminate non-compliant packaging from the Indian market through AI automation, protecting consumers and empowering officers.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {["React", "Vite", "FastAPI", "Gemini 2.5", "Tailwind CSS", "Recharts"].map(tech => (
+              <span key={tech} className="px-3 py-1 bg-paper border border-ink/10 text-[10px] font-bold text-ink rounded-lg uppercase tracking-wider">{tech}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer CTA */}
       <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-20 flex flex-col items-center text-center gap-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
