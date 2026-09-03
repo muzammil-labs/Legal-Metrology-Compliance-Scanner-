@@ -510,6 +510,9 @@ def serve_spa(full_path: str):
     if full_path.startswith("api/") or full_path == "api":
         raise HTTPException(status_code=404, detail="Not Found")
         
+    if full_path.startswith("assets/") or full_path.endswith((".js", ".css", ".png", ".jpg", ".ico", ".webmanifest", ".json")):
+        raise HTTPException(status_code=404, detail="Static Asset Not Found")
+        
     index_file = os.path.join(frontend_dist, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
