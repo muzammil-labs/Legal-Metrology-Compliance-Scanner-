@@ -160,7 +160,7 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
     if not failed:
         return {"estimated_fine_inr": 0, "applicable_section": "Section 36 (Compliant)", "jan_vishwas_eligible": True, "grace_period_days": 30, "director_liability": False}
     is_deceptive = any(r.rule in [StatutoryRule.RULE_6_11_USP, StatutoryRule.RULE_6_1_C] for r in failed)
-    return {"estimated_fine_inr": 25000 if is_deceptive else 5000, "applicable_section": "Section 36 & Section 49, Legal Metrology Act, 2009", "jan_vishwas_eligible": not is_deceptive, "grace_period_days": 15 if not is_deceptive else 0, "director_liability": len(failed) >= 3}
+    return {"estimated_fine_inr": 100000 if is_deceptive else 25000, "applicable_section": "Section 36 & Section 49, Legal Metrology Act, 2009 (Jan Vishwas Amendment 2023)", "jan_vishwas_eligible": not is_deceptive, "grace_period_days": 15 if not is_deceptive else 0, "director_liability": len(failed) >= 3}
 
 def audit_text(text: str, json_artwork: Optional[dict] = None):
     rules = [audit_manufacturer_details(text), audit_country_of_origin(text), audit_net_quantity(text), audit_mrp_tax(text), audit_consumer_care(text), audit_unit_sale_price(text)]
