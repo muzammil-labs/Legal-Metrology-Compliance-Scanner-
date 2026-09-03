@@ -60,7 +60,8 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
     if (lower.includes("manufacturer") || lower.includes("packer")) {
       return { top: "15%", left: "4%" };
     }
-    if (lower.includes("mrp") || lower.includes("price") || lower.includes("retail")) {
+    // Strict match for MRP to avoid capturing "Unit Sale Price"
+    if (lower.includes("mrp") || lower.includes("maximum retail")) {
       return { top: "15%", right: "4%" };
     }
 
@@ -76,7 +77,6 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
     if (lower.includes("consumer care")) {
       return { top: "55%", left: "4%" };
     }
-    // Must check USP before other things but since we grouped it by row, it's fine.
     if (lower.includes("unit sale") || lower.includes("usp")) {
       return { top: "55%", right: "4%" };
     }
