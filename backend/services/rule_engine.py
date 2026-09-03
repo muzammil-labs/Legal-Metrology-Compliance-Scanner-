@@ -65,4 +65,4 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
 def audit_text(text: str, json_artwork: Optional[dict] = None):
     rules = [audit_manufacturer_details(text), audit_country_of_origin(text), audit_net_quantity(text), audit_mrp_tax(text), audit_consumer_care(text), audit_unit_sale_price(text)]
     # Match the 5-element tuple expected in memory: (rules, usp, extracted_fields, penalty, fine_estimation)
-    return rules, None, None, None, None
+    return rules

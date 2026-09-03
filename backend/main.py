@@ -108,7 +108,7 @@ async def scan(
          raise HTTPException(status_code=400, detail="Invalid image format")
 
     text, _ = extract_label_with_gemini(content)
-    rules, _, _, _, _ = audit_text(text)
+    rules = audit_text(text)
     fssai_info = audit_fssai_declarations(text)
 
     overall_status = RuleStatus.PASS
@@ -168,7 +168,7 @@ async def batch_scan(
             raise HTTPException(status_code=400, detail=f"Invalid file format for {file.filename}")
 
         text, _ = extract_label_with_gemini(content)
-        rules, _, _, _, _ = audit_text(text)
+        rules = audit_text(text)
         fssai_info = audit_fssai_declarations(text)
 
         overall_status = RuleStatus.PASS
@@ -214,7 +214,7 @@ async def pre_audit_endpoint(
     payload: PreAuditRequest,
     api_key: str = Depends(validate_b2b_api_key)
 ):
-    rules, _, _, _, _ = audit_text(payload.artwork_text)
+    rules = audit_text(payload.artwork_text)
     fssai_info = audit_fssai_declarations(payload.artwork_text, [payload.brand_name] if payload.brand_name else None)
 
     overall_status = RuleStatus.PASS
@@ -289,7 +289,7 @@ def export_inspection_notice(
     status_str = rec.overall_status if rec and rec.overall_status else "FAIL"
     ocr_text = rec.extracted_text if rec and rec.extracted_text else ""
 
-    rules, _, _, _, _ = audit_text(ocr_text or "Mfg by Brand Ltd. Net Qty 100g")
+    rules = audit_text(ocr_text or "Mfg by Brand Ltd. Net Qty 100g")
     violations = [r for r in rules if r.status != RuleStatus.PASS]
 
     if notice_type == "IMPROVEMENT":

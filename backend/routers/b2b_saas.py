@@ -12,7 +12,7 @@ async def pre_audit_endpoint(
     payload: PreAuditRequest,
     api_key: str = Depends(validate_b2b_api_key)
 ):
-    rules, _, _, _, _ = audit_text(payload.artwork_text)
+    rules = audit_text(payload.artwork_text)
     overall_status = RuleStatus.PASS
     if any(r.status == RuleStatus.FAIL for r in rules):
         overall_status = RuleStatus.FAIL
