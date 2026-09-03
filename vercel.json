@@ -1,15 +1,19 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
+  "framework": "vite",
   "functions": {
     "api/index.py": {
-      "maxDuration": 60,
-      "includeFiles": "frontend/dist/**"
+      "maxDuration": 60
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/health",
       "destination": "/api/index.py"
     }
   ]
