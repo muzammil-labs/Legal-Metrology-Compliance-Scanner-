@@ -76,13 +76,13 @@ def test_audit_text_comprehensive():
     sample_text = (
         "Mfg by ABC Ltd, PIN: 500001. Country of Origin: India. "
         "Net Qty: 500 g. MRP Rs. 100 (incl. of all taxes). "
-        "Consumer Care: care@abc.com. USP Rs. 0.20 / g"
+        "Consumer Care: care@abc.com. USP Rs. 0.20 / g. Mfg: 10/2025"
     )
     results = audit_text(sample_text)
     if isinstance(results, tuple) and len(results) == 5:
         results = results[0]
     assert isinstance(results, list)
-    assert len(results) == 6
+    assert len(results) == 7
     assert all(isinstance(r, RuleResult) for r in results)
     assert all(r.status == RuleStatus.PASS for r in results)
 
@@ -188,4 +188,29 @@ def test_fssai_not_food_product():
     non_food_text = "Shampoo, Paraben free. Made in India. MRP 100."
     res = audit_fssai_declarations(non_food_text)
     assert res.is_food_product is False
+    assert res.status == RuleStatus.PASS
+
+# --- JSON Fallback Tests ---
+def test_rule_manufacturer_json_fallback():
+    res = audit_manufacturer_details('', {'manufacturer_name': 'ABC Corp', 'manufacturer_pincode': '500001'})
+    assert res.status == RuleStatus.PASS
+
+def test_rule_country_of_origin_json_fallback():
+    res = audit_country_of_origin('', {'country_of_origin': 'India'})
+    assert res.status == RuleStatus.PASS
+
+def test_rule_net_quantity_json_fallback():
+    res = audit_net_quantity('', {'net_quantity_value': '500', 'net_quantity_unit': 'g'})
+    assert res.status == RuleStatus.PASS
+
+def test_rule_mrp_tax_json_fallback():
+    res = audit_mrp_tax('', {'mrp_includes_taxes_declared': 'yes'})
+    assert res.status == RuleStatus.PASS
+
+def test_rule_consumer_care_json_fallback():
+    res = audit_consumer_care('', {'consumer_care_email': 'care@brand.com'})
+    assert res.status == RuleStatus.PASS
+
+def test_rule_unit_sale_price_json_fallback():
+    res = audit_unit_sale_price('', {'unit_sale_price': 'Rs. 0.50 per g'})
     assert res.status == RuleStatus.PASS
