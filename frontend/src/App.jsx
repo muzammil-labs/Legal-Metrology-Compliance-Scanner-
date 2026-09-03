@@ -41,6 +41,7 @@ export default function App() {
   async function handleRunScan(customOcrText = "", isDeepScan = false) {
     setLoading(true);
     setScanError(null);
+    setAudit(null); // Clear stale results while scanning
     setMessage("Analyzing...");
     try {
       const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText, "New Delhi", isDeepScan);
@@ -93,7 +94,7 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <ComplianceSummaryCard audit={audit} onOpenNoticeModal={setNoticeModalType} />
+              <ComplianceSummaryCard audit={audit} onOpenNoticeModal={setNoticeModalType} loading={loading} />
             </div>
           )}
           {activeTab === "officer" && <InspectorAnalyticsDashboard />}

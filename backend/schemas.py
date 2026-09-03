@@ -26,6 +26,7 @@ class RuleResult(BaseModel):
     reason: str
     statutory_clause: Optional[str] = None
     remedy: Optional[str] = None
+    evidence: Optional[List[str]] = None
 
 class DigitalDeclarationItem(BaseModel):
     declaration_name: str

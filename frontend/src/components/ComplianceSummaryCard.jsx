@@ -2,9 +2,17 @@ import React, { useState, useEffect } from "react";
 import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function ComplianceSummaryCard({ audit, onOpenNoticeModal }) {
-  if (!audit) return null;
-
+export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loading }) {
+  if (!audit) {
+    return loading ? (
+      <div className="flex flex-col gap-4 animate-pulse">
+        <div className="h-32 bg-ink/5 rounded-2xl" />
+        <div className="h-16 bg-ink/5 rounded-xl" />
+        <div className="h-16 bg-ink/5 rounded-xl" />
+        <div className="h-16 bg-ink/5 rounded-xl" />
+      </div>
+    ) : null;
+  }
   const { overall_status, rules = [], fssai_verification, penalty, barcode_health } = audit;
   const isOverallPass = overall_status === "PASS";
   
