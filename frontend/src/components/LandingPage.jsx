@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck, ShieldAlert, ArrowRight, Zap, Scale, Users, Building2,
@@ -160,9 +160,11 @@ export default function LandingPage({ onEnter }) {
             <div className="text-[10px] font-bold tracking-widest text-turmeric-deep uppercase">India &middot; SIH26034</div>
           </div>
         </div>
-        <nav className="hidden md:flex items-center gap-1 bg-seal-cream border border-ink/10 px-2 py-1.5 rounded-xl">
-          {["About", "FAQ", "API"].map(link => (
-            <a key={link} href="#" className="px-4 py-2 text-sm font-bold text-ink-soft hover:text-ink hover:bg-paper rounded-lg transition-all">{link}</a>
+        <nav className="hidden lg:flex items-center gap-1 bg-seal-cream border border-ink/10 px-2 py-1.5 rounded-xl">
+          {["Consumer", "Seller", "Officer", "Pricing", "Rules", "About", "FAQ", "API"].map(link => (
+            <a key={link} href={`#${link.toLowerCase()}`} className="px-3 py-2 text-sm font-bold text-ink-soft hover:text-ink hover:bg-paper rounded-lg transition-all">
+              {link}
+            </a>
           ))}
         </nav>
         <button onClick={onEnter} className="flex items-center gap-2 bg-ink text-paper px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-ink-soft transition-all shadow-sm">

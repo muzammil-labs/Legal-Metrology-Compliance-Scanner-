@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Store, Upload, CheckCircle2, AlertTriangle, QrCode, ShieldCheck, Download, Sparkles, Box, ListChecks } from "lucide-react";
 import { executeBatchScan } from "../services/api";
 import BatchAuditModal from "./BatchAuditModal";

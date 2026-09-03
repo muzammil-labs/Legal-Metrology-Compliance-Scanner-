@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Key, Code, Activity, Copy, Check, Zap, Shield, Database, Terminal, FileJson, Server, ShieldAlert } from 'lucide-react';
 import { motion } from "framer-motion";
 

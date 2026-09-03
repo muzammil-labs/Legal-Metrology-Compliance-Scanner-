@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [activeTab, setActiveTab] = useState("consumer");
+  const [role, setRole] = useState("consumer");
   const [demoMode, setDemoMode] = useState(null);
   const [file, setFile] = useState(null);
   const [audit, setAudit] = useState(() => loadPrecachedFixture("control_pass"));
@@ -35,10 +36,10 @@ export default function App() {
     }
   }
 
-  async function handleRunScan(customOcrText = "") {
+  async function handleRunScan(customOcrText = "", isDeepScan = false) {
     setLoading(true);
     try {
-      const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText, "New Delhi", false);
+      const result = await executeScanWithCircuitBreaker(file, demoMode, customOcrText, "New Delhi", isDeepScan);
       setAudit(result);
     } finally {
       setLoading(false);
@@ -51,7 +52,7 @@ export default function App() {
         <LandingPage key="landing" onEnter={() => setShowLanding(false)} />
       ) : (
         <motion.main key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full min-h-screen px-4 sm:px-6 md:px-8 max-w-6xl mx-auto flex flex-col items-center">
-          <Navbar activeTab={activeTab} setActiveTab={setActiveTab} demoMode={demoMode} setDemoMode={handleChooseMode} />
+          <Navbar activeTab={activeTab} setActiveTab={setActiveTab} demoMode={demoMode} setDemoMode={handleChooseMode} role={role} setRole={setRole} onGoHome={() => setShowLanding(true)} />
 
 
       <AnimatePresence mode="wait">
