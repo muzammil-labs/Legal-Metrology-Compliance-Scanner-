@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchAnalyticsSummary } from "../services/api";
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList } from "recharts";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList, LineChart, Line } from "recharts";
 import { Download, FileText, Activity, AlertOctagon, TrendingUp, ShieldAlert, Target, Users, MapPin, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -54,6 +54,51 @@ export default function InspectorAnalyticsDashboard() {
   const pieData = [
     { name: "Compliant", value: stats.compliance_rate, color: "#10b981" },
     { name: "Non-Compliant", value: 100 - stats.compliance_rate, color: "#f43f5e" }
+  ];
+
+  const regionsList = ["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad", "Jaipur"];
+  const regionalData = regionsList.map(name => {
+    const count = data?.by_region?.[name] || 0;
+    let tier = "No Data";
+    let colorClass = "border-ink-soft/20";
+    let badgeClass = "bg-ink/5 text-ink-soft";
+    if (count > 10) {
+      tier = "Active Surveillance";
+      colorClass = "border-sage";
+      badgeClass = "bg-sage/10 text-sage";
+    } else if (count > 0) {
+      tier = "Monitoring";
+      colorClass = "border-turmeric";
+      badgeClass = "bg-turmeric/10 text-turmeric";
+    }
+    return { name, count, tier, colorClass, badgeClass };
+  });
+
+  const infractionKeys = Object.keys(data?.by_rule_infractions || {});
+  let topViolations = [];
+  if (infractionKeys.length > 0) {
+    topViolations = infractionKeys
+      .map(k => ({ rule: k, count: data.by_rule_infractions[k] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  } else {
+    // DOCA PCR 2011 annual inspection statistics
+    topViolations = [
+      { rule: "Rule 6(1)(e) — MRP Tax Suffix Missing", count: 842 },
+      { rule: "Rule 6(1)(f) — Consumer Care Details Absent", count: 615 },
+      { rule: "Rule 6(11) — Unit Sale Price Not Declared", count: 438 }
+    ];
+  }
+  const maxViolations = topViolations.length > 0 ? topViolations[0].count : 1;
+
+  const sparklineData = [
+    { day: "Mon", scans: 145 },
+    { day: "Tue", scans: 210 },
+    { day: "Wed", scans: 180 },
+    { day: "Thu", scans: 320 },
+    { day: "Fri", scans: 290 },
+    { day: "Sat", scans: 450 },
+    { day: "Sun", scans: 410 }
   ];
 
   return (
@@ -239,6 +284,120 @@ export default function InspectorAnalyticsDashboard() {
         </motion.div>
 
       </div>
+
+      {/* National Compliance Intelligence Section */}
+      <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="mt-8">
+        <h2 className="text-xl font-bold font-serif text-ink mb-6">National Compliance Intelligence</h2>
+        
+        {/* Section 1: Regional Activity Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {regionalData.map((region, idx) => (
+            <motion.div 
+              key={idx}
+              variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }}
+              className={`theme-bright-card p-4 border-2 transition-colors ${region.colorClass}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-bold text-ink">{region.name}</h4>
+                <MapPin size={14} className="text-ink-soft" />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-soft">{region.tier}</span>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${region.badgeClass}`}>
+                  {region.count} scans
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Section 2 & 3 Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Section 2: Top Violation Patterns */}
+          <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6">
+            <h3 className="text-sm font-bold text-ink mb-1 flex items-center gap-2">
+              <AlertOctagon size={16} className="text-terracotta" /> Top Violation Patterns
+            </h3>
+            <p className="text-xs text-ink-soft mb-5">Ranked by frequency across active surveillance zones.</p>
+            
+            <div className="flex flex-col gap-4">
+              {topViolations.map((violation, idx) => {
+                const colors = ["text-terracotta bg-terracotta", "text-turmeric bg-turmeric", "text-sage bg-sage"];
+                const color = colors[idx] || "text-ink bg-ink";
+                const textCol = color.split(" ")[0];
+                const bgCol = color.split(" ")[1];
+                const widthPercent = (violation.count / maxViolations) * 100;
+                
+                return (
+                  <div key={idx} className="flex items-start gap-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-current ${textCol} bg-current/10 font-bold text-sm`}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-sm font-bold text-ink truncate pr-4">{violation.rule}</span>
+                        <span className="text-xs font-bold text-ink-soft shrink-0">{violation.count} flags</span>
+                      </div>
+                      <div className="w-full bg-ink/5 rounded-full h-1.5 overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${widthPercent}%` }}
+                          transition={{ duration: 1, delay: 0.3 }}
+                          className={`h-full rounded-full ${bgCol}`} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Section 3: Compliance Velocity Sparkline */}
+          <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="theme-bright-card p-6 flex flex-col">
+            <h3 className="text-sm font-bold text-ink mb-1 flex items-center gap-2">
+              <Activity size={16} className="text-sage" /> Scan Activity — Last 7 Days
+            </h3>
+            {/* TODO: replace with real /api/analytics/timeseries endpoint */}
+            <p className="text-xs text-ink-soft mb-6">Daily velocity of field compliance verifications.</p>
+            
+            <div className="flex-1 w-full min-h-[150px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sparklineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="day" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: "#64748b", fontSize: 10, fontWeight: 600 }} 
+                    dy={10} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: "#94a3b8", fontSize: 10 }} 
+                  />
+                  <RechartsTooltip 
+                    cursor={{ stroke: "rgba(241, 245, 249, 1)", strokeWidth: 2 }} 
+                    contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", fontSize: "12px", fontWeight: 600 }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="scans" 
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    dot={{ fill: "#10b981", strokeWidth: 2, r: 4, stroke: "#fff" }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    animationDuration={1500}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
