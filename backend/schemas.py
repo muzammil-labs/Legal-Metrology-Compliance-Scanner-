@@ -19,6 +19,7 @@ class StatutoryRule(str, Enum):
     RULE_5 = "Rule 5 - Numeral & Letter Height"
     RULE_5_PDP = "Rule 5 - PDP Area Font Size"
     BILINGUAL = "Bilingual Consistency"
+    FSSAI = "FSSAI Safety & Standards Declaration"
 
 class RuleResult(BaseModel):
     rule: StatutoryRule
