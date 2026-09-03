@@ -54,8 +54,8 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             <img src={URL.createObjectURL(file)} alt="Captured label" className="absolute inset-0 w-full h-full object-contain p-2" />
             {loading && (
               <div className="absolute inset-0 pointer-events-none">
-                <div className="w-full h-1 bg-turmeric shadow-[0_0_15px_rgba(232,163,61,0.8)] animate-scanline" />
-                <div className="absolute inset-0 bg-turmeric/10 animate-pulse" />
+                <div className="w-full h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.9)] animate-[scanline_1.2s_linear_infinite]" />
+                <div className="absolute inset-0 bg-cyan-400/10 animate-pulse" />
               </div>
             )}
           </>
