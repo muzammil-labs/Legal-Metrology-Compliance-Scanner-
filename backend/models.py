@@ -16,6 +16,7 @@ class InspectionRecord(Base):
     overall_status = Column(String(20), index=True)
     extracted_text = Column(Text, default="")
     timestamp = Column(String(50))
+    violation_count = Column(Integer, default=0)
 
     # We maintain aliases for compatibility with main.py vs old code
     @property
