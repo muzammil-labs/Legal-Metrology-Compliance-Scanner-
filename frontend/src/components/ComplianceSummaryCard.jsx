@@ -99,8 +99,10 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
               <p className="text-xs font-medium text-ink-soft mb-4">Sections 36 & 49, Legal Metrology Act, 2009</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-paper border border-ink/10 p-3.5 rounded-xl">
-                  <span className="text-[9px] font-bold text-ink-soft uppercase tracking-widest block mb-1">Monetary Exposure</span>
-                  <strong className="text-lg font-black text-terracotta">{penalty.estimated_fine_inr || "₹25,000"}</strong>
+                  <span className="text-[9px] font-bold text-ink-soft uppercase tracking-widest block mb-1">Estimated Fine</span>
+                  <strong className="text-lg font-black text-terracotta">
+                    {penalty.estimated_fine_inr ? `₹${penalty.estimated_fine_inr.toLocaleString('en-IN')}` : "₹25,000"}
+                  </strong>
                 </div>
                 <div className="bg-paper border border-ink/10 p-3.5 rounded-xl">
                   <span className="text-[9px] font-bold text-ink-soft uppercase tracking-widest block mb-1">Jan Vishwas 2026</span>
