@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ComplianceHeatmap from "./ComplianceHeatmap";
 
-export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loading }) {
+export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loading, imageFile }) {
   if (!audit) {
     return loading ? (
       <div className="flex flex-col gap-4 animate-pulse">
@@ -34,6 +35,9 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 w-full max-w-full pb-16">
       
+      {/* Visual Heatmap */}
+      <ComplianceHeatmap imageFile={imageFile} rules={rules} />
+
       {/* Hero Status Banner & Score */}
       <motion.div layout className={`p-6 rounded-2xl shadow-sm ${isOverallPass ? "bg-sage/10 border border-sage/20" : "bg-terracotta/10 border border-terracotta/20"}`}>
         <div className="flex items-center gap-4">

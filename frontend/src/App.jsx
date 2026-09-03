@@ -94,7 +94,7 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <ComplianceSummaryCard audit={audit} onOpenNoticeModal={setNoticeModalType} loading={loading} />
+              <ComplianceSummaryCard audit={audit} onOpenNoticeModal={setNoticeModalType} loading={loading} imageFile={file} />
             </div>
           )}
           {activeTab === "officer" && <InspectorAnalyticsDashboard />}
