@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react";
-import { Upload, Camera, FileScan, Eye, Package, ShoppingBag, X, XCircle } from "lucide-react";
+import React, { useState, useRef, useImperativeHandle } from "react";
+import { Upload, Camera, FileScan, Eye, Package, ShoppingBag, X, XCircle, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function CameraScanner({ file, setFile, demoMode, loading, message, onScan, audit }) {
+export default React.forwardRef(function CameraScanner({ file, setFile, demoMode, loading, message, onScan, audit }, ref) {
   const [showOcrInput, setShowOcrInput] = useState(false);
   const [customOcr, setCustomOcr] = useState("");
   const [scanType, setScanType] = useState("physical");
@@ -10,10 +10,20 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
   const [inputMode, setInputMode] = useState("upload"); // "upload" | "camera"
   const [isMobile, setIsMobile] = useState(true);
 
+  // Multi-image state
+  const [scannedSides, setScannedSides] = useState([]);
+  const SIDE_LABELS = ['Front Panel', 'Back Panel', 'Side Panel', 'Bottom Panel'];
+  const [scanProgress, setScanProgress] = useState({ current: 1, total: 1 });
+
+  useImperativeHandle(ref, () => ({
+    getScannedSides: () => scannedSides,
+  }));
+
   // Guided Rescan State
   const [scanPhase, setScanPhase] = useState("idle"); // "idle" | "complete" | "guiding"
   const [missingFields, setMissingFields] = useState([]);
   const prevFileRef = useRef(null);
+  const hasScannedOnceRef = useRef(false);
 
   React.useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
@@ -21,6 +31,7 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
   const uploadInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const rescanInputRef = useRef(null);
 
   const getMissingFields = (currentAudit) => {
     if (!currentAudit || !currentAudit.rules) return [];
@@ -56,46 +67,95 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
   function handleFileChange(e) {
     const f = e.target.files[0];
-    if (f) setFile(f);
+    if (f) {
+      if (scannedSides.length === 0) {
+        setScannedSides([{ id: Date.now(), label: SIDE_LABELS[0], file: f, previewUrl: URL.createObjectURL(f), status: 'pending' }]);
+      } else {
+        const nextIdx = scannedSides.length;
+        setScannedSides(prev => [...prev, { id: Date.now(), label: SIDE_LABELS[nextIdx] || `Side ${nextIdx + 1}`, file: f, previewUrl: URL.createObjectURL(f), status: 'pending' }]);
+      }
+      setFile(f);
+    }
     // reset so the same file can be picked again
     e.target.value = "";
   }
 
   function clearFile() {
     setFile(null);
+    // If we're in single file mode (backward compat)
+    if (scannedSides.length === 0) return;
+  }
+
+  function clearAll() {
+    scannedSides.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setScannedSides([]);
+    setFile(null);
+    setScanPhase("idle");
+  }
+
+  function removeSide(index) {
+    const side = scannedSides[index];
+    if (side) URL.revokeObjectURL(side.previewUrl);
+    setScannedSides(prev => prev.filter((_, i) => i !== index));
+    if (scannedSides.length === 1) {
+      setFile(null);
+      setScanPhase("idle");
+    }
   }
 
   function switchToMode(mode) {
     setInputMode(mode);
-    clearFile();
+    clearAll();
   }
 
   React.useEffect(() => {
     if (audit) {
+      hasScannedOnceRef.current = true;
       const missing = getMissingFields(audit);
       setMissingFields(missing);
       if (missing.length > 0) {
         setScanPhase("complete");
       }
+      // mark all as scanned
+      setScannedSides(prev => prev.map(s => ({ ...s, status: 'scanned' })));
     } else {
       setScanPhase("idle");
       setMissingFields([]);
+      setScannedSides(prev => prev.map(s => ({ ...s, status: 'pending' })));
     }
   }, [audit]);
 
   React.useEffect(() => {
     if (file && prevFileRef.current !== file) {
       prevFileRef.current = file;
-      if (scanPhase === "complete") {
+      // Only auto-rescan if a prior scan has already completed (not on first upload)
+      if (hasScannedOnceRef.current && scanPhase === "complete") {
         onScan("", false);
       }
     } else if (!file) {
       prevFileRef.current = null;
     }
-  }, [file, scanPhase, onScan]);
+  }, [file, scanPhase]); // onScan intentionally excluded — it is stable and its inclusion causes re-render loops
+
+  // Mock progress for multi-scan
+  React.useEffect(() => {
+    let interval;
+    if (loading && scannedSides.length > 1) {
+      setScanProgress({ current: 1, total: scannedSides.length });
+      interval = setInterval(() => {
+        setScanProgress(prev => {
+          if (prev.current < prev.total) return { ...prev, current: prev.current + 1 };
+          return prev;
+        });
+      }, 2500);
+    } else {
+      setScanProgress({ current: 1, total: 1 });
+    }
+    return () => clearInterval(interval);
+  }, [loading, scannedSides.length]);
 
   const previewUrl = file ? URL.createObjectURL(file) : null;
-  const canScan = file || demoMode || customOcr;
+  const canScan = scanType === "physical" && (scannedSides.length > 0 || file || demoMode || customOcr);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -110,9 +170,15 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             <FileScan className="text-turmeric shrink-0" size={20} />
             Verification Engine
           </h2>
-          <span className="text-[10px] font-bold tracking-widest text-sage bg-sage/10 border border-sage/20 px-2 py-1 rounded-md uppercase">
-            SYSTEM ONLINE
-          </span>
+          {scannedSides.length > 1 ? (
+            <span className="text-[10px] font-bold tracking-widest text-turmeric bg-turmeric/10 border border-turmeric/20 px-2 py-1 rounded-md uppercase">
+              MULTI-PANEL MODE — {scannedSides.length} sides loaded
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold tracking-widest text-sage bg-sage/10 border border-sage/20 px-2 py-1 rounded-md uppercase">
+              SYSTEM ONLINE
+            </span>
+          )}
         </div>
 
         {/* ── Toggle 1: Physical / E-Commerce ── */}
@@ -170,18 +236,13 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
           {/* E-commerce URL input */}
           {scanType === "ecommerce" && (
-            <div className="w-full max-w-md p-6 flex flex-col gap-4">
-              <h3 className="text-lg font-bold text-ink mb-1 text-center">Analyze E-Commerce Listing</h3>
-              <p className="text-sm text-ink-soft text-center mb-2">
-                Paste a product URL from Flipkart, Amazon, or JioMart to run a comprehensive metadata audit.
-              </p>
-              <input
-                type="url"
-                placeholder="https://amazon.in/dp/B08XXYZ..."
-                className="w-full bg-white border border-slate-200 text-slate-900 text-sm p-3 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
-                value={customOcr}
-                onChange={(e) => setCustomOcr(e.target.value)}
-              />
+            <div className="w-full max-w-md p-6 flex flex-col items-center gap-4 text-center">
+              <div className="w-14 h-14 rounded-full bg-turmeric/10 border border-turmeric/20 flex items-center justify-center">
+                <ShoppingBag size={26} className="text-turmeric" />
+              </div>
+              <h3 className="text-base font-bold font-serif text-ink">E-Commerce Audit</h3>
+              <p className="text-sm text-ink-soft leading-relaxed max-w-xs">Screenshot the product listing and use Physical Package mode to audit compliance now. URL-based auditing coming soon.</p>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-turmeric bg-turmeric/10 px-3 py-1 rounded-full border border-turmeric/20">Coming Soon</span>
             </div>
           )}
 
@@ -193,10 +254,47 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             </div>
           )}
 
-          {/* Image preview with clear button */}
-          {scanType === "physical" && !demoMode && file && (
+          {/* Multi-Panel UI */}
+          {scanType === "physical" && !demoMode && scannedSides.length > 0 && (
+            <div className="w-full h-full flex flex-col justify-center gap-6 p-4">
+              <div className="flex flex-row justify-center gap-4 overflow-x-auto pb-2">
+                {scannedSides.map((side, idx) => (
+                  <div key={side.id} className="relative flex flex-col items-center gap-2 shrink-0">
+                    <div className="relative w-24 h-24">
+                      <img src={side.previewUrl} className="w-24 h-24 object-cover rounded-xl border border-ink/10 shadow-sm bg-white" alt={side.label} />
+                      <button onClick={() => removeSide(idx)} className="absolute -top-2 -right-2 bg-ink/70 hover:bg-ink text-paper rounded-full p-1 shadow-md transition-colors">
+                        <X size={14} />
+                      </button>
+                      {side.status === 'scanned' && (
+                        <div className="absolute -bottom-2 -right-2 bg-sage text-paper rounded-full p-1 shadow-md">
+                          <Check size={14} />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold text-ink-soft uppercase tracking-wider">{side.label}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {scannedSides.length < 4 && (
+                <div className="flex items-center justify-center">
+                  <button 
+                    onClick={() => {
+                      if (inputMode === "camera") cameraInputRef.current?.click();
+                      else uploadInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 py-2 px-4 rounded-full border border-ink/20 text-ink hover:bg-ink/5 transition-colors text-xs font-bold uppercase tracking-widest shadow-sm bg-white"
+                  >
+                    <Camera size={16} /> Add Another Side
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Image preview with clear button (backward compatibility / single mode fallback) */}
+          {scanType === "physical" && !demoMode && file && scannedSides.length === 0 && (
             <div className="relative w-full h-full flex items-center justify-center p-2">
-              {/* × clear button */}
               <button
                 onClick={clearFile}
                 className="absolute top-2 right-2 z-10 w-7 h-7 bg-ink/70 hover:bg-ink text-paper rounded-full flex items-center justify-center transition-colors"
@@ -210,18 +308,19 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
                   alt="Captured label"
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
-                {loading && (
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
-                    <div className="absolute left-0 w-full h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,1)] animate-[scanline_1.5s_ease-in-out_infinite]" />
-                    <div className="absolute inset-0 bg-cyan-400/10 animate-pulse" />
-                  </div>
-                )}
               </div>
+            </div>
+          )}
+          
+          {loading && (scanType === "physical" && !demoMode) && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg z-20">
+              <div className="absolute left-0 w-full h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,1)] animate-[scanline_1.5s_ease-in-out_infinite]" />
+              <div className="absolute inset-0 bg-cyan-400/10 animate-pulse" />
             </div>
           )}
 
           {/* Upload trigger — no file yet, upload mode */}
-          {scanType === "physical" && !demoMode && !file && inputMode === "upload" && (
+          {scanType === "physical" && !demoMode && !file && scannedSides.length === 0 && inputMode === "upload" && (
             <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
               <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
                 <Upload size={28} />
@@ -230,10 +329,6 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
                 Upload Product Label
               </span>
               <span className="text-xs text-ink-soft mt-1">JPG, PNG, WEBP — up to 10 MB</span>
-              {/*
-                NO capture attribute here — opens gallery / file picker on mobile.
-                This is intentional. Do not add capture="environment".
-              */}
               <input
                 ref={uploadInputRef}
                 type="file"
@@ -245,7 +340,7 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
           )}
 
           {/* Camera trigger — no file yet, camera mode */}
-          {scanType === "physical" && !demoMode && !file && inputMode === "camera" && (
+          {scanType === "physical" && !demoMode && !file && scannedSides.length === 0 && inputMode === "camera" && (
             <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
               <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
                 <Camera size={28} />
@@ -254,10 +349,6 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
                 Tap to Open Camera
               </span>
               <span className="text-xs text-ink-soft mt-1">Points at rear camera for label scanning</span>
-              {/*
-                capture="environment" is what forces the OS camera app on mobile.
-                MUST stay on this input. Do not remove it.
-              */}
               <input
                 ref={cameraInputRef}
                 type="file"
@@ -272,6 +363,13 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
 
         {/* ── Bottom controls ── */}
         <div className="flex flex-col gap-2">
+          {scannedSides.length > 0 && !loading && (
+            <div className="flex items-center justify-end mb-2">
+              <button onClick={clearAll} className="text-xs font-bold text-terracotta hover:text-red-700 uppercase tracking-widest flex items-center gap-1">
+                <X size={12} /> Clear All Sides
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-end mb-2 mr-1">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -291,7 +389,9 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             className="w-full min-h-[48px] bg-ink hover:bg-ink-soft disabled:opacity-60 disabled:cursor-not-allowed text-paper font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
           >
             <FileScan size={18} className="text-turmeric" />
-            {loading ? "Analyzing..." : "Execute Compliance Scan"}
+            {loading 
+              ? (scannedSides.length > 1 ? `Analyzing side ${scanProgress.current} of ${scanProgress.total}...` : "Analyzing...") 
+              : "Execute Compliance Scan"}
           </motion.button>
 
           {!canScan && (
@@ -328,6 +428,14 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             </motion.div>
           )}
         </AnimatePresence>
+        {/* Always-present hidden input for Guided Rescan — never conditionally rendered */}
+        <input
+          ref={rescanInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
       </motion.div>
 
       {/* Guided Rescan Panel */}
@@ -358,13 +466,7 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
             <div className="flex flex-col gap-2 mt-2">
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (inputMode === "camera" && cameraInputRef.current) {
-                    cameraInputRef.current.click();
-                  } else if (uploadInputRef.current) {
-                    uploadInputRef.current.click();
-                  }
-                }}
+                onClick={() => { if (rescanInputRef.current) rescanInputRef.current.click(); }}
                 className="w-full py-3 bg-terracotta text-paper font-bold text-sm rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-terracotta/90 transition-colors"
               >
                 <Camera size={18} /> Scan Another Side
@@ -382,4 +484,4 @@ export default function CameraScanner({ file, setFile, demoMode, loading, messag
       </AnimatePresence>
     </div>
   );
-}
+});

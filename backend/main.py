@@ -170,8 +170,9 @@ async def gemini_health_check():
 @app.post("/api/scan", response_model=AuditResponse)
 async def scan(
     file: UploadFile = File(...),
+    ocr_text: str = Form(default=""),
+    region: str = Form(default="New Delhi"),
     db: Session = Depends(get_db),
-    current_role: UserRole = Depends(require_role([UserRole.FIELD_INSPECTOR, UserRole.ADMIN, UserRole.DISTRICT_MAGISTRATE, UserRole.CENTRAL_ADMIN]))
 ):
     await file.seek(0)
     content = await file.read(MAX_FILE_SIZE + 1)
@@ -204,12 +205,15 @@ async def scan(
             
         text, structured_fields, ocr_confidence = extract_label_with_gemini(content, mime_type=resolved_mime)
 
+    if ocr_text and ocr_text.strip():
+        text = text + "\n" + ocr_text.strip()
+
     # Check for special markers returned by Gemini
     if "NOT_A_PACKAGED_PRODUCT" in text:
         raise HTTPException(status_code=422, detail="This image does not appear to show a packaged consumer product. Please scan a product label.")
     if "IMAGE_QUALITY_POOR" in text:
         raise HTTPException(status_code=422, detail="Image quality is too poor (blurry, glare, or out of focus). Please retake the photo in better lighting.")
-    rules = audit_text(text, json_artwork=structured_fields)
+    rules, deception_analysis = audit_text(text, json_artwork=structured_fields)
     fssai_info = audit_fssai_declarations(text)
 
     overall_status = RuleStatus.PASS
@@ -238,6 +242,7 @@ async def scan(
     inspection = InspectionRecord(
         sha256=sha256_hash,
         source_filename=file.filename or "unknown.jpg",
+        region=region,
         overall_status=overall_status.value,
         ocr_text=text,
         inspected_at=datetime.utcnow(),
@@ -261,7 +266,8 @@ async def scan(
         timestamp=datetime.utcnow().isoformat(),
         ocr_text=text,
         penalty=calculate_compounding_fine(rules),
-        fssai_verification=fssai_info
+        fssai_verification=fssai_info,
+        deception_analysis=deception_analysis
     )
 
 @app.post("/api/scan/batch", response_model=BatchAuditResponse)
@@ -295,7 +301,7 @@ async def batch_scan(
             text, structured_fields, ocr_confidence = DEMO_OCR_TEXT, DEMO_STRUCTURED, 1.0
         else:
             text, structured_fields, ocr_confidence = extract_label_with_gemini(content)
-        rules = audit_text(text, json_artwork=structured_fields)
+        rules, deception_analysis = audit_text(text, json_artwork=structured_fields)
         fssai_info = audit_fssai_declarations(text)
 
         overall_status = RuleStatus.PASS
@@ -341,7 +347,7 @@ async def pre_audit_endpoint(
     payload: PreAuditRequest,
     api_key: str = Depends(validate_b2b_api_key)
 ):
-    rules = audit_text(payload.artwork_text)
+    rules, deception_analysis = audit_text(payload.artwork_text)
     fssai_info = audit_fssai_declarations(payload.artwork_text, [payload.brand_name] if payload.brand_name else None)
 
     overall_status = RuleStatus.PASS
@@ -419,7 +425,7 @@ def export_inspection_notice(
     status_str = rec.overall_status if rec and rec.overall_status else "FAIL"
     ocr_text = rec.extracted_text if rec and rec.extracted_text else ""
 
-    rules = audit_text(ocr_text or "Mfg by Brand Ltd. Net Qty 100g")
+    rules, deception_analysis = audit_text(ocr_text or "Mfg by Brand Ltd. Net Qty 100g")
     violations = [r for r in rules if r.status != RuleStatus.PASS]
 
     if notice_type == "IMPROVEMENT":

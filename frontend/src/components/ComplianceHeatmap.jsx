@@ -62,7 +62,7 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
     }
     // Strict match for MRP to avoid capturing "Unit Sale Price"
     if (lower.includes("mrp") || lower.includes("maximum retail")) {
-      return { top: "15%", right: "4%" };
+      return { top: "15%", left: "55%" };
     }
 
     // ROW 2: 35%
@@ -70,7 +70,7 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
       return { top: "35%", left: "4%" };
     }
     if (lower.includes("country") || lower.includes("origin")) {
-      return { top: "35%", right: "4%" };
+      return { top: "35%", left: "55%" };
     }
 
     // ROW 3: 55%
@@ -78,7 +78,7 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
       return { top: "55%", left: "4%" };
     }
     if (lower.includes("unit sale") || lower.includes("usp")) {
-      return { top: "55%", right: "4%" };
+      return { top: "55%", left: "55%" };
     }
 
     // ROW 4: 75%
@@ -86,7 +86,7 @@ export default function ComplianceHeatmap({ imageFile, rules }) {
       return { top: "75%", left: "4%" };
     }
     if (lower.includes("fssai") || lower.includes("safety") || lower.includes("food")) {
-      return { top: "75%", right: "4%" };
+      return { top: "75%", left: "55%" };
     }
     
     // Default fallback position for anything else

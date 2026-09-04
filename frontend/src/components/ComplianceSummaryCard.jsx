@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode, Volume2, Square } from "lucide-react";
+import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ChevronDown, Scale, FileText, FileWarning, Leaf, QrCode, Volume2, Square, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ComplianceHeatmap from "./ComplianceHeatmap";
 
 export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loading, imageFile }) {
+  const [expandedRules, setExpandedRules] = useState([]);
+  const [lang, setLang] = useState("en-IN");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechError, setSpeechError] = useState("");
+
+  useEffect(() => {
+    if (audit && audit.rules) {
+      setExpandedRules(audit.rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null));
+    }
+  }, [audit]);
+
   if (!audit) {
     return loading ? (
       <div className="flex flex-col gap-4 animate-pulse">
@@ -17,14 +28,6 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
   const { overall_status, rules = [], fssai_verification, penalty, barcode_health } = audit;
   const isOverallPass = overall_status === "PASS";
   
-  // Auto-expand FAIL rules immediately upon load
-  const initialExpanded = rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null);
-  const [expandedRules, setExpandedRules] = useState(initialExpanded);
-
-  useEffect(() => {
-    setExpandedRules(rules.map((r, i) => r.status === "FAIL" ? i : null).filter(i => i !== null));
-  }, [audit]);
-
   const toggleRule = (idx) => setExpandedRules(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
 
   // Calculate Compliance Score
@@ -54,10 +57,27 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
     riskLabel = "Medium Risk — Label correction advised";
   }
 
-  // Voice Readout State
-  const [lang, setLang] = useState("en-IN");
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechError, setSpeechError] = useState("");
+  function findVoiceAndSpeak(utterance, targetLang) {
+    const trySpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const exact = voices.find(v => v.lang === targetLang);
+        const partial = voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
+        if (exact) utterance.voice = exact;
+        else if (partial) utterance.voice = partial;
+      }
+      window.speechSynthesis.speak(utterance);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) {
+      trySpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        trySpeak();
+      };
+      setTimeout(() => { if (!window.speechSynthesis.speaking) trySpeak(); }, 600);
+    }
+  }
 
   const speakResults = () => {
     if (!audit) return;
@@ -100,19 +120,11 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
     utterance.lang = lang;
     utterance.rate = 0.9;
     
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      const match = voices.find(v => v.lang === lang);
-      if (match) utterance.voice = match;
-    }
-    
-    utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (e) => {
-      if (e.error !== 'canceled') setIsSpeaking(false);
-    };
+    utterance.onerror = (e) => { setIsSpeaking(false); };
+    setIsSpeaking(true);  // Set immediately — don't wait for onstart
     
-    window.speechSynthesis.speak(utterance);
+    findVoiceAndSpeak(utterance, lang);
   };
 
   const stopSpeaking = () => {
@@ -237,10 +249,43 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
         </div>
         <div className="text-center">
           <p className="text-xs font-bold text-ink-soft">
-            Compliance DNA — {rules.length} declarations verified
+            Compliance DNA — {passedRules} of {totalRules} declarations compliant
           </p>
         </div>
       </motion.div>
+
+      {audit.deception_analysis?.has_deceptive_patterns && (
+        <motion.div layout className="theme-bright-card p-6 border-l-4 border-l-turmeric">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-turmeric/10 text-turmeric rounded-xl">
+              <Eye size={20} />
+            </div>
+            <div>
+              <h4 className="text-base font-bold font-serif text-ink">Deception Risk Analysis</h4>
+              <p className="text-xs text-ink-soft">AI-detected potentially misleading packaging patterns</p>
+            </div>
+            <span className="ml-auto text-sm font-black text-turmeric-deep">
+              {audit.deception_analysis.deception_risk_score}/100
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {audit.deception_analysis.flags.map((flag, idx) => (
+              <div key={idx} className="flex items-start gap-3 bg-paper p-3 rounded-xl border border-ink/5">
+                <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md shrink-0 mt-0.5 ${
+                  flag.severity === 'HIGH' ? 'bg-terracotta/10 text-terracotta' :
+                  flag.severity === 'MEDIUM' ? 'bg-turmeric/10 text-turmeric-deep' :
+                  'bg-ink/5 text-ink-soft'
+                }`}>{flag.severity}</span>
+                <div>
+                  <p className="text-sm font-bold text-ink">{flag.field_affected}</p>
+                  <p className="text-xs text-ink-soft">{flag.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-ink-soft mt-4 italic">{audit.deception_analysis.summary}</p>
+        </motion.div>
+      )}
 
       {/* Barcode Health HUD (Esko/GlobalVision benchmark) */}
       {barcode_health && (
@@ -298,7 +343,7 @@ export default function ComplianceSummaryCard({ audit, onOpenNoticeModal, loadin
       </AnimatePresence>
 
       <AnimatePresence>
-      {!isOverallPass && onOpenNoticeModal && (
+      {overall_status === "FAIL" && onOpenNoticeModal && (
         <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.98 }} onClick={() => onOpenNoticeModal("COMPOUNDING")}
           className="w-full flex items-center justify-center gap-2 min-h-[48px] bg-ink hover:bg-ink-soft text-paper font-bold text-sm rounded-xl shadow-md">
           <FileWarning size={18} className="text-turmeric" /> Generate Section 36 Compounding Notice

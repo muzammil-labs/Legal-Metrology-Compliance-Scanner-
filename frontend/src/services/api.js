@@ -63,6 +63,26 @@ export async function executeScanWithCircuitBreaker(
   }
 }
 
+export async function scanMultipleSides(imageFiles, region = "New Delhi") {
+  if (!imageFiles || imageFiles.length === 0) throw new Error("No images provided");
+  if (imageFiles.length === 1) {
+    return executeScanWithCircuitBreaker(imageFiles[0], null, "", region, false);
+  }
+  
+  const ocrTexts = [];
+  for (const imgFile of imageFiles) {
+    try {
+      const result = await executeScanWithCircuitBreaker(imgFile, null, "", region, false);
+      if (result.ocr_text) ocrTexts.push(result.ocr_text);
+    } catch (e) {
+      console.warn("Side scan failed, continuing:", e.message);
+    }
+  }
+  
+  const combinedText = ocrTexts.join("\n");
+  return executeScanWithCircuitBreaker(imageFiles[0], null, combinedText, region, true);
+}
+
 export async function fetchInspections(limit = 50) {
   try {
     const res = await fetch(resolveUrl(`/api/inspections?limit=${limit}`));

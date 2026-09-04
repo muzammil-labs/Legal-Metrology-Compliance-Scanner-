@@ -101,6 +101,18 @@ class PreAuditResponse(BaseModel):
     estimated_fine_inr: int
     fssai_verification: Optional[FSSAIVerification] = None
 
+class DeceptionFlag(BaseModel):
+    flag_type: str  # "TINY_TEXT", "LOW_CONTRAST", "BURIED_INFO", "FONT_TOO_SMALL", "HIDDEN_QUANTITY"
+    description: str
+    severity: str  # "LOW", "MEDIUM", "HIGH"
+    field_affected: str
+
+class DeceptionAnalysis(BaseModel):
+    has_deceptive_patterns: bool = False
+    flags: List[DeceptionFlag] = []
+    deception_risk_score: int = 0  # 0-100
+    summary: str = "No deceptive patterns detected."
+
 class AuditResponse(BaseModel):
     inspection_id: str
     sha256_hash: str
@@ -110,6 +122,7 @@ class AuditResponse(BaseModel):
     ocr_text: Optional[str] = None
     penalty: Optional[Dict[str, Any]] = None
     fssai_verification: Optional[FSSAIVerification] = None
+    deception_analysis: Optional[DeceptionAnalysis] = None
 
 class BatchAuditItem(BaseModel):
     item_id: str

@@ -50,8 +50,10 @@ PART 2 — after the raw text, output exactly one JSON block:
 ```
 Use null for any field not visible. Do not invent values."""
         fallback_models = [
-            "gemini-3.6-flash", "gemini-3.5-flash", 
-            "gemini-3.0-flash", "gemini-3.1-pro-preview", "gemini-3.6-pro"
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash-lite",
         ]
         errors = []
         for model_name in fallback_models:

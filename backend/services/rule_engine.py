@@ -1,6 +1,6 @@
 import re
 from typing import List, Optional, Dict, Any
-from schemas import RuleResult, RuleStatus, StatutoryRule
+from schemas import RuleResult, RuleStatus, StatutoryRule, PenaltyEstimate, DeceptionAnalysis, DeceptionFlag
 
 MANUFACTURER_RE = re.compile(r'(?i)\b(mfg\.?\s*by|manufactured\s*by|packed\s*by|pkd\.?\s*by|imported\s*by|marketed\s*by|baked\s*in|produced\s*by)\b')
 PINCODE_RE = re.compile(r'\b([1-9][0-9]{5}|[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}|\d{5})\b')
@@ -175,12 +175,131 @@ def audit_date_of_mfg(text: str, json_artwork: Optional[dict] = None) -> RuleRes
         remedy="Print the Month and Year of manufacture or packing on the label (e.g., 'Mfg: 08/2025')."
     )
 
-def calculate_compounding_fine(violations: List[RuleResult]) -> Dict[str, Any]:
+def calculate_compounding_fine(violations: List[RuleResult]) -> PenaltyEstimate:
     failed = [r for r in violations if r.status == RuleStatus.FAIL]
     if not failed:
-        return {"estimated_fine_inr": 0, "applicable_section": "Section 36 (Compliant)", "jan_vishwas_eligible": True, "grace_period_days": 30, "director_liability": False}
+        return PenaltyEstimate(
+            estimated_fine_range="0",
+            min_penalty_inr=0,
+            max_penalty_inr=0,
+            legal_section="Section 36 (Compliant)",
+            jan_vishwas_eligible=True,
+            grace_period_days="30",
+            director_liability=False
+        )
     is_deceptive = any(r.rule in [StatutoryRule.RULE_6_11_USP, StatutoryRule.RULE_6_1_C] for r in failed)
-    return {"estimated_fine_inr": 100000 if is_deceptive else 25000, "applicable_section": "Section 36 & Section 49, Legal Metrology Act, 2009 (Jan Vishwas Amendment 2023)", "jan_vishwas_eligible": not is_deceptive, "grace_period_days": 15 if not is_deceptive else 0, "director_liability": len(failed) >= 3}
+    penalty_inr = 100000 if is_deceptive else 25000
+    return PenaltyEstimate(
+        estimated_fine_range=str(penalty_inr),
+        min_penalty_inr=penalty_inr,
+        max_penalty_inr=penalty_inr,
+        legal_section="Section 36 & Section 49, Legal Metrology Act, 2009 (Jan Vishwas Amendment 2023)",
+        jan_vishwas_eligible=not is_deceptive,
+        grace_period_days="15" if not is_deceptive else "0",
+        director_liability=len(failed) >= 3
+    )
+
+def detect_deceptive_patterns(text: str, json_artwork: Optional[dict] = None) -> DeceptionAnalysis:
+    json_artwork = json_artwork or {}
+    flags = []
+    
+    # PATTERN 1 - HIDDEN_QUANTITY
+    qty_val = json_artwork.get('net_quantity_value')
+    if qty_val:
+        try:
+            val = float(qty_val)
+            unit = str(json_artwork.get('net_quantity_unit')).lower()
+            if val < 10 and unit in ['g', 'ml']:
+                flags.append(DeceptionFlag(
+                    flag_type="HIDDEN_QUANTITY",
+                    description="Net quantity is suspiciously low (< 10g/ml). May indicate sample size being passed off as full product.",
+                    severity="LOW",
+                    field_affected="Net Quantity"
+                ))
+        except ValueError:
+            pass
+
+    # PATTERN 2 - MISLEADING_UNIT
+    # Look for mg, mcg, cl, gm, gms, kgs
+    misleading_unit_re = re.compile(r'(?i)\b\d+(?:\.\d+)?\s*(mg|mcg|cl|gm|gms|kgs)\b')
+    if misleading_unit_re.search(text) or str(json_artwork.get('net_quantity_unit')).lower() in ['mg', 'mcg', 'cl', 'gm', 'gms', 'kgs']:
+        flags.append(DeceptionFlag(
+            flag_type="MISLEADING_UNIT",
+            description="Quantity declared using obscure sub-units (e.g. mg, cl). This creates a perception mismatch vs standard SI units.",
+            severity="MEDIUM",
+            field_affected="Net Quantity"
+        ))
+
+    # PATTERN 3 - BURIED_MANDATORY_INFO
+    if len(text) > 500:
+        long_lines = [line for line in text.split('\n') if len(line) > 200]
+        if long_lines:
+            for line in long_lines:
+                if CONSUMER_CARE_RE.search(line) or MANUFACTURER_RE.search(line):
+                    flags.append(DeceptionFlag(
+                        flag_type="BURIED_INFO",
+                        description="Mandatory manufacturer or consumer care info is buried inside a very dense block of text (> 200 chars).",
+                        severity="MEDIUM",
+                        field_affected="Layout / Formatting"
+                    ))
+                    break
+
+    # PATTERN 4 - PRICE_QUANTITY_MISMATCH
+    mrp_str = json_artwork.get('mrp_value')
+    if mrp_str and qty_val:
+        try:
+            mrp = float(mrp_str)
+            qty = float(qty_val)
+            unit = str(json_artwork.get('net_quantity_unit')).lower()
+            # Convert kg/l to g/ml
+            if unit in ['kg', 'l']:
+                qty *= 1000
+                unit = 'g' if unit == 'kg' else 'ml'
+            if unit in ['g', 'ml'] and qty > 0:
+                price_per_unit = mrp / qty
+                if price_per_unit > 5:
+                    # Check for food product context
+                    is_food = bool(re.search(r'(?i)(fssai|food|snack|beverage|eat)', text))
+                    if is_food:
+                        flags.append(DeceptionFlag(
+                            flag_type="PRICE_QUANTITY_MISMATCH",
+                            description=f"Unusually high price per {unit} for a food item (Rs. {price_per_unit:.2f}/{unit}). Anomalous pricing.",
+                            severity="LOW",
+                            field_affected="MRP / Net Quantity"
+                        ))
+        except ValueError:
+            pass
+
+    # PATTERN 5 - MISSING_HINDI_MANDATORY
+    has_hindi = bool(re.search(r'[\u0900-\u097F]', text))
+    if has_hindi:
+        # Check if Hindi MRP is declared. Simple check: 'एमआरपी' or 'मूल्य'
+        has_hindi_mrp = bool(re.search(r'एमआरपी|मूल्य|कर|सहित', text))
+        if not has_hindi_mrp:
+            flags.append(DeceptionFlag(
+                flag_type="MISSING_HINDI_MANDATORY",
+                description="Hindi text detected on packaging, but MRP declaration appears only in English. Bilingual rules require MRP in Hindi as well.",
+                severity="LOW",
+                field_affected="Bilingual Declarations"
+            ))
+
+    # Calculate risk score
+    severity_scores = {"LOW": 10, "MEDIUM": 25, "HIGH": 40}
+    score = sum(severity_scores.get(f.severity, 0) for f in flags)
+    score = min(score, 100)
+
+    summary = "No deceptive patterns detected."
+    if score > 0:
+        highest_severity = max(flags, key=lambda f: severity_scores.get(f.severity, 0))
+        summary = highest_severity.description
+
+    return DeceptionAnalysis(
+        has_deceptive_patterns=len(flags) > 0,
+        flags=flags,
+        deception_risk_score=score,
+        summary=summary
+    )
+
 
 def audit_text(text: str, json_artwork: Optional[dict] = None):
     rules = [
@@ -192,4 +311,5 @@ def audit_text(text: str, json_artwork: Optional[dict] = None):
         audit_unit_sale_price(text, json_artwork),
         audit_date_of_mfg(text, json_artwork)
     ]
-    return rules
+    deception_analysis = detect_deceptive_patterns(text, json_artwork)
+    return rules, deception_analysis

@@ -20,8 +20,7 @@ def audit_fssai_declarations(text: str, detected_objects: Optional[List[str]] = 
     lic_match = FSSAI_LICENSE_RE.search(text or "")
     lic_num = lic_match.group(1) if lic_match else None
 
-    # Relaxed validation: 14 digits (OCR might mistake 1 for 7, etc)
-    is_lic_valid = bool(lic_num and re.fullmatch(r'\d{14}', lic_num))
+    is_lic_valid = bool(lic_num and re.fullmatch(r'[12]\d{13}', lic_num))
 
     if not is_lic_valid:
         violations.append("Missing or malformed 14-digit FSSAI License Number")

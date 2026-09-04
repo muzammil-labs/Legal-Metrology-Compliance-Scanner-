@@ -60,16 +60,16 @@ export default function InspectorAnalyticsDashboard() {
   const regionalData = regionsList.map(name => {
     const count = data?.by_region?.[name] || 0;
     let tier = "No Data";
-    let colorClass = "border-ink-soft/20";
+    let colorClass = "border-ink/10";
     let badgeClass = "bg-ink/5 text-ink-soft";
     if (count > 10) {
       tier = "Active Surveillance";
-      colorClass = "border-sage";
+      colorClass = "border-sage/40";
       badgeClass = "bg-sage/10 text-sage";
     } else if (count > 0) {
       tier = "Monitoring";
-      colorClass = "border-turmeric";
-      badgeClass = "bg-turmeric/10 text-turmeric";
+      colorClass = "border-turmeric/40";
+      badgeClass = "bg-turmeric/10 text-turmeric-deep";
     }
     return { name, count, tier, colorClass, badgeClass };
   });
@@ -100,6 +100,14 @@ export default function InspectorAnalyticsDashboard() {
     { day: "Sat", scans: 450 },
     { day: "Sun", scans: 410 }
   ];
+
+  const intelligenceSummary = data ? [
+    `${stats.total_scans.toLocaleString()} products scanned across ${stats.active_districts} districts.`,
+    `National compliance rate: ${stats.compliance_rate.toFixed(1)}%${stats.compliance_rate >= 80 ? ' — above target threshold.' : ' — below 80% target, enforcement action advised.'}`,
+    Object.keys(data.by_region || {}).length > 0
+      ? `Most active region: ${Object.entries(data.by_region).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'N/A'}.`
+      : 'Regional data collection in progress.',
+  ].join(' ') : '';
 
   return (
     <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="space-y-6 w-full max-w-full overflow-x-hidden pb-12">
@@ -309,6 +317,12 @@ export default function InspectorAnalyticsDashboard() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        <div className="bg-paper border border-ink/10 p-4 rounded-xl mb-8">
+          <p className="text-sm text-ink-soft leading-relaxed italic">
+            {intelligenceSummary}
+          </p>
         </div>
 
         {/* Section 2 & 3 Grid */}
