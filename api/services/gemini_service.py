@@ -17,7 +17,7 @@ def extract_label_with_gemini(content: bytes, mime_type: str = "image/jpeg") -> 
         client = genai.Client(api_key=api_key)
         
         if mime_type.startswith("video/"):
-            import tempfile, time, os
+            import tempfile, time
             suffix = ".mp4"
             if mime_type == "video/webm": suffix = ".webm"
             elif mime_type == "video/quicktime": suffix = ".mov"

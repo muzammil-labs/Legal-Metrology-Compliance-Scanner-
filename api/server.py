@@ -167,7 +167,7 @@ def debug_path(full_path: str, request: Request):
 
 @app.get("/api/health/gemini")
 async def gemini_health_check():
-    import time
+    import time, os
     start = time.perf_counter()
     api_key = os.environ.get("GEMINI_API_KEY")
     status = "demo_mode" if DEMO_MODE else "unknown"
@@ -299,6 +299,9 @@ async def scan(
         db.rollback()
         inspection_id = sha256_hash[:12]
 
+    fine_info = calculate_compounding_fine(rules)
+    fine_dict = fine_info.model_dump() if hasattr(fine_info, 'model_dump') else fine_info
+    
     return AuditResponse(
         inspection_id=inspection_id,
         sha256_hash=sha256_hash,
@@ -306,7 +309,7 @@ async def scan(
         rules=rules,
         timestamp=datetime.utcnow().isoformat(),
         ocr_text=text,
-        penalty=calculate_compounding_fine(rules),
+        penalty=fine_dict,
         fssai_verification=fssai_info,
         deception_analysis=deception_analysis
     )
