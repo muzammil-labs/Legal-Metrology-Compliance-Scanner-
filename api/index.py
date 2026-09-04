@@ -1,10 +1,16 @@
+from fastapi import FastAPI
+
+# Vercel's AST parser requires 'app' to be defined at the top level,
+# BEFORE any imports that might fail to resolve during static analysis.
+app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
+
 import os
 import io
 import hashlib
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException, status, Header
+from fastapi import UploadFile, File, Form, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
@@ -67,8 +73,6 @@ try:
 except Exception as _db_init_err:
     import logging as _logging
     _logging.warning(f"DB create_all failed (non-fatal on Vercel): {_db_init_err}")
-
-app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
