@@ -54,17 +54,9 @@ except Exception as e:
     def catch_all_error(path: str):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=500, content={"error": "Import Failed", "traceback": err_msg})
-    
-    # We must mock the required imports so the rest of the file doesn't crash on import
-    class Mock:
-        def __getattr__(self, name):
-            return lambda *args, **kwargs: None
-    
-    AuditResponse = RuleResult = RuleStatus = StatutoryRule = BatchAuditResponse = BatchAuditItem = PreAuditRequest = PreAuditResponse = ExecutiveAnalyticsResponse = DistrictMetricSummary = ECommerceAuditRequest = ECommerceAuditResponse = Mock
-    audit_text = calculate_compounding_fine = audit_fssai_declarations = extract_label_with_gemini = require_role = UserRole = validate_b2b_api_key = generate_executive_pdf_report = generate_excel_export = audit_digital_listing = generate_compounding_notice_pdf = generate_improvement_notice_pdf = Mock()
-    InspectionRecord = Base = engine = get_db = Session = Mock()
-    UploadFile = File = Form = Depends = HTTPException = status = Header = CORSMiddleware = Response = StreamingResponse = Mock()
-    io = hashlib = datetime = List = Optional = Dict = Any = Mock()
+    # prevent remaining code from running
+    import sys
+    sys.exit(0)
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
