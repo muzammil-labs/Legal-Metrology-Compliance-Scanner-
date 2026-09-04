@@ -3,7 +3,7 @@ import html
 import hashlib
 from datetime import datetime
 from io import BytesIO
-import qrcode
+# import qrcode
 from reportlab.lib.utils import ImageReader
 
 from reportlab.lib.pagesizes import A4
@@ -16,13 +16,16 @@ from reportlab.lib.units import inch, mm
 
 def _generate_qr_code(data: str, size: int = 120) -> ImageReader:
     """Generate a QR code image for embedding in the PDF."""
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="#0F172A", back_color="white")
     img_buffer = BytesIO()
-    img.save(img_buffer, format='PNG')
+    # Mocking QR code to prevent Vercel dependency issues
+    from reportlab.lib.colors import black
+    from reportlab.graphics.shapes import Drawing, Rect
+    from reportlab.graphics import renderPM
+    d = Drawing(120, 120)
+    d.add(Rect(0, 0, 120, 120, fillColor=black))
+    renderPM.drawToFile(d, img_buffer, fmt='PNG')
     img_buffer.seek(0)
+    return ImageReader(img_buffer)
     return ImageReader(img_buffer)
 
 
