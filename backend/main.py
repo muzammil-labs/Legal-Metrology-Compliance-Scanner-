@@ -89,16 +89,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def vercel_routing_middleware(request: Request, call_next):
-    vercel_path = request.query_params.get("vercel_path")
-    if vercel_path:
-        # Re-write the path so FastAPI router can match it correctly
-        request.scope["path"] = f"/api/{vercel_path}"
-    response = await call_next(request)
-    return response
-
-
 # NOTE: On Vercel, the React frontend is served via outputDirectory/rewrites in vercel.json.
 # The backend should ONLY handle /api/* and /health routes — no root endpoint needed.
 
