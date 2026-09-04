@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,13 +6,24 @@
 
 @layer base {
   body {
-    @apply bg-paper text-ink min-h-screen overflow-x-hidden font-sans;
+    @apply bg-paper text-ink min-h-screen overflow-x-hidden font-sans selection:bg-turmeric selection:text-white;
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
   }
 }
 
 @layer components {
   .theme-bright-card {
-    @apply bg-seal-cream border border-ink/10 rounded-2xl;
+    @apply bg-glass-gradient backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl shadow-black/50;
+  }
+  
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl;
+  }
+  
+  .neon-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-turmeric to-turmeric-deep text-white font-medium rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-[1.02] active:scale-95;
   }
 }
 
@@ -29,6 +40,22 @@
   .animate-scanline {
     animation: scanline 2s linear infinite;
   }
+  .animate-ticker {
+    animation: ticker 35s linear infinite;
+  }
+  .animate-ticker:hover {
+    animation-play-state: paused;
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.05) 50%,
+      rgba(255,255,255,0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
 }
 
 @keyframes fadeInUp {
@@ -43,9 +70,9 @@
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
 @keyframes scanline {
@@ -58,13 +85,9 @@
   100% { transform: translateX(-50%); }
 }
 
-@layer utilities {
-  .animate-ticker {
-    animation: ticker 35s linear infinite;
-  }
-  .animate-ticker:hover {
-    animation-play-state: paused;
-  }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .reveal-up {
