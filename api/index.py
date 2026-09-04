@@ -4,50 +4,59 @@ from fastapi import FastAPI
 # BEFORE any imports that might fail to resolve during static analysis.
 app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
 
-# Ensure sibling modules (database, models, services/) are importable
-# when Vercel runs this file from a different working directory.
 import sys, os
 _api_dir = os.path.dirname(os.path.abspath(__file__))
 if _api_dir not in sys.path:
     sys.path.insert(0, _api_dir)
 
-import io
-import hashlib
-from datetime import datetime
-from typing import List, Optional, Dict, Any
+import traceback
 
-from fastapi import UploadFile, File, Form, Depends, HTTPException, status, Header
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
-from sqlalchemy.orm import Session
+try:
+    import io
+    import hashlib
+    from datetime import datetime
+    from typing import List, Optional, Dict, Any
 
-from database import engine, Base
-from models import InspectionRecord
-from database import get_db
+    from fastapi import UploadFile, File, Form, Depends, HTTPException, status, Header
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import Response, StreamingResponse
+    from sqlalchemy.orm import Session
 
-from schemas import (
-    AuditResponse,
-    RuleResult,
-    RuleStatus,
-    StatutoryRule,
-    BatchAuditResponse,
-    BatchAuditItem,
-    PreAuditRequest,
-    PreAuditResponse,
-    ExecutiveAnalyticsResponse,
-    DistrictMetricSummary,
-    ECommerceAuditRequest,
-    ECommerceAuditResponse
-)
-from services.rule_engine import audit_text, calculate_compounding_fine
-from services.fssai_auditor import audit_fssai_declarations
+    from database import engine, Base, get_db
+    from models import InspectionRecord
+    
+    from schemas import (
+        AuditResponse,
+        RuleResult,
+        RuleStatus,
+        StatutoryRule,
+        BatchAuditResponse,
+        BatchAuditItem,
+        PreAuditRequest,
+        PreAuditResponse,
+        ExecutiveAnalyticsResponse,
+        DistrictMetricSummary,
+        ECommerceAuditRequest,
+        ECommerceAuditResponse
+    )
+    from services.rule_engine import audit_text, calculate_compounding_fine
+    from services.fssai_auditor import audit_fssai_declarations
 
-from services.gemini_service import extract_label_with_gemini
-from services.auth import require_role, UserRole, validate_b2b_api_key
-from services.executive_reports import generate_executive_pdf_report, generate_excel_export
-from services.ecommerce_parser import audit_digital_listing
+    from services.gemini_service import extract_label_with_gemini
+    from services.auth import require_role, UserRole, validate_b2b_api_key
+    from services.executive_reports import generate_executive_pdf_report, generate_excel_export
+    from services.ecommerce_parser import audit_digital_listing
 
-from services.pdf_generator import generate_compounding_notice_pdf, generate_improvement_notice_pdf
+    from services.pdf_generator import generate_compounding_notice_pdf, generate_improvement_notice_pdf
+except Exception as e:
+    err_msg = traceback.format_exc()
+    @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+    def catch_all_error(path: str):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=500, content={"error": "Import Failed", "traceback": err_msg})
+    # prevent remaining code from running
+    import sys
+    sys.exit(0)
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
