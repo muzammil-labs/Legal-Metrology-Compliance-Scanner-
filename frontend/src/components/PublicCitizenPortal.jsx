@@ -19,16 +19,23 @@ export default function PublicCitizenPortal() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("Ready to scan product labels");
   const [audit, setAudit] = useState(null);
+  const scannerRef = React.useRef(null);
 
   const handleScan = async (customOcrText = "") => {
+    const sides = scannerRef.current?.getScannedSides() || [];
+    const imageFiles = sides.length > 0 ? sides.map(s => s.file) : (file ? [file] : []);
+
+    if (imageFiles.length === 0 && !demoMode && !customOcrText) {
+      setMessage("Error: Please add at least one product image or video before scanning.");
+      return;
+    }
+
     setLoading(true);
-    setMessage("Analyzing product label for consumer rights violations...");
+    setMessage(imageFiles.length > 1 ? "Analyzing multiple sides..." : "Analyzing product label...");
     try {
-      const result = await executeScanWithCircuitBreaker(
-        file,
-        demoMode,
-        customOcrText,
-      );
+      const result = imageFiles.length > 1
+        ? await require("../services/api").scanMultipleSides(imageFiles, "New Delhi")
+        : await executeScanWithCircuitBreaker(imageFiles[0] || null, demoMode, customOcrText);
       setAudit(result);
       setMessage("Analysis complete");
     } catch (error) {
@@ -111,6 +118,7 @@ Please investigate this non-compliant packaging. Attached is the photograph of t
 
       <section className="workspace">
         <CameraScanner
+          ref={scannerRef}
           file={file}
           setFile={setFile}
           demoMode={demoMode}

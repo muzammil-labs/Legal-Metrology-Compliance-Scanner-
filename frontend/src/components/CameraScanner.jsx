@@ -205,12 +205,12 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
           </button>
         </div>
 
-        {/* ── Toggle 2: Upload / Camera — physical + no demo only ── */}
-        {scanType === "physical" && !demoMode && isMobile && (
-          <div className="flex bg-seal-cream border border-ink/10 p-1 rounded-xl mb-4">
+        {/* ── Toggle 2: Upload / Camera / Video — physical + no demo only ── */}
+        {scanType === "physical" && !demoMode && (
+          <div className="flex bg-seal-cream border border-ink/10 p-1 rounded-xl mb-4 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => switchToMode("upload")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 whitespace-nowrap ${
                 inputMode === "upload"
                   ? "bg-paper shadow-sm text-ink border border-ink/10"
                   : "text-ink-soft hover:text-ink"
@@ -218,15 +218,27 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
             >
               <Upload size={15} /> Upload Photo
             </button>
+            {isMobile && (
+              <button
+                onClick={() => switchToMode("camera")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  inputMode === "camera"
+                    ? "bg-paper shadow-sm text-ink border border-ink/10"
+                    : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                <Camera size={15} /> Use Camera
+              </button>
+            )}
             <button
-              onClick={() => switchToMode("camera")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 ${
-                inputMode === "camera"
+              onClick={() => switchToMode("video")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-bold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                inputMode === "video"
                   ? "bg-paper shadow-sm text-ink border border-ink/10"
                   : "text-ink-soft hover:text-ink"
               }`}
             >
-              <Camera size={15} /> Use Camera
+              <Camera size={15} /> 360° Video
             </button>
           </div>
         )}
@@ -292,7 +304,7 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
             </div>
           )}
 
-          {/* Image preview with clear button (backward compatibility / single mode fallback) */}
+          {/* Image/Video preview with clear button (backward compatibility / single mode fallback) */}
           {scanType === "physical" && !demoMode && file && scannedSides.length === 0 && (
             <div className="relative w-full h-full flex items-center justify-center p-2">
               <button
@@ -303,11 +315,11 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
                 <X size={14} />
               </button>
               <div className="relative max-w-full max-h-full inline-block">
-                <img
-                  src={previewUrl}
-                  alt="Captured label"
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                />
+                {file.type.startsWith("video/") ? (
+                  <video src={previewUrl} controls className="max-w-full max-h-full object-contain rounded-lg" />
+                ) : (
+                  <img src={previewUrl} alt="Captured label" className="max-w-full max-h-full object-contain rounded-lg" />
+                )}
               </div>
             </div>
           )}
@@ -341,7 +353,7 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
 
           {/* Camera trigger — no file yet, camera mode */}
           {scanType === "physical" && !demoMode && !file && scannedSides.length === 0 && inputMode === "camera" && (
-            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
+            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6 text-center">
               <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
                 <Camera size={28} />
               </div>
@@ -353,6 +365,26 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
                 ref={cameraInputRef}
                 type="file"
                 accept="image/*"
+                capture="environment"
+                className="w-0 h-0 absolute opacity-0 overflow-hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          )}
+
+          {/* Video trigger — no file yet, video mode */}
+          {scanType === "physical" && !demoMode && !file && scannedSides.length === 0 && inputMode === "video" && (
+            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-paper border border-ink/10 text-turmeric flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                <Camera size={28} />
+              </div>
+              <span className="text-sm font-bold text-ink group-hover:text-turmeric-deep transition-colors">
+                Record 360° Product Spin
+              </span>
+              <span className="text-xs text-ink-soft mt-1">Slowly rotate the product in front of the camera (Max 15s)</span>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
                 capture="environment"
                 className="w-0 h-0 absolute opacity-0 overflow-hidden"
                 onChange={handleFileChange}

@@ -15,7 +15,35 @@ def extract_label_with_gemini(content: bytes, mime_type: str = "image/jpeg") -> 
         return "Mocked extracted text (ERROR: GEMINI_API_KEY is missing from environment variables)", {}, 0.5
     try:
         client = genai.Client(api_key=api_key)
-        image_part = types.Part.from_bytes(data=content, mime_type=mime_type)
+        
+        if mime_type.startswith("video/"):
+            import tempfile, time, os
+            suffix = ".mp4"
+            if mime_type == "video/webm": suffix = ".webm"
+            elif mime_type == "video/quicktime": suffix = ".mov"
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_file.write(content)
+                temp_path = temp_file.name
+                
+            try:
+                uploaded_file = client.files.upload(file=temp_path)
+                
+                # Wait for video processing
+                while str(uploaded_file.state) in ("PROCESSING", "State.PROCESSING", "1"):
+                    time.sleep(2)
+                    uploaded_file = client.files.get(name=uploaded_file.name)
+                
+                if str(uploaded_file.state) in ("FAILED", "State.FAILED", "2"):
+                    raise Exception("Video processing failed in Gemini API.")
+                    
+                image_part = uploaded_file
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+        else:
+            image_part = types.Part.from_bytes(data=content, mime_type=mime_type)
+
         prompt = """You are a Legal Metrology OCR engine for India's PCR 2011.
 
 STEP 0 — IMAGE QUALITY AND SUBJECT CHECK (do this first before any OCR):

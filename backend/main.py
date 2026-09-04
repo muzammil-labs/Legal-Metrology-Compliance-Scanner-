@@ -155,10 +155,10 @@ async def scan(
     # may send files with no extension (e.g. just 'image') so we can't rely on extension alone
     content_type = file.content_type or ""
     filename = file.filename or ""
-    allowed_extensions = (".png", ".jpg", ".jpeg", ".webp")
-    allowed_content_types = ("image/jpeg", "image/png", "image/webp", "image/jpg")
-    if not (filename.lower().endswith(allowed_extensions) or content_type.lower() in allowed_content_types or content_type.lower().startswith("image/")):
-        raise HTTPException(status_code=400, detail="Invalid image format. Please upload a JPG, PNG, or WEBP image.")
+    allowed_extensions = (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".mov")
+    allowed_content_types = ("image/jpeg", "image/png", "image/webp", "image/jpg", "video/mp4", "video/webm", "video/quicktime")
+    if not (filename.lower().endswith(allowed_extensions) or content_type.lower() in allowed_content_types or content_type.lower().startswith("image/") or content_type.lower().startswith("video/")):
+        raise HTTPException(status_code=400, detail="Invalid format. Please upload a JPG/PNG/WEBP image or MP4/WEBM/MOV video.")
 
     if DEMO_MODE:
         text, structured_fields, ocr_confidence = DEMO_OCR_TEXT, DEMO_STRUCTURED, 1.0
@@ -167,9 +167,12 @@ async def scan(
             raise HTTPException(status_code=500, detail="CRITICAL: GEMINI_API_KEY is not configured on the Vercel server. Please add it to your Environment Variables.")
         
         resolved_mime = content_type.lower()
-        if not resolved_mime.startswith("image/"):
+        if not (resolved_mime.startswith("image/") or resolved_mime.startswith("video/")):
             if filename.lower().endswith(".png"): resolved_mime = "image/png"
             elif filename.lower().endswith(".webp"): resolved_mime = "image/webp"
+            elif filename.lower().endswith(".mp4"): resolved_mime = "video/mp4"
+            elif filename.lower().endswith(".webm"): resolved_mime = "video/webm"
+            elif filename.lower().endswith(".mov"): resolved_mime = "video/quicktime"
             else: resolved_mime = "image/jpeg"
             
         text, structured_fields, ocr_confidence = extract_label_with_gemini(content, mime_type=resolved_mime)
