@@ -180,6 +180,7 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> PenaltyEstimate:
     if not failed:
         return PenaltyEstimate(
             estimated_fine_range="0",
+            estimated_fine_inr=0,
             min_penalty_inr=0,
             max_penalty_inr=0,
             legal_section="Section 36 (Compliant)",
@@ -191,6 +192,7 @@ def calculate_compounding_fine(violations: List[RuleResult]) -> PenaltyEstimate:
     penalty_inr = 100000 if is_deceptive else 25000
     return PenaltyEstimate(
         estimated_fine_range=str(penalty_inr),
+        estimated_fine_inr=penalty_inr,
         min_penalty_inr=penalty_inr,
         max_penalty_inr=penalty_inr,
         legal_section="Section 36 & Section 49, Legal Metrology Act, 2009 (Jan Vishwas Amendment 2023)",

@@ -83,6 +83,7 @@ class PenaltyEstimate(BaseModel):
     legal_section: str = "Section 36, Legal Metrology Act, 2009"
     min_penalty_inr: int = 0
     max_penalty_inr: int = 0
+    estimated_fine_inr: int = 0
 
 class PDPFontEvaluation(BaseModel):
     estimated_pdp_area_sq_cm: float = 0.0

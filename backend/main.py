@@ -6,8 +6,7 @@ from typing import List, Optional, Dict, Any
 
 from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse, FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from database import engine, Base
@@ -90,38 +89,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
-if not os.path.exists(frontend_dist):
-    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
-
-if os.path.exists(frontend_dist):
-    assets_dir = os.path.join(frontend_dist, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-
-@app.get("/")
-@app.get("/citizen")
-def root_endpoint():
-    index_file = os.path.join(frontend_dist, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return HTMLResponse(
-        """<!DOCTYPE html>
-        <html>
-        <head><title>PakkaLabel India - Legal Metrology Compliance Engine</title></head>
-        <body style="background:#09090b;color:#f4f4f5;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-            <div style="text-align:center;padding:2.5rem;border:1px solid #27272a;border-radius:16px;background:#18181b;max-width:540px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-                <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#38bdf8;margin-bottom:0.75rem;">Ministry of Consumer Affairs &bull; DOCA</div>
-                <h1 style="color:#f4f4f5;font-size:24px;margin:0 0 0.5rem 0;">PakkaLabel India Engine</h1>
-                <p style="color:#a1a1aa;font-size:14px;line-height:1.5;">Legal Metrology PCR 2011 Compliance Scanner is active & operational.</p>
-                <div style="margin-top:1.5rem;display:flex;gap:10px;justify-content:center;">
-                    <a href="/health" style="padding:8px 16px;background:#27272a;border:1px solid #3f3f46;color:#38bdf8;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">System Health</a>
-                    <a href="/api/analytics/summary" style="padding:8px 16px;background:#27272a;border:1px solid #3f3f46;color:#34d399;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">Analytics Docket</a>
-                </div>
-            </div>
-        </body>
-        </html>"""
-    )
+# NOTE: On Vercel, the React frontend is served via outputDirectory/rewrites in vercel.json.
+# The backend should ONLY handle /api/* and /health routes — no root endpoint needed.
 
 @app.get("/health")
 def health_check():
@@ -320,14 +289,15 @@ async def batch_scan(
             passed_count += 1
 
         fine_info = calculate_compounding_fine(rules)
-        total_compounding_exposure_inr += fine_info.get("estimated_fine_inr", 0)
+        fine_dict = fine_info.model_dump() if hasattr(fine_info, 'model_dump') else fine_info
+        total_compounding_exposure_inr += fine_dict.get("estimated_fine_inr", 0)
 
         items.append(BatchAuditItem(
             item_id=str(uuid.uuid4()),
             filename=file.filename,
             overall_status=overall_status.value,
             violations_count=violations_count,
-            estimated_fine_inr=fine_info.get("estimated_fine_inr", 0),
+            estimated_fine_inr=fine_dict.get("estimated_fine_inr", 0),
             fssai_verification=fssai_info
         ))
 
