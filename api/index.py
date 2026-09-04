@@ -4,7 +4,13 @@ from fastapi import FastAPI
 # BEFORE any imports that might fail to resolve during static analysis.
 app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
 
-import os
+# Ensure sibling modules (database, models, services/) are importable
+# when Vercel runs this file from a different working directory.
+import sys, os
+_api_dir = os.path.dirname(os.path.abspath(__file__))
+if _api_dir not in sys.path:
+    sys.path.insert(0, _api_dir)
+
 import io
 import hashlib
 from datetime import datetime
