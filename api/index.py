@@ -106,13 +106,13 @@ app.add_middleware(
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
-@app.get("/debug/{full_path:path}")
-async def debug_path(request: Request, full_path: str = ""):
+@app.get("/api/debug/{full_path:path}")
+def debug_path(full_path: str, request: Request):
     return {
-        "received_path": request.url.path,
-        "full_path_param": full_path,
-        "query_params": dict(request.query_params),
+        "full_path": full_path,
         "url": str(request.url),
+        "path": request.scope.get("path"),
+        "raw_path": request.scope.get("raw_path").decode("utf-8") if request.scope.get("raw_path") else None
     }
 
 @app.get("/api/health/gemini")
