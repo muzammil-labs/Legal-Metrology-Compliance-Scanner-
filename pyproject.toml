@@ -24,7 +24,7 @@ dependencies = [
 package = false
 
 [tool.vercel]
-entrypoint = "api.index:app"
+entrypoint = "api.server:app"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
