@@ -104,13 +104,12 @@ app.add_middleware(
 
 @app.middleware("http")
 async def debug_path_middleware(request: Request, call_next):
-    if "/debug_path" in request.url.path:
-        return JSONResponse({
-            "request_url_path": request.url.path, 
-            "scope_path": request.scope.get("path"),
-            "query_params": dict(request.query_params)
-        })
-    return await call_next(request)
+    return JSONResponse({
+        "intercepted": True,
+        "request_url_path": request.url.path, 
+        "scope_path": request.scope.get("path"),
+        "query_params": dict(request.query_params)
+    })
 
 @app.get("/health")
 def health_check():
