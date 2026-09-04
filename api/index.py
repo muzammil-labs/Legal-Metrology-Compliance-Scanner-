@@ -524,3 +524,13 @@ def export_excel_report(
 @app.post("/api/v1/audit-digital-listing", response_model=ECommerceAuditResponse)
 def audit_digital_listing_endpoint(payload: ECommerceAuditRequest):
     return audit_digital_listing(payload)
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+def catch_all(path: str, request: Request):
+    return {
+        "message": "CATCH ALL HIT",
+        "path_param": path,
+        "url": str(request.url),
+        "method": request.method,
+        "headers": dict(request.headers)
+    }
