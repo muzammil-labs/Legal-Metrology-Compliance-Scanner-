@@ -92,6 +92,14 @@ app.add_middleware(
 # NOTE: On Vercel, the React frontend is served via outputDirectory/rewrites in vercel.json.
 # The backend should ONLY handle /api/* and /health routes — no root endpoint needed.
 
+@app.middleware("http")
+async def vercel_routing_middleware(request: Request, call_next):
+    vercel_path = request.query_params.get("vercel_path")
+    if vercel_path:
+        request.scope["path"] = f"/api/{vercel_path}"
+    response = await call_next(request)
+    return response
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
