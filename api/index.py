@@ -114,6 +114,15 @@ async def vercel_routing_middleware(request: Request, call_next):
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
+@app.get("/debug/{full_path:path}")
+async def debug_path(request: Request, full_path: str = ""):
+    return {
+        "received_path": request.url.path,
+        "full_path_param": full_path,
+        "query_params": dict(request.query_params),
+        "url": str(request.url),
+    }
+
 @app.get("/api/health/gemini")
 async def gemini_health_check():
     import time
