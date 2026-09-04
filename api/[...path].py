@@ -103,17 +103,14 @@ app.add_middleware(
 # The backend should ONLY handle /api/* and /health routes — no root endpoint needed.
 
 @app.middleware("http")
-async def vercel_routing_middleware(request: Request, call_next):
-    vercel_path = request.query_params.get("vercel_path")
-    if vercel_path:
-        request.scope["path"] = f"/api/{vercel_path}"
-@app.middleware("http")
 async def debug_path_middleware(request: Request, call_next):
-    return JSONResponse({
-        "request_url_path": request.url.path, 
-        "scope_path": request.scope.get("path"),
-        "query_params": dict(request.query_params)
-    })
+    if "/debug_path" in request.url.path:
+        return JSONResponse({
+            "request_url_path": request.url.path, 
+            "scope_path": request.scope.get("path"),
+            "query_params": dict(request.query_params)
+        })
+    return await call_next(request)
 
 @app.get("/health")
 def health_check():
