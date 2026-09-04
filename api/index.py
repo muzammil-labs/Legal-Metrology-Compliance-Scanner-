@@ -1,8 +1,19 @@
 from fastapi import FastAPI
+import logging
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    try:
+        from database import engine, Base
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logging.warning(f"DB init skipped (non-fatal): {e}")
+    yield
 
 # Vercel's AST parser requires 'app' to be defined at the top level,
 # BEFORE any imports that might fail to resolve during static analysis.
-app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0")
+app = FastAPI(title="PakkaLabel Legal Metrology Scanner", version="1.0.0", lifespan=lifespan)
 
 # Ensure sibling modules (database, models, services/) are importable
 # when Vercel runs this file from a different working directory.
@@ -93,21 +104,37 @@ DEMO_STRUCTURED = {
     "unit_sale_price": "21.43 per 100g",
 }
 
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as _db_init_err:
-    import logging as _logging
-    _logging.warning(f"DB create_all failed (non-fatal on Vercel): {_db_init_err}")
-
+import logging, traceback
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import traceback
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+logger = logging.getLogger("pakkalabel")
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.warning(f"HTTP {exc.status_code} on {request.url}: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": True, "status_code": exc.status_code, "detail": exc.detail, "path": str(request.url.path)}
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"Validation error on {request.url}: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"error": True, "status_code": 422, "detail": "Invalid request payload", "errors": exc.errors(), "path": str(request.url.path)}
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    logger.error(f"Unhandled exception on {request.url}:\n{tb}")
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Unhandled Backend Error: {traceback.format_exc()}"}
+        content={"error": True, "status_code": 500, "detail": "Internal server error — the function did not crash, this is a handled error.", "path": str(request.url.path)}
     )
 
 app.add_middleware(
@@ -548,12 +575,6 @@ def export_excel_report(
 def audit_digital_listing_endpoint(payload: ECommerceAuditRequest):
     return audit_digital_listing(payload)
 
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-def catch_all(path: str, request: Request):
-    return {
-        "message": "CATCH ALL HIT",
-        "path_param": path,
-        "url": str(request.url),
-        "method": request.method,
-        "headers": dict(request.headers)
-    }
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(status_code=404, content={"error": True, "status_code": 404, "detail": f"Route not found: {request.url.path}"})

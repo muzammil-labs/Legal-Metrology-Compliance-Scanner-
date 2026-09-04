@@ -15,18 +15,33 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, mm
 
 def _generate_qr_code(data: str, size: int = 120) -> ImageReader:
-    """Generate a QR code image for embedding in the PDF."""
-    img_buffer = BytesIO()
-    # Mocking QR code to prevent Vercel dependency issues
-    from reportlab.lib.colors import black
-    from reportlab.graphics.shapes import Drawing, Rect
+    """Returns a blank placeholder — qrcode package not available on Vercel."""
+    from io import BytesIO
+    from reportlab.lib import colors as rl_colors
+    # Draw a simple grey placeholder box instead of a real QR code
+    from reportlab.graphics.shapes import Drawing, Rect, String
     from reportlab.graphics import renderPM
-    d = Drawing(120, 120)
-    d.add(Rect(0, 0, 120, 120, fillColor=black))
-    renderPM.drawToFile(d, img_buffer, fmt='PNG')
-    img_buffer.seek(0)
-    return ImageReader(img_buffer)
-    return ImageReader(img_buffer)
+    try:
+        d = Drawing(size, size)
+        d.add(Rect(0, 0, size, size, fillColor=rl_colors.lightgrey, strokeColor=rl_colors.grey))
+        d.add(String(size//2, size//2, "QR", textAnchor='middle', fontSize=14))
+        img_buffer = BytesIO()
+        renderPM.drawToFile(d, img_buffer, fmt='PNG')
+        img_buffer.seek(0)
+        return ImageReader(img_buffer)
+    except Exception:
+        # Ultimate fallback: return a 1x1 white pixel as ImageReader
+        import struct, zlib
+        def _make_minimal_png():
+            sig = b'\x89PNG\r\n\x1a\n'
+            def chunk(name, data):
+                c = struct.pack('>I', len(data)) + name + data
+                return c + struct.pack('>I', zlib.crc32(name + data) & 0xFFFFFFFF)
+            ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 2, 0, 0, 0))
+            idat = chunk(b'IDAT', zlib.compress(b'\x00\xFF\xFF\xFF'))
+            iend = chunk(b'IEND', b'')
+            return sig + ihdr + idat + iend
+        return ImageReader(BytesIO(_make_minimal_png()))
 
 
 def _generate_pdf(

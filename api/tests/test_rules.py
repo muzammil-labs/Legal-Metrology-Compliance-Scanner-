@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from fastapi.testclient import TestClient
 
-from main import app
+from index import app
 from schemas import (
     ExecutiveAnalyticsResponse,
     DistrictMetricSummary,
