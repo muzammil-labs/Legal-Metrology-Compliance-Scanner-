@@ -1,0 +1,7 @@
+node/
+node22/
+*.zip
+.venv/
+temp*
+frontend/node_modules/
+.git/
