@@ -109,13 +109,11 @@ async def vercel_routing_middleware(request: Request, call_next):
         request.scope["path"] = f"/api/{vercel_path}"
 @app.middleware("http")
 async def debug_path_middleware(request: Request, call_next):
-    if "debug_path" in request.url.path:
-        return JSONResponse({
-            "request_url_path": request.url.path, 
-            "scope_path": request.scope.get("path"),
-            "query_params": dict(request.query_params)
-        })
-    return await call_next(request)
+    return JSONResponse({
+        "request_url_path": request.url.path, 
+        "scope_path": request.scope.get("path"),
+        "query_params": dict(request.query_params)
+    })
 
 @app.get("/health")
 def health_check():
