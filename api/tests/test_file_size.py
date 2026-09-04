@@ -1,6 +1,6 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
-from index import app
+from server import app
 from services.auth import Role
 import io
 

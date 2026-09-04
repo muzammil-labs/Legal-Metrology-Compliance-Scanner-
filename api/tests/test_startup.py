@@ -5,13 +5,13 @@ CI command: cd api && python -m pytest tests/test_startup.py -v
 """
 import importlib, sys, os, pytest
 
-def test_index_imports_cleanly():
-    """api/index.py must import with zero exceptions."""
+def test_server_imports_cleanly():
+    """api/server.py must import with zero exceptions."""
     os.environ.setdefault("DEMO_MODE", "true")
-    if "index" in sys.modules:
-        del sys.modules["index"]
-    mod = importlib.import_module("index")
-    assert hasattr(mod, "app"), "FastAPI app object missing from index.py"
+    if "server" in sys.modules:
+        del sys.modules["server"]
+    mod = importlib.import_module("server")
+    assert hasattr(mod, "app"), "FastAPI app object missing from server.py"
 
 def test_all_services_importable():
     services = [
@@ -36,23 +36,23 @@ def test_database_module():
 
 def test_health_endpoint():
     from fastapi.testclient import TestClient
-    import index
-    client = TestClient(index.app)
+    import server
+    client = TestClient(server.app)
     r = client.get("/health")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
 
 def test_404_returns_json_not_crash():
     from fastapi.testclient import TestClient
-    import index
-    client = TestClient(index.app, raise_server_exceptions=False)
+    import server
+    client = TestClient(server.app, raise_server_exceptions=False)
     r = client.get("/this-route-does-not-exist-xyz")
     assert r.status_code == 404
     assert "status_code" in r.json()
 
 def test_scan_missing_file_returns_422_not_500():
     from fastapi.testclient import TestClient
-    import index
-    client = TestClient(index.app, raise_server_exceptions=False)
+    import server
+    client = TestClient(server.app, raise_server_exceptions=False)
     r = client.post("/api/scan")  # no file attached
     assert r.status_code in (400, 422), f"Expected 4xx, got {r.status_code}: {r.text}"

@@ -2,13 +2,13 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/index.py": {
+    "api/server.py": {
       "maxDuration": 60
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.py" },
-    { "source": "/health", "destination": "/api/index.py" },
+    { "source": "/api/:path*", "destination": "/api/server.py" },
+    { "source": "/health", "destination": "/api/server.py" },
     { "source": "/:path*", "destination": "/index.html" }
   ]
 }
