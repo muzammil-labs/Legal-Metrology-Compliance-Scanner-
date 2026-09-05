@@ -292,8 +292,7 @@ export default React.forwardRef(function CameraScanner({ file, setFile, demoMode
                 <div className="flex items-center justify-center">
                   <button 
                     onClick={() => {
-                      if (inputMode === "camera") cameraInputRef.current?.click();
-                      else uploadInputRef.current?.click();
+                      if (rescanInputRef.current) rescanInputRef.current.click();
                     }}
                     className="flex items-center gap-2 py-2 px-4 rounded-full border border-ink/20 text-ink hover:bg-ink/5 transition-colors text-xs font-bold uppercase tracking-widest shadow-sm bg-white"
                   >
