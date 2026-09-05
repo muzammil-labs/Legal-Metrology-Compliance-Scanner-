@@ -110,7 +110,7 @@ export default function InspectorAnalyticsDashboard() {
   ].join(' ') : '';
 
   return (
-    <motion.div initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="space-y-6 w-full max-w-full overflow-x-hidden pb-12">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 w-full max-w-full overflow-x-hidden pb-12">
       
       {/* Header */}
       <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5">

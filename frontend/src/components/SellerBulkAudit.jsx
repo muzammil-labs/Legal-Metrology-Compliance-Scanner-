@@ -11,7 +11,7 @@ export default function SellerBulkAudit() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   return (
-    <motion.section initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="pb-12 w-full overflow-x-hidden">
+    <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-12 w-full overflow-x-hidden">
       
       {/* Header */}
       <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
