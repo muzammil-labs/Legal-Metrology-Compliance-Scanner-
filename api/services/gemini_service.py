@@ -46,12 +46,6 @@ def extract_label_with_gemini(content: bytes, mime_type: str = "image/jpeg") -> 
 
         prompt = """You are a Legal Metrology OCR engine for India's PCR 2011.
 
-STEP 0 — IMAGE QUALITY AND SUBJECT CHECK (do this first before any OCR):
-- If the image is too blurry, out of focus, overexposed, or has heavy glare making text unreadable, output ONLY this exact string and nothing else: IMAGE_QUALITY_POOR
-- If the image does NOT show a packaged consumer product label (e.g., it shows a person, animal, landscape, selfie, random object, food without packaging, screenshot, blank wall etc.), output ONLY this exact string and nothing else: NOT_A_PACKAGED_PRODUCT
-
-If the image passes Step 0, continue:
-
 PART 1 — extract every word visible on this product label exactly as printed.
 Preserve line breaks as \\n. Do not correct spelling. Do not skip any text.
 
@@ -78,9 +72,9 @@ PART 2 — after the raw text, output exactly one JSON block:
 ```
 Use null for any field not visible. Do not invent values."""
         fallback_models = [
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash-8b",
+            "gemini-3.8-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
         ]
         errors = []
         for model_name in fallback_models:

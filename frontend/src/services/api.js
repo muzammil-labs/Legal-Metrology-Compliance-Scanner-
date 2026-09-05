@@ -34,7 +34,7 @@ export async function executeScanWithCircuitBreaker(
     throw new Error("An image file is required for live scanning.");
 
   const controller = new AbortController();
-  const timeoutMs = isDeepScan ? 45000 : 30000;
+  const timeoutMs = isDeepScan ? 120000 : 90000; // 90s normal, 120s deep scan
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const formData = new FormData();
@@ -56,6 +56,12 @@ export async function executeScanWithCircuitBreaker(
     }
     return await response.json();
   } catch (error) {
+    // Convert cryptic AbortError into a user-friendly message
+    if (error.name === "AbortError") {
+      throw new Error(
+        "Scan timed out — the server took too long to respond. Please try again with a clearer image."
+      );
+    }
     console.error("Scan failed or timed out.", error);
     throw error;
   } finally {
